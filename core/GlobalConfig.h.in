@@ -1,0 +1,4 @@
+
+// the configured options and settings for Tutorial
+#define NAV24_VERSION_MAJOR @NAV24_VERSION_MAJOR@
+#define NAV24_VERSION_MINOR @NAV24_VERSION_MINOR@
