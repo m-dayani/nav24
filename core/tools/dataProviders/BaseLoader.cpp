@@ -12,8 +12,8 @@ using namespace boost::filesystem;
 namespace NAV24 {
 
     BaseLoader::BaseLoader(const DS_ParamsPtr &pDsParams) :
-            mLoadState(TabularTextDS::LoadState::BAD_PATH), mDsFormat(pDsParams->getFormat()), mDsName(pDsParams->getName()),
-            mSeqCount(0), mSeqTarget(0), mSeqIdx(0), mnMaxIter(pDsParams->getMaxIter()), mTsFactor(pDsParams->getTsFactor()),
+            mLoadState(TabularTextDS::LoadState::BAD_PATH), /*mDsFormat(pDsParams->getFormat()),*/ mDsName(pDsParams->getName()),
+            mSeqCount(0), mSeqTarget(0), mSeqIdx(0), mnMaxIter(0), mTsFactor(1.0/*pDsParams->getTsFactor()*/),
             mbGtQwFirst(pDsParams->isGtQwFirst()), mbGtPosFirst(pDsParams->isGtPosFirst()),
             mbImuGyroFirst(pDsParams->isImuGyroFirst()){
 

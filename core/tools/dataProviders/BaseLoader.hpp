@@ -92,7 +92,7 @@ namespace NAV24 {
         std::vector<PoseHookPtr> mvpGtPoseHooks;
 
         TabularTextDS::LoadState mLoadState;
-        DS_Params::DS_Formats mDsFormat;
+//        DS_Params::DS_Formats mDsFormat;
 
         std::string mDsName;
 

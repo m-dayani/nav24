@@ -149,6 +149,13 @@ namespace NAV24 {
         }
         //template<typename T>
         //static uint writeMap(cv::FileNode &n, const std::string &strArg, const std::map<std::string, T> &inSeq);
+
+        static std::string printNode(const cv::FileNode &node, int depth = 0);
+
+        static void saveParams(const cv::FileNode& fNode, cv::FileStorage& fs);
+
+    protected:
+        static void printNode(const cv::FileNode &node, std::ostringstream& oss, int depth = 0);
     };
 
 } // NAV24

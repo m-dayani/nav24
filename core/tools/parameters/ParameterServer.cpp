@@ -9,72 +9,47 @@ using namespace std;
 
 namespace NAV24 {
 
-    ParameterServer::ParameterServer(const ChannelPtr &server) : mpChannel(server) {
+    ParameterServer::ParameterServer(const ChannelPtr &server) :
+        mpChannel(server), mConfigFile(""), mpFileStorage(nullptr), mpParam(nullptr) {}
 
-        // Never create shared pointers from raw pointers!
-        //shared_ptr<MsgCallback> callback(this);
-        //mpChannel->registerChannel(callback, ParameterServer::TOPIC);
-    }
-
-    ParameterServer::ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg) : ParameterServer(server) {
+    ParameterServer::ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg) :
+        ParameterServer(server) {
 
         this->receive(configMsg);
     }
 
-    std::string ParameterServer::getFullStat() {
+    ParameterServer::~ParameterServer() {
 
-        ostringstream oss;
-
-        oss << "# Dataset Info:\n";
-        oss << mvpDS_Params->printStr("\t");
-
-        oss << "# Camera Parameters:\n";
-        oss << CamParams::printStr(mpCamParams.get(), "\t");
-        if (mpCamParams->mpLinkedCam) {
-            oss << "# Right Camera Parameters:\n";
-            oss << CamParams::printStr(mpCamParams->mpLinkedCam, "\t");
+        if (mpFileStorage) {
+            mpFileStorage->release();
         }
-
-        oss << "# IMU Parameters:\n";
-        oss << mpImuParams->printStr("\t");
-
-        return oss.str();
     }
 
     void ParameterServer::load(const string &settingsFile) {
 
-        cv::FileStorage fsSettings(settingsFile, cv::FileStorage::READ);
-        if(!fsSettings.isOpened()) {
-            cerr << "** ERROR: Failed to open settings file: " << settingsFile << endl;
+        mConfigFile = settingsFile;
+        mpFileStorage = make_shared<cv::FileStorage>(mConfigFile, cv::FileStorage::READ);
+        if(!mpFileStorage || !mpFileStorage->isOpened()) {
+            cerr << "** ERROR: Failed to open settings file: " << mConfigFile << endl;
             return;
         }
-
-        mvpDS_Params = vector<DS_ParamsPtr>();
-        mvpDS_Params.push_back(make_shared<DS_Params>(fsSettings));
-
-        mpCamParams = make_shared<CamParams>(fsSettings);
-
-        mpImuParams = make_shared<IMU_Params>(fsSettings);
-
-        mpSensorConfig = make_shared<SensorConfig>(fsSettings);
-
-        fsSettings.release();
     }
 
     void ParameterServer::save(const string &pathParams) {
 
-        cv::FileStorage paramsFile(pathParams, cv::FileStorage::WRITE);
-        if(!paramsFile.isOpened()) {
+        shared_ptr<cv::FileStorage> pFileStorage = make_shared<cv::FileStorage>(mConfigFile, cv::FileStorage::WRITE);
+        if (!pathParams.empty()) {
+            pFileStorage = make_shared<cv::FileStorage>(pathParams, cv::FileStorage::WRITE);
+        }
 
+        if(!pFileStorage || !pFileStorage->isOpened()) {
             cerr << "** ERROR: Failed to open settings file: " << pathParams << endl;
             return;
         }
 
-        mvpDS_Params->write(paramsFile);
-        mpCamParams->write(paramsFile);
-        mpImuParams->write(paramsFile);
+        // todo: how to save or print fileStorage?
 
-        paramsFile.release();
+        pFileStorage->release();
     }
 
     void ParameterServer::receive(const MsgPtr &msg) {
@@ -82,7 +57,7 @@ namespace NAV24 {
         // check the topic
         string topic = msg->getTopic();
         if (topic != ParameterServer::TOPIC) {
-            // log warning
+            // todo: log warning
             return;
         }
 
@@ -99,7 +74,7 @@ namespace NAV24 {
                 this->handleRequest(msg);
                 break;
             default:
-                //log warning
+                //todo: log warning
                 break;
         }
     }
@@ -108,7 +83,7 @@ namespace NAV24 {
 
         MsgReqPtr request = static_pointer_cast<MsgRequest>(msg);
         if (!request) {
-            // log warning
+            // todo: log warning
             return;
         }
 
@@ -116,30 +91,25 @@ namespace NAV24 {
 
         // check message to find which parameter type it requests
         string tag = request->getMessage();
-        ParamPtr param{};
-        string res = "";
-        if (tag == DS_Params::TAG) {
-            param = mvpDS_Params;
-            res = mvpDS_Params->printStr();
-        }
-        else if (tag == CamParams::TAG) {
-            param = mpCamParams;
-            res = mpCamParams->printStr(mpCamParams.get());
-        }
-        else if (tag == IMU_Params::TAG) {
-            param = mpImuParams;
-            res = mpImuParams->printStr();
-        }
-        else if (tag == TAG_PS_GET_STAT) {
-            sender->receive(make_shared<Message>(msg->getTopic(), this->getFullStat()));
+        ParamPtr pParam = this->getParameter(tag);
+
+        if (msg->getTargetId() == FCN_PS_PRINT) {
+            sender->receive(make_shared<Message>(msg->getTopic(), pParam->printStr()));
             return;
         }
 
-        // create a response message and send back to the caller
-        MsgPtr response = make_shared<MsgConfig>(msg->getTopic(), param);
-        response->setMessage(res);
+        // create a response message
+        MsgPtr response = make_shared<MsgConfig>(msg->getTopic(), pParam);
 
+        // send back to the caller
         sender->receive(response);
+    }
+
+    const ParamPtr &ParameterServer::getParameter(const std::string& tag) {
+
+        // todo
+        //return <#initializer#>;
+        return nullptr;
     }
 
 } // NAV24

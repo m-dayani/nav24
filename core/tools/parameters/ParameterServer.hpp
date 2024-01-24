@@ -12,18 +12,18 @@
 
 #include "Message.hpp"
 #include "Channel.hpp"
-#include "DS_Params.hpp"
-#include "CamParams.hpp"
-#include "IMU_Params.hpp"
-#include "SensorConfig.hpp"
+//#include "DS_Params.hpp"
+//#include "CamParams.hpp"
+//#include "IMU_Params.hpp"
+//#include "SensorConfig.hpp"
 
 
 namespace NAV24 {
 
-    // todo: use static variables instead of macros?
 #define FCN_PS_LOAD 1
 #define FCN_PS_SAVE 2
 #define FCN_PS_REQ 3
+#define FCN_PS_PRINT 4
 #define TAG_PS_GET_STAT "ParamServer/GetStat"
 
     class ParameterServer : public MsgCallback {
@@ -33,6 +33,7 @@ namespace NAV24 {
 
         explicit ParameterServer(const ChannelPtr& server);
         ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg);
+        ~ParameterServer();
 
         void receive(const MsgPtr& msg) override;
 
@@ -40,16 +41,15 @@ namespace NAV24 {
         void load(const std::string& settings);
         void save(const std::string& pathParams);
         void handleRequest(const MsgPtr& msg);
-        std::string getFullStat();
+        const ParamPtr& getParameter(const std::string& tag);
 
     private:
         ChannelPtr mpChannel;
 
-        // todo: apply the required changes
-        std::vector<DS_ParamsPtr> mvpDS_Params;
-        CamParamsPtr mpCamParams;
-        IMU_ParamsPtr mpImuParams;
-        SensorConfigPtr mpSensorConfig;
+        std::string mConfigFile;
+        std::shared_ptr<cv::FileStorage> mpFileStorage;
+
+        ParamPtr mpParam;
     };
 
 } // NAV24

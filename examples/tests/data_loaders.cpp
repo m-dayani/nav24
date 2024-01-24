@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     chSystem->publish(msgSaveSettings);
 
     // Get required camera parameters
-    MsgPtr msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC, CamParams::TAG, FCN_PS_REQ, recvSystem);
+    MsgPtr msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC, "Camera", FCN_PS_REQ, recvSystem);
     chSystem->publish(msgGetCamParams);
 
     return 0;

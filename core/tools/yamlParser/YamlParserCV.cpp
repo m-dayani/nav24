@@ -3,6 +3,9 @@
 //
 
 #include "YamlParserCV.hpp"
+#include <iostream>
+
+using namespace std;
 
 namespace NAV24 {
 
@@ -128,6 +131,105 @@ namespace NAV24 {
         n[strArg] >> outMat;
         return outMat.clone();
     }
+
+    std::string YamlParserCV::printNode(const cv::FileNode &node, int depth) {
+
+        std::ostringstream oss{};
+        printNode(node, oss, depth);
+        return oss.str();
+    }
+
+    void YamlParserCV::printNode(const cv::FileNode &node, std::ostringstream &oss, int depth) {
+
+        std::string indent = "";
+        for (int i = 0; i < depth; i++) {
+            indent += "\t";
+        }
+
+        if (node.isMap()) {
+            vector<string> keys = node.keys();
+            for (auto key : keys) {
+                cv::FileNode newNode = node[key];
+                string sep = ":\n";
+                if (newNode.isReal() || newNode.isInt() || newNode.isString()) {
+                    sep = ": ";
+                }
+                oss << indent << key << sep;
+                printNode(newNode, oss, depth + 1);
+                oss << endl;
+            }
+        }
+        else if (node.isSeq()) {
+            for (auto iter = node.begin(); iter != node.end(); iter++) {
+                cv::FileNode newNode = *iter;
+                string sep = "- ";
+                if (newNode.isMap()) {
+                    sep = "-\n";
+                }
+                oss << indent << sep;
+                printNode(newNode, oss, depth + 1);
+                oss << endl;
+            }
+        }
+        else if (node.isString()) {
+
+            oss << (string) node;
+        }
+        else if (node.isInt()) {
+
+            oss << to_string((int) node);
+        }
+        else if (node.isReal()) {
+
+            oss << to_string((double) node);
+        }
+    }
+
+    void YamlParserCV::saveParams(const cv::FileNode& node, cv::FileStorage& fs) {
+
+        if (node.isMap()) {
+            vector<string> keys = node.keys();
+            for (auto key : keys) {
+                cv::FileNode newNode = node[key];
+                if (newNode.isMap()) {
+                    fs << key << "{";
+                    saveParams(newNode, fs);
+                    fs << "}";
+                }
+                else {
+                    fs << key;
+                    saveParams(newNode, fs);
+                }
+            }
+        }
+        else if (node.isSeq()) {
+            fs << "[";
+            for (auto iter = node.begin(); iter != node.end(); iter++) {
+                if ((*iter).isMap()) {
+                    fs << "{";
+                    saveParams(*iter, fs);
+                    fs << "}";
+                }
+                else {
+                    saveParams(*iter, fs);
+                }
+            }
+            fs << "]";
+        }
+        else if (node.isString()) {
+
+            fs << (string) node;
+        }
+        else if (node.isInt()) {
+
+            fs << (int) node;
+        }
+        else if (node.isReal()) {
+
+            fs << (double) node;
+        }
+    }
+
 
     /*void YamlParserCV::writeMat(cv::FileNode &n, const std::string &strArg, const cv::Mat &inCvMat) {
 

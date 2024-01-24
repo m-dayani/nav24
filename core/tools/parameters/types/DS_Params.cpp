@@ -9,7 +9,7 @@ using namespace std;
 namespace NAV24 {
 
     DS_ParamsOffline::DS_ParamsOffline() :
-            mFormat(NOT_SUPPORTED), mnSeqTarget(0), mnMaxIter(1), mfTsFactor(1.0),
+            /*mFormat(NOT_SUPPORTED),*/ mnSeqTarget(0), mnMaxIter(1), mfTsFactor(1.0),
             mbImuGyroFirst(true), mbGtPosFirst(true), mbGtQwFirst(true)
     {}
 
@@ -23,39 +23,39 @@ namespace NAV24 {
         this->read(dsNode);
     }
 
-    DS_ParamsOffline::DS_Formats DS_ParamsOffline::mapDsFormats(const string& strFormat) {
+//    DS_ParamsOffline::DS_Formats DS_ParamsOffline::mapDsFormats(const string& strFormat) {
 
-        if (strFormat == "euroc")
-            return DS_Params::EUROC;
-        else if (strFormat == "ev_ethz")
-            return DS_Params::EV_ETHZ;
-        else if (strFormat == "ev_mvsec")
-            return DS_Params::EV_MVSEC;
-        else
-            return DS_Params::NOT_SUPPORTED;
-    }
+//        if (strFormat == "euroc")
+//            return DS_Params::EUROC;
+//        else if (strFormat == "ev_ethz")
+//            return DS_Params::EV_ETHZ;
+//        else if (strFormat == "ev_mvsec")
+//            return DS_Params::EV_MVSEC;
+//        else
+//            return DS_Params::NOT_SUPPORTED;
+//    }
 
-    string DS_ParamsOffline::mapDsFormats(const DS_ParamsOffline::DS_Formats dsFormat) {
-
-        switch (dsFormat) {
-            case DS_Params::EUROC:
-                return "euroc";
-            case DS_Params::EV_ETHZ:
-                return "ev_ethz";
-            case DS_Params::EV_MVSEC:
-                return "ev_mvsec";
-            case DS_Params::NOT_SUPPORTED:
-            default:
-                return "not_supported";
-        }
-    }
+//    string DS_ParamsOffline::mapDsFormats(const DS_ParamsOffline::DS_Formats dsFormat) {
+//
+//        switch (dsFormat) {
+//            case DS_Params::EUROC:
+//                return "euroc";
+//            case DS_Params::EV_ETHZ:
+//                return "ev_ethz";
+//            case DS_Params::EV_MVSEC:
+//                return "ev_mvsec";
+//            case DS_Params::NOT_SUPPORTED:
+//            default:
+//                return "not_supported";
+//        }
+//    }
 
     void DS_ParamsOffline::write(cv::FileStorage &fs) const {
 
         fs << "DS" << "{";
 
         YamlParserCV::writeString(fs, "name", mName);
-        YamlParserCV::writeString(fs, "format", mapDsFormats(mFormat));
+//        YamlParserCV::writeString(fs, "format", mapDsFormats(mFormat));
         //fs << *(mpSensorConfig);
         //mpSensorConfig->write(fs);
 
@@ -83,7 +83,7 @@ namespace NAV24 {
 
         // Resolve DS format
         string dsFormat = YamlParserCV::readString(dsNode, "format", mapDsFormats(NOT_SUPPORTED));
-        mFormat = mapDsFormats(dsFormat);
+//        mFormat = mapDsFormats(dsFormat);
 
         // DS sensor configuration
         // TODO: Remove from here -> move to the root param server
@@ -114,7 +114,7 @@ namespace NAV24 {
         ostringstream oss;
 
         oss << prefix << "Name: " << mName << endl;
-        oss << prefix << "Format: " << mapDsFormats(mFormat) << endl;
+//        oss << prefix << "Format: " << mapDsFormats(mFormat) << endl;
         //oss << prefix << "Sensor Configuration: " << mpSensorConfig->toStr() << endl;
 
         oss << prefix << "Paths:\n";

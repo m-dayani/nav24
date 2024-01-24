@@ -11,8 +11,8 @@ namespace NAV24 {
     EurocLoader::EurocLoader(const DS_ParamsPtr& pDsParams) : BaseLoader(pDsParams) {
 
         // Check dataset format
-        if (mDsFormat != DS_Params::EUROC) {
-            LOG(ERROR) << "** Initializing EuRoC loader with " << DS_Params::mapDsFormats(mDsFormat) << " data!\n";
+        if (true) {//mDsFormat != DS_Params::EUROC) {
+            //LOG(ERROR) << "** Initializing EuRoC loader with " << DS_Params::mapDsFormats(mDsFormat) << " data!\n";
             mLoadState = TabularTextDS::BAD_DATA;
             return;
         }

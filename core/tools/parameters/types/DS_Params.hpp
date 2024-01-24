@@ -18,14 +18,14 @@ namespace NAV24 {
     struct DS_Params : public Parameter {
 
         const std::string &getName() const { return mName; }
-        DS_Formats getFormat() const { return mFormat; }
+        //DS_Formats getFormat() const { return mFormat; }
         const std::string &getType() const { return mType; }
 
         static DS_ParamsPtr getDsParams(const cv::FileStorage& fsSettings);
 
     protected:
         std::string mName;
-        DS_Formats mFormat;
+        //DS_Formats mFormat;
         std::string mType;
     };
 
@@ -57,8 +57,8 @@ namespace NAV24 {
         // This is relative to execution path
         std::string getResultsBasePath();
 
-        void write(cv::FileStorage& fs) const override;
-        void read(const cv::FileNode& node) override;
+        void write(cv::FileStorage& fs) const;
+        void read(const cv::FileNode& node);
 
         std::string printStr(const std::string& prefix = "") override;
 
@@ -96,7 +96,7 @@ namespace NAV24 {
 
         struct Camera {
             int port;
-            int[] resolution;
+            std::vector<int> resolution;
             int fps;
         } mCam;
     };

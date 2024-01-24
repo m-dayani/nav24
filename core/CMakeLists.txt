@@ -53,57 +53,20 @@ list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
 
 set(ALL_H_FILES
         ${SYSTEM_DIR}/System.hpp
-        ${DATA_LOADERS_DIR}/TabularTextWriter.hpp
-        ${DATA_LOADERS_DIR}/SharedQueue.hpp
         ${UTILS_YAML_PARSER_DIR}/YamlParserCV.hpp
-        ${PARAMS_TYPES_DIR}/SensorConfig.hpp
-        ${PARAMS_TYPES_DIR}/Parameter.hpp
-        ${PARAMS_TYPES_DIR}/CamParams.hpp
-        ${PARAMS_TYPES_DIR}/IMU_Params.hpp
-        ${PARAMS_TYPES_DIR}/DS_Params.hpp
+        ${PARAMS_DIR}/Parameter.hpp
         ${PARAMS_DIR}/ParameterServer.hpp
+        ${PARAMS_DIR}/ParameterBlueprint.h
         ${MESSAGING_DIR}/Message.hpp
         ${MESSAGING_DIR}/Channel.hpp
-        ${DATA_LOADERS_DIR}/BaseLoader.hpp
-        ${DATA_LOADERS_DIR}/EurocLoader.hpp
-        ${VISUALIZATION_DIR}/Visualization.hpp
-        ${SENSOR_TYPES_DIR}/Image.hpp
-        ${SENSOR_TYPES_DIR}/IMU.hpp
-        ${SENSOR_TYPES_DIR}/ImageFilter.hpp
-        ${SENSOR_TYPES_DIR}/ImageHook.hpp
-        ${SENSOR_TYPES_DIR}/IMU_Hook.hpp
-        ${UTILS_DT_CONV_DIR}/DataConversion.hpp
-        ${DATA_STORE_DIR}/PoseDS.hpp
-        ${DATA_STORE_DIR}/ImageDS.hpp
-        ${DATA_STORE_DIR}/IMU_DS.hpp
-        ${DATA_STORE_DIR}/TabularTextDS.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
-        ${DATA_LOADERS_DIR}/TabularTextWriter.cpp
-        ${DATA_LOADERS_DIR}/SharedQueue.cpp
         ${UTILS_YAML_PARSER_DIR}/YamlParserCV.cpp
-        ${PARAMS_TYPES_DIR}/SensorConfig.cpp
-        ${PARAMS_TYPES_DIR}/Parameter.cpp
-        ${PARAMS_TYPES_DIR}/CamParams.cpp
-        ${PARAMS_TYPES_DIR}/IMU_Params.cpp
-        ${PARAMS_TYPES_DIR}/DS_Params.cpp
+        ${PARAMS_DIR}/Parameter.cpp
         ${PARAMS_DIR}/ParameterServer.cpp
         ${MESSAGING_DIR}/Message.cpp
         ${MESSAGING_DIR}/Channel.cpp
-        ${DATA_LOADERS_DIR}/BaseLoader.cpp
-        ${DATA_LOADERS_DIR}/EurocLoader.cpp
-        ${VISUALIZATION_DIR}/Visualization.cpp
-        ${SENSOR_TYPES_DIR}/Image.cpp
-        ${SENSOR_TYPES_DIR}/IMU.cpp
-        ${SENSOR_TYPES_DIR}/ImageFilter.cpp
-        ${SENSOR_TYPES_DIR}/ImageHook.cpp
-        ${SENSOR_TYPES_DIR}/IMU_Hook.cpp
-        ${UTILS_DT_CONV_DIR}/DataConversion.cpp
-        ${DATA_STORE_DIR}/PoseDS.cpp
-        ${DATA_STORE_DIR}/ImageDS.cpp
-        ${DATA_STORE_DIR}/IMU_DS.cpp
-        ${DATA_STORE_DIR}/TabularTextDS.cpp
 )
 
 include_directories(
