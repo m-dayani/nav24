@@ -10,77 +10,29 @@ using namespace std;
 
 namespace NAV24 {
 
-    std::string ParamCV::printStr(const std::string &prefix) {
+    Parameter::Parameter(const string &name_, const ParamPtr &parent_) : name(name_), parent(parent_), children(), type(0) {}
 
-        return YamlParserCV::printNode(mFileNode);
+    ParamPtr Parameter::getChild(const string &key) {
+        return children[key].lock();
     }
 
-    void ParamCV::write(const string &key, cv::FileNode& write_node) const {
+    ParamPtr Parameter::seekNode(const string &key) {
 
-        auto newNode = Parameter::seekNode(write_node, key);
-        if (newNode)
-            *newNode = mFileNode;
-    }
+        ParamPtr pParam;
+        bool initialized = false;
 
-    ParamPtr ParamCV::read(const string &key) {
+        vector<string> vKeys{};
+        Parameter::splitKey(vKeys, key);
 
-        ParamPtr pParam = nullptr;
-        auto pNewNode = Parameter::seekNode(mFileNode, key);
-        if (!pNewNode)
-            return nullptr;
-        auto node = *pNewNode;
-
-        if (node.isMap()) {
-            pParam = make_shared<ParamCV>(node);
-        }
-        else {
-            cv::FileNode newNode = node;
-            if (node.isSeq()) {
-                newNode = *(node.begin());
+        for (auto k : vKeys) {
+            if (!initialized) {
+                pParam = this->getChild(k);
+                initialized = true;
             }
-
-            if (newNode.isInt()) {
-                shared_ptr<ParamSeq<int>> pParamInt = make_shared<ParamSeq<int>>(ParamSeq<int>::SeqType::INT);
-                if (node.isSeq()) {
-                    for (auto iter = node.begin(); iter != node.end(); iter++) {
-                        pParamInt->push_back((int) *iter);
-                    }
-                }
-                else {
-                    pParamInt->push_back((int) node);
-                }
-                pParam = pParamInt;
-            }
-            else if (newNode.isString()) {
-                shared_ptr<ParamSeq<string>> pParamStr = make_shared<ParamSeq<string>>(ParamSeq<string>::SeqType::STRING);
-                if (node.isSeq()) {
-                    for (auto iter = node.begin(); iter != node.end(); iter++) {
-                        pParamStr->push_back((string) *iter);
-                    }
-                }
-                else {
-                    pParamStr->push_back((string) node);
-                }
-                pParam = pParamStr;
-            }
-            else if (newNode.isReal()) {
-                shared_ptr<ParamSeq<double>> pParamFloat = make_shared<ParamSeq<double>>(ParamSeq<double>::SeqType::DOUBLE);
-                if (node.isSeq()) {
-                    for (auto iter = node.begin(); iter != node.end(); iter++) {
-                        pParamFloat->push_back((double) *iter);
-                    }
-                }
-                else {
-                    pParamFloat->push_back((double) node);
-                }
-                pParam = pParamFloat;
-            }
-
-            if (pParam) {
-                static_pointer_cast<ParamCV>(pParam)->setNode(node);
+            else {
+                pParam = pParam->getChild(k);
             }
         }
-
         return pParam;
     }
 
@@ -103,60 +55,83 @@ namespace NAV24 {
         string res = "";
         size_t n = vKey.size();
 
-
         for (size_t i = 0; i < n; i++) {
-
             string d = (i == n - 1) ? "" : delim;
             res += vKey[i] + d;
         }
-
         return res;
     }
 
-    bool is_number(const std::string& s) {
-        std::string::const_iterator it = s.begin();
-        while (it != s.end() && std::isdigit(*it)) ++it;
-        return !s.empty() && it == s.end();
+    ParamPtr Parameter::read(const string &key) {
+        //todo: implement this
+        auto pParam = seekNode(key);
+        return pParam;
     }
 
-    cv::FileNode* Parameter::seekNode(const cv::FileNode& nd, const std::string& key) {
-
-        if (nd.isNone()) {
-            return nullptr;
-        }
-
-        std::vector<std::string> vKeys{};
-        Parameter::splitKey(vKeys, key);
-
-        cv::FileNode node = nd;
-
-        for (auto k : vKeys) {
-            if (is_number(k)) {
-                node = node[std::stoi(k)];
-            }
-            else {
-                node = node[k];
-            }
-        }
-
-        auto newNode = &node;
-        return newNode;
+    void Parameter::write(const string &key, const ParamPtr& paramPtr) {
+        // this is wrong (discards child/parent relations)
+        // todo: improve this
+        ParamPtr pParam = seekNode(key);
+        pParam = paramPtr;
     }
 
-    template<typename T>
-    std::string ParamSeq<T>::printStr(const std::string &prefix) {
+    std::string Parameter::printStr(const std::string &prefix) const {
 
         ostringstream oss{};
-
-        oss << "[" << prefix;
-
-        for (size_t i = 0; i < mData.size(); i++) {
-
-            string d = (i == mData.size() - 1) ? "]" : ", ";
-            oss << mData[i] << d;
+        string pref = "";
+        if (this->parent.lock()) {
+            pref = prefix;
         }
-
+        string sep = " ";
+        if (prefix.size() > 0) {
+            sep = prefix[0];
+        }
+        for (auto child : children) {
+            oss << "\n" << pref << child.first << ": " << child.second.lock()->printStr(pref + sep);
+        }
         return oss.str();
     }
 
+    void Parameter::insertChild(const string& key, const ParamPtr &pChild) {
+
+        children.insert(make_pair(key, pChild));
+    }
+
+
+    template<typename T>
+    std::string ParamType<T>::printStr(const std::string &prefix) const {
+
+        ostringstream oss{};
+        string pref = prefix;
+        if (prefix.size() > 0) {
+            pref = " ";
+        }
+        oss << pref << mData;
+        return oss.str();
+    }
+
+    template<typename T>
+    std::string ParamSeq<T>::printStr(const std::string &prefix) const {
+
+        ostringstream oss{};
+        string pref = prefix;
+        if (prefix.size() > 0) {
+            pref = " ";
+        }
+        oss << pref << "[";
+        for (int i = 0; i < mvData.size(); i++) {
+            oss << mvData[i];
+            string sep = (i == mvData.size() - 1) ? "]" : ", ";
+            oss << sep;
+        }
+        return oss.str();
+    }
+
+    template std::string ParamType<string>::printStr(const std::string &prefix) const;
+    template std::string ParamType<int>::printStr(const std::string &prefix) const;
+    template std::string ParamType<double>::printStr(const std::string &prefix) const;
+    template std::string ParamSeq<int>::printStr(const std::string &prefix) const;
+    template std::string ParamSeq<double>::printStr(const std::string &prefix) const;
+    template std::string ParamSeq<string>::printStr(const std::string &prefix) const;
+    template std::string ParamType<cv::Mat>::printStr(const std::string &prefix) const;
 }

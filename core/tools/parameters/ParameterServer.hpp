@@ -33,7 +33,6 @@ namespace NAV24 {
 
         explicit ParameterServer(const ChannelPtr& server);
         ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg);
-        ~ParameterServer();
 
         void receive(const MsgPtr& msg) override;
 
@@ -47,9 +46,9 @@ namespace NAV24 {
         ChannelPtr mpChannel;
 
         std::string mConfigFile;
-        std::shared_ptr<cv::FileStorage> mpFileStorage;
 
-        ParamPtr mpParam;
+        ParamPtr mpParamRoot;
+        std::vector<ParamPtr> mvpAllParams;
     };
 
 } // NAV24

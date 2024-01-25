@@ -21,37 +21,23 @@ int main(int argc, char** argv) {
     string fileName = "../../config/AUN_ARM.yaml";
     string writeFile = "../../config/AUN_ARM1.yaml";
 
-    FileStorage fs, fs_write;
-    fs.open(fileName, FileStorage::READ);
-    fs_write.open(writeFile, FileStorage::WRITE);
-    if (!fs.isOpened())
-    {
-        cerr << "Failed to open " << fileName << endl;
-        return 1;
-    }
+    vector<ParamPtr> vAllParams{};
 
-    cv::FileNode rootNode = fs.root();
-    ParamPtr pParam = make_shared<ParamCV>(rootNode);
+    ParamPtr pParam = YamlParserCV::loadParams(fileName, vAllParams);
 
     ParamPtr pCamIntrinsics = pParam->read("Sensors/Camera/calib/intrinsics");
     ParamPtr pImagePath = pParam->read("DS/0/paths/imageBase");
     auto pImgPathSeq = static_pointer_cast<ParamSeq<string>>(pImagePath);
-    pImgPathSeq->push_back("a-folder");
+    if (pImgPathSeq)
+        pImgPathSeq->push_back("a-folder");
 
-    pImagePath->write("DS/0/paths/imageBase", rootNode);
-
-    ParamPtr ppParam = make_shared<ParamCV>(rootNode);
-    ParamPtr ppImagePath = ppParam->read("DS/0/paths/imageBase");
-
+    cout << pParam->printStr("\t") << endl;
     cout << pCamIntrinsics->printStr() << endl;
-    // this shows that a READ fileStorage cannot be overwritten
-    if (ppImagePath)
-        cout << ppImagePath->printStr() << endl;
+    if (pImgPathSeq)
+        cout << pImgPathSeq->printStr() << endl;
 
-    YamlParserCV::saveParams(static_pointer_cast<ParamCV>(ppParam)->getNode(), fs_write);
-
-    fs.release();
-    fs_write.release();
+    // this strips the comments and reverses the order of all key:value pairs!
+    YamlParserCV::saveParams(writeFile, pParam);
 
     return 0;
 }

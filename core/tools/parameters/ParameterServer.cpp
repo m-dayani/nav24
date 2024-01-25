@@ -3,6 +3,7 @@
 //
 
 #include "ParameterServer.hpp"
+#include "YamlParserCV.hpp"
 
 using namespace std;
 
@@ -10,7 +11,7 @@ using namespace std;
 namespace NAV24 {
 
     ParameterServer::ParameterServer(const ChannelPtr &server) :
-        mpChannel(server), mConfigFile(""), mpFileStorage(nullptr), mpParam(nullptr) {}
+        mpChannel(server), mConfigFile(""), mpParamRoot(nullptr), mvpAllParams{} {}
 
     ParameterServer::ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg) :
         ParameterServer(server) {
@@ -18,38 +19,12 @@ namespace NAV24 {
         this->receive(configMsg);
     }
 
-    ParameterServer::~ParameterServer() {
-
-        if (mpFileStorage) {
-            mpFileStorage->release();
-        }
-    }
-
     void ParameterServer::load(const string &settingsFile) {
-
-        mConfigFile = settingsFile;
-        mpFileStorage = make_shared<cv::FileStorage>(mConfigFile, cv::FileStorage::READ);
-        if(!mpFileStorage || !mpFileStorage->isOpened()) {
-            cerr << "** ERROR: Failed to open settings file: " << mConfigFile << endl;
-            return;
-        }
+        mpParamRoot = YamlParserCV::loadParams(settingsFile, mvpAllParams);
     }
 
     void ParameterServer::save(const string &pathParams) {
-
-        shared_ptr<cv::FileStorage> pFileStorage = make_shared<cv::FileStorage>(mConfigFile, cv::FileStorage::WRITE);
-        if (!pathParams.empty()) {
-            pFileStorage = make_shared<cv::FileStorage>(pathParams, cv::FileStorage::WRITE);
-        }
-
-        if(!pFileStorage || !pFileStorage->isOpened()) {
-            cerr << "** ERROR: Failed to open settings file: " << pathParams << endl;
-            return;
-        }
-
-        // todo: how to save or print fileStorage?
-
-        pFileStorage->release();
+        YamlParserCV::saveParams(pathParams, mpParamRoot);
     }
 
     void ParameterServer::receive(const MsgPtr &msg) {
@@ -106,10 +81,7 @@ namespace NAV24 {
     }
 
     const ParamPtr &ParameterServer::getParameter(const std::string& tag) {
-
-        // todo
-        //return <#initializer#>;
-        return nullptr;
+        return mpParamRoot->read(tag);
     }
 
 } // NAV24
