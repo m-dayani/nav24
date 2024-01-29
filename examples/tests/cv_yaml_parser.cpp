@@ -27,6 +27,7 @@ int main(int argc, char** argv) {
 
     ParamPtr pCamIntrinsics = pParam->read("Sensors/Camera/calib/intrinsics");
     ParamPtr pImagePath = pParam->read("DS/0/paths/imageBase");
+    ParamPtr pDummyParam = pParam->read("Key/to/nothing");
     auto pImgPathSeq = static_pointer_cast<ParamSeq<string>>(pImagePath);
     if (pImgPathSeq)
         pImgPathSeq->push_back("a-folder");

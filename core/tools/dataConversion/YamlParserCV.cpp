@@ -160,9 +160,10 @@ namespace NAV24 {
         auto allChildren = param->getAllChildren();
 
         if (nodeType == NodeType::MAP_NODE) {
-            for (auto child : allChildren) {
-                string key = child.first;
-                auto pParam = child.second.lock();
+            vector<string> vChildKeys = param->getAllChildKeys();
+            for (auto iter = vChildKeys.begin(); iter != vChildKeys.end(); iter++) {
+                string key = *iter;
+                auto pParam = allChildren[key].lock();
                 int nodeType1 = pParam->getType();
                 if (nodeType1 == NodeType::MAP_NODE) {
                     fs << key << "{";

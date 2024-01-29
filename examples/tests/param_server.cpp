@@ -3,10 +3,10 @@
 #include <memory>
 #include <thread>
 
+#include <glog/logging.h>
+
 #include "ParameterServer.hpp"
-#include "EurocLoader.hpp"
-#include "Visualization.hpp"
-#include "TabularTextWriter.hpp"
+#include "ParameterBlueprint.h"
 
 using namespace std;
 using namespace NAV24;
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     string settingsFile = argv[1];
     cout << "Settings File: " << settingsFile << endl;
 
-    shared_ptr<DummySystem> pSystem = make_shared<DummySystem>(settingsFile);
+    auto pSystem = make_shared<DummySystem>(settingsFile);
     ChannelPtr chSystem = dynamic_pointer_cast<Channel>(pSystem);
     MsgCbPtr recvSystem = dynamic_pointer_cast<MsgCallback>(pSystem);
 
@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
     MsgPtr msgSaveSettings = make_shared<Message>(ParameterServer::TOPIC, paramsFile, FCN_PS_SAVE);
     chSystem->publish(msgSaveSettings);
 
-    // Get required camera parameters
-    MsgPtr msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC, "Camera", FCN_PS_REQ, recvSystem);
-    chSystem->publish(msgGetCamParams);
+    // Get required dataset parameters
+    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, recvSystem);
+    chSystem->publish(msgGetDsParams);
 
     return 0;
 }

@@ -21,8 +21,8 @@ namespace NAV24 {
         Message(const std::string& _topic, const std::string& _msg = "", const int _targetId = 0, const int _chId = 0) :
                 topic(_topic), msg(_msg), targetId(_targetId), chId(_chId) {}
 
-        std::string getMessage() { return msg; }
-        void setMessage(const std::string& _msg) { this->msg = _msg; }
+        virtual std::string getMessage() { return msg; }
+        virtual void setMessage(const std::string& _msg) { this->msg = _msg; }
         std::string getTopic() { return topic; }
         void setTopic(const std::string& _topic) { this->topic = _topic; }
         int getTargetId() { return targetId; }
@@ -41,6 +41,9 @@ namespace NAV24 {
     class MsgCallback {
     public:
         virtual void receive(const MsgPtr& msg) = 0;
+    protected:
+        //virtual void setup(const MsgPtr& configMsg) = 0;
+        //virtual void handleRequest(const MsgPtr& reqMsg) = 0;
     };
     typedef std::shared_ptr<MsgCallback> MsgCbPtr;
 
@@ -58,10 +61,22 @@ namespace NAV24 {
     class MsgConfig : public Message {
     public:
         MsgConfig(const std::string& topic, const ParamPtr& paramPtr) : Message(topic), mConfig(paramPtr) {}
+
+        ParamPtr getConfig() { return mConfig; }
+
+        std::string getMessage() override { return mConfig->printStr(); }
     protected:
         ParamPtr mConfig;
     };
     typedef std::shared_ptr<MsgConfig> MsgConfigPtr;
+
+    /*class MsgSensorData : public Message {
+    public:
+        MsgSensorData(const std::string& topic, const SensorDataPtr& dataPtr) : Message(topic), mSensorData(dataPtr) {}
+
+    protected:
+        SensorDataPtr mSensorData;
+    };*/
 
 }
 

@@ -10,15 +10,21 @@ using namespace std;
 
 namespace NAV24 {
 
-    Parameter::Parameter(const string &name_, const ParamPtr &parent_) : name(name_), parent(parent_), children(), type(0) {}
+    Parameter::Parameter(const string &name_, const ParamPtr &parent_) :
+        name(name_), parent(parent_), children(), vChildKeys(), type(0) {}
 
     ParamPtr Parameter::getChild(const string &key) {
-        return children[key].lock();
+        if (children.count(key) > 0) {
+            return children[key].lock();
+        }
+        else {
+            return shared_ptr<Parameter>();
+        }
     }
 
     ParamPtr Parameter::seekNode(const string &key) {
 
-        ParamPtr pParam;
+        ParamPtr pParam{nullptr};
         bool initialized = false;
 
         vector<string> vKeys{};
@@ -31,6 +37,9 @@ namespace NAV24 {
             }
             else {
                 pParam = pParam->getChild(k);
+            }
+            if (!pParam) {
+                break;
             }
         }
         return pParam;
@@ -50,7 +59,7 @@ namespace NAV24 {
         vKeys.push_back(key);
     }
 
-    string &Parameter::mergeKey(const std::vector<std::string> &vKey, const std::string& delim) {
+    string Parameter::mergeKey(const std::vector<std::string> &vKey, const std::string& delim) {
 
         string res = "";
         size_t n = vKey.size();
@@ -63,9 +72,7 @@ namespace NAV24 {
     }
 
     ParamPtr Parameter::read(const string &key) {
-        //todo: implement this
-        auto pParam = seekNode(key);
-        return pParam;
+        return seekNode(key);
     }
 
     void Parameter::write(const string &key, const ParamPtr& paramPtr) {
@@ -95,6 +102,11 @@ namespace NAV24 {
     void Parameter::insertChild(const string& key, const ParamPtr &pChild) {
 
         children.insert(make_pair(key, pChild));
+        vChildKeys.push_back(key);
+    }
+
+    void Parameter::removeChild(const string &key) {
+        //todo: implement
     }
 
 
@@ -131,7 +143,28 @@ namespace NAV24 {
     template std::string ParamType<int>::printStr(const std::string &prefix) const;
     template std::string ParamType<double>::printStr(const std::string &prefix) const;
     template std::string ParamSeq<int>::printStr(const std::string &prefix) const;
+    template std::string ParamType<cv::Mat>::printStr(const std::string &prefix) const;
     template std::string ParamSeq<double>::printStr(const std::string &prefix) const;
     template std::string ParamSeq<string>::printStr(const std::string &prefix) const;
-    template std::string ParamType<cv::Mat>::printStr(const std::string &prefix) const;
+
+
+    template<typename T>
+    shared_ptr<T> find_param(const std::string& tag, const ParamPtr& pParam) {
+
+        if (pParam) {
+            auto pParamNew = pParam->read(tag);
+            if (pParamNew && dynamic_pointer_cast<T>(pParamNew)) {
+                return dynamic_pointer_cast<T>(pParamNew);
+            }
+        }
+        return nullptr;
+    }
+
+    template shared_ptr<ParamType<string>> find_param(const std::string& tag, const ParamPtr& pParam);
+    template shared_ptr<ParamType<int>> find_param(const std::string& tag, const ParamPtr& pParam);
+    template shared_ptr<ParamType<double>> find_param(const std::string& tag, const ParamPtr& pParam);
+    template shared_ptr<ParamType<cv::Mat>> find_param(const std::string& tag, const ParamPtr& pParam);
+    template shared_ptr<ParamSeq<string>> find_param(const std::string& tag, const ParamPtr& pParam);
+    template shared_ptr<ParamSeq<int>> find_param(const std::string& tag, const ParamPtr& pParam);
+    template shared_ptr<ParamSeq<double>> find_param(const std::string& tag, const ParamPtr& pParam);
 }

@@ -7,7 +7,7 @@
 
 namespace NAV24 {
 
-
+#define PARAM_DS "Process/DS/0"
 
 }
 

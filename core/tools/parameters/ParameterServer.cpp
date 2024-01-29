@@ -64,24 +64,22 @@ namespace NAV24 {
 
         MsgCbPtr sender = request->getCallback();
 
-        // check message to find which parameter type it requests
+        // check message
         string tag = request->getMessage();
-        ParamPtr pParam = this->getParameter(tag);
 
-        if (msg->getTargetId() == FCN_PS_PRINT) {
-            sender->receive(make_shared<Message>(msg->getTopic(), pParam->printStr()));
+        if (tag == TAG_PS_GET_STAT) {
+            sender->receive(make_shared<Message>(msg->getTopic(), mpParamRoot->printStr()));
             return;
         }
+
+        // find which parameter it requests
+        auto pParam = mpParamRoot->read(tag);
 
         // create a response message
         MsgPtr response = make_shared<MsgConfig>(msg->getTopic(), pParam);
 
         // send back to the caller
         sender->receive(response);
-    }
-
-    const ParamPtr &ParameterServer::getParameter(const std::string& tag) {
-        return mpParamRoot->read(tag);
     }
 
 } // NAV24

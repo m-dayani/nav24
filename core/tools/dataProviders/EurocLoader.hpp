@@ -7,15 +7,15 @@
 
 #include <iomanip>
 
-#include "BaseLoader.hpp"
+#include "DataStore.hpp"
 
 
 namespace NAV24 {
 
     class EurocLoader : public BaseLoader {
     public:
-        explicit EurocLoader(const DS_ParamsPtr& pDsParams);
-        ~EurocLoader() override = default;
+        //explicit EurocLoader(const DS_ParamsPtr& pDsParams);
+        //~EurocLoader() override = default;
 
         void play() override;
 

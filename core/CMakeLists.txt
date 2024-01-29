@@ -18,23 +18,21 @@ list(APPEND LIST_INCLUDE_DIRS ${SYSTEM_DIR})
 
 set(UTILS_DIR tools)
 list(APPEND LIST_INCLUDE_DIRS ${UTILS_DIR})
-set(UTILS_YAML_PARSER_DIR ${UTILS_DIR}/yamlParser)
-list(APPEND LIST_INCLUDE_DIRS ${UTILS_YAML_PARSER_DIR})
 set(UTILS_DT_CONV_DIR ${UTILS_DIR}/dataConversion)
 list(APPEND LIST_INCLUDE_DIRS ${UTILS_DT_CONV_DIR})
 
 set(PARAMS_DIR ${UTILS_DIR}/parameters)
 list(APPEND LIST_INCLUDE_DIRS ${PARAMS_DIR})
-set(PARAMS_TYPES_DIR ${PARAMS_DIR}/types)
-list(APPEND LIST_INCLUDE_DIRS ${PARAMS_TYPES_DIR})
 
 set(MESSAGING_DIR ${UTILS_DIR}/messaging)
 list(APPEND LIST_INCLUDE_DIRS ${MESSAGING_DIR})
 
 set(DATA_TYPES_DIR dataTypes)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_TYPES_DIR})
-set(SENSOR_TYPES_DIR ${DATA_TYPES_DIR}/sensors)
-list(APPEND LIST_INCLUDE_DIRS ${SENSOR_TYPES_DIR})
+set(SENSORS_DIR ${DATA_TYPES_DIR}/sensor)
+list(APPEND LIST_INCLUDE_DIRS ${SENSORS_DIR})
+set(SENSOR_DATA_DIR ${SENSORS_DIR}/data)
+list(APPEND LIST_INCLUDE_DIRS ${SENSOR_DATA_DIR})
 
 set(DATA_LOADERS_DIR ${UTILS_DIR}/dataProviders)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
@@ -44,29 +42,27 @@ list(APPEND LIST_INCLUDE_DIRS ${DATA_STORE_DIR})
 set(VISUALIZATION_DIR ${UTILS_DIR}/visualization)
 list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
 
-#set(FRONTEND_DIR frontEnd)
-#set(FE_CAMERA_DIR ${FRONTEND_DIR}/Camera)
-#set(FE_CAMERA_MODELS_DIR ${FE_CAMERA_DIR}/Models)
-#list(APPEND LIST_INCLUDE_DIRS ${FE_CAMERA_MODELS_DIR})
-#set(FE_CAMERA_UTILS_DIR ${FE_CAMERA_DIR}/Utils)
-#list(APPEND LIST_INCLUDE_DIRS ${FE_CAMERA_UTILS_DIR})
 
 set(ALL_H_FILES
         ${SYSTEM_DIR}/System.hpp
-        ${UTILS_YAML_PARSER_DIR}/YamlParserCV.hpp
+        ${UTILS_DT_CONV_DIR}/YamlParserCV.hpp
         ${PARAMS_DIR}/Parameter.hpp
         ${PARAMS_DIR}/ParameterServer.hpp
         ${PARAMS_DIR}/ParameterBlueprint.h
         ${MESSAGING_DIR}/Message.hpp
         ${MESSAGING_DIR}/Channel.hpp
+        ${DATA_LOADERS_DIR}/DataStore.hpp
+        ${DATA_STORE_DIR}/TabularTextDS.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
-        ${UTILS_YAML_PARSER_DIR}/YamlParserCV.cpp
+        ${UTILS_DT_CONV_DIR}/YamlParserCV.cpp
         ${PARAMS_DIR}/Parameter.cpp
         ${PARAMS_DIR}/ParameterServer.cpp
         ${MESSAGING_DIR}/Message.cpp
         ${MESSAGING_DIR}/Channel.cpp
+        ${DATA_LOADERS_DIR}/DataStore.cpp
+        ${DATA_STORE_DIR}/TabularTextDS.cpp
 )
 
 include_directories(

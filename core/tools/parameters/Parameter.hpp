@@ -27,7 +27,9 @@ namespace NAV24 {
 
         // Insert child
         virtual void insertChild(const std::string& key, const ParamPtr& pChild);
-        std::unordered_map<std::string, ParamPtrW> const& getAllChildren() { return children; }
+        virtual void removeChild(const std::string& key);
+        std::map<std::string, ParamPtrW> const& getAllChildren() { return children; }
+        std::vector<std::string> const& getAllChildKeys() { return vChildKeys; }
 
         // Follows the key chain to find the parameter node, then returns the corresponding parameter node
         virtual ParamPtr read(const std::string& key);
@@ -36,7 +38,7 @@ namespace NAV24 {
 
         // Helper methods for key management
         static void splitKey(std::vector<std::string> &vKeys, const std::string& key, const std::string& delim = "/");
-        static std::string& mergeKey(const std::vector<std::string>& vKey, const std::string& delim = "/");
+        static std::string mergeKey(const std::vector<std::string>& vKey, const std::string& delim = "/");
 
         // Prints the node recursively from root to the last child
         virtual std::string printStr(const std::string& prefix = "") const;
@@ -54,7 +56,9 @@ namespace NAV24 {
         std::string name;
         int type;
         ParamPtrW parent;
-        std::unordered_map<std::string, ParamPtrW> children;
+        std::map<std::string, ParamPtrW> children;
+        // this is added to solve reversed order of saved config file
+        std::vector<std::string> vChildKeys;
     };
 
     template<typename T>
@@ -89,6 +93,9 @@ namespace NAV24 {
     private:
         std::vector<T> mvData;
     };
+
+    template<typename T>
+    std::shared_ptr<T> find_param(const std::string& tag, const ParamPtr& pParam);
 }
 
 #endif //NAV24_PARAMETER_HPP
