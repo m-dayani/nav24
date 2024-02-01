@@ -23,13 +23,32 @@ public:
         if (pParamMsg) {
             auto pParam = pParamMsg->getConfig();
             if (pParam) {
+                if (pDataStore && msg->getTopic() == ParameterServer::TOPIC) {
+                    MsgPtr msgParams = make_shared<MsgConfig>(DataStore::TOPIC, pParam);
+                    msgParams->setTargetId(FCN_DS_LOAD);
+                    pDataStore->receive(msgParams);
+                }
                 cout << pParam->printStr() << endl;
             }
         }
-        else {
-            cout << msg->getMessage() << endl;
+        else if (msg) {
+            cout << msg->toString() << endl;
         }
     }
+
+    shared_ptr<DataStore> pDataStore = nullptr;
+};
+
+class DummyChannel : public Channel {
+public:
+    void publish(const MsgPtr &message) override {
+
+        if (message) {
+            cout << "DummyChannel::publish, message to send: " << message->toString() << endl;
+        }
+    }
+    void registerChannel(const MsgCbPtr &callback, const string &topic) override {}
+    void unregisterChannel(const MsgCbPtr &callback, const string &topic) override {}
 };
 
 
@@ -38,37 +57,95 @@ int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    if (argc < 2) {
-        cout << "Usage: " << argv[0] << " settings.yaml\n";
-        return 1;
-    }
+    string configFile = "../../config/AUN_ARM.yaml";
+    string configFile1 = "../../config/AUN_ARM1.yaml";
+    string configFile2 = "../../config/EuRoC.yaml";
 
-    string settingsFile = argv[1];
-    cout << "Settings File: " << settingsFile << endl;
+    // System & loader
+    MsgCbPtr pSystem = make_shared<DummySystem>();
+    ChannelPtr pChannel = make_shared<DummyChannel>();
+    auto pParamServer = make_shared<ParameterServer>(nullptr);
 
-    auto pSystem = make_shared<DummySystem>(settingsFile);
-    ChannelPtr chSystem = static_pointer_cast<Channel>(pSystem);
-    MsgCbPtr sysCallback = static_pointer_cast<MsgCallback>(pSystem);
+    // Load params messages
+    MsgPtr msgLdConfNormal = make_shared<Message>(ParameterServer::TOPIC, configFile, FCN_PS_LOAD);
+    MsgPtr msgLdConfTricky = make_shared<Message>(ParameterServer::TOPIC, configFile1, FCN_PS_LOAD);
+    MsgPtr msgLdConfTricky1 = make_shared<Message>(ParameterServer::TOPIC, configFile2, FCN_PS_LOAD);
 
-    // Load Settings
-    MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, settingsFile, FCN_PS_LOAD);
-    shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(chSystem, msgLoadSettings);
-    chSystem->registerChannel(pParamServer, ParameterServer::TOPIC);
+    // Normal operation
 
     // Data provider
-    shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(chSystem);
-    chSystem->registerChannel(pDataProvider, DataStore::TOPIC);
-    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pDataProvider);
-    chSystem->publish(msgGetDsParams);
+    shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(pChannel);
+    //pChannel->registerChannel(pDataProvider, DataStore::TOPIC);
 
-    //cout << pDataProvider->printLoaderStateStr() << endl;
+    // Load tricky params
+    pParamServer->receive(msgLdConfTricky1);
+    // Setup data store with these params
+    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, "DS", FCN_PS_REQ, pDataProvider);
+    pParamServer->receive(msgGetDsParams);
+
+    // Change the dataset
+    pParamServer->receive(msgLdConfTricky);
+    msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pDataProvider);
+    pParamServer->receive(msgGetDsParams);
+
+    // Change the dataset once again
+    pParamServer->receive(msgLdConfNormal);
+    msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pSystem);
+    pParamServer->receive(msgGetDsParams);
+
     // Print loader state
-    MsgPtr msgPrintLdState = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_STAT, FCN_DS_REQ, sysCallback);
-    chSystem->publish(msgPrintLdState);
+    MsgPtr msgPrintLdState = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_STAT, FCN_DS_REQ, pSystem);
+    pDataProvider->receive(msgPrintLdState);
+
+    // Change sequence
+    MsgPtr msgChSeq = make_shared<Message>(DataStore::TOPIC, TAG_DS_CH_SEQ_INC, FCN_DS_REQ_CHANGE);
+    pDataProvider->receive(msgChSeq);
 
     // Get images path params
-    MsgPtr msgImagePaths = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_PATH_IMG, FCN_DS_REQ, sysCallback);
-    chSystem->publish(msgImagePaths);
+    MsgPtr msgImagePaths = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_PATH_IMG, FCN_DS_REQ, pSystem);
+    pDataProvider->receive(msgImagePaths);
+
+    // Reset and inquire IMU path
+    msgChSeq->setMessage(TAG_DS_CH_SEQ_RST);
+    pDataProvider->receive(msgChSeq);
+    MsgPtr msgImuPath = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_PATH_IMU, FCN_DS_REQ, pSystem);
+    pDataProvider->receive(msgImuPath);
+
+    // Bad operation
+
+    vector<MsgPtr> badMessages{};
+
+    badMessages.push_back(nullptr);
+    badMessages.push_back(make_shared<Message>());
+    badMessages.push_back(make_shared<Message>("WRONG/TOPIC"));
+    badMessages.push_back(make_shared<Message>(ParameterServer::TOPIC, "", 2938));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC, "", 36527988736));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC, "", FCN_DS_LOAD));
+    MsgConfigPtr paramBadConf = make_shared<MsgConfig>(DataStore::TOPIC, nullptr);
+    paramBadConf->setTargetId(FCN_DS_LOAD);
+    badMessages.push_back(paramBadConf);
+    badMessages.push_back(make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_STAT, FCN_DS_REQ, nullptr));
+    badMessages.push_back(make_shared<MsgRequest>(DataStore::TOPIC, "Wrong/Request/Message", FCN_DS_REQ, nullptr));
+    badMessages.push_back(make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_STAT, 9827, pSystem));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC, "Wrong/Change/Seq/Message", FCN_DS_REQ_CHANGE));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC, TAG_DS_CH_SEQ_DEC, 76352));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC, TAG_DS_CH_SEQ_DEC, FCN_DS_REQ_CHANGE));
+    badMessages.push_back(make_shared<Message>(DataStore::TOPIC, TAG_DS_CH_SEQ_DEC, FCN_DS_REQ_CHANGE));
+
+    int i = 0;
+    for (auto msg : badMessages) {
+        cout << "processing message #" << i << endl;
+        pDataProvider->receive(msg);
+        i++;
+    }
+
+    auto msgWrongParams = make_shared<MsgRequest>(ParameterServer::TOPIC, "Input/Camera", FCN_PS_REQ, pSystem);
+    pParamServer->receive(msgWrongParams);
+
+    // Print the latest state after these changes
+    cout << endl << endl;
+    pDataProvider->receive(msgPrintLdState);
 
     return 0;
 }

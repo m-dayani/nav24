@@ -11,9 +11,6 @@
 
 #include <opencv2/core.hpp>
 
-//#include "ImageDS.hpp"
-//#include "IMU_DS.hpp"
-//#include "PoseDS.hpp"
 #include "TabularTextDS.hpp"
 #include "Message.hpp"
 #include "Channel.hpp"
@@ -32,7 +29,7 @@ namespace NAV24 {
 #define TAG_DS_GET_PATH_GT "DataProvider/GetGtPath"
 
 #define TAG_DS_CH_SEQ_RST "DataProvider/ResetSequences"
-#define TAG_DS_CH_SEG_INC "DataProvider/IncrementSequences"
+#define TAG_DS_CH_SEQ_INC "DataProvider/IncrementSequences"
 #define TAG_DS_CH_SEQ_DEC "DataProvider/DecrementSequences"
 
     class DataStore : public MsgCallback {
@@ -45,12 +42,9 @@ namespace NAV24 {
 
         void receive(const MsgPtr& msg) override;
 
+    protected:
         void notifyChange();
 
-        // Default play: Image-based!
-        //virtual void play() = 0;
-
-    protected:
         //Getters/Setters
         std::string getDatasetName() const { return mDsName; }
         unsigned int getNumSequences() const { return mSeqCount; }
@@ -64,7 +58,6 @@ namespace NAV24 {
         virtual bool checkSequence(unsigned int seq) const;
 
         virtual void resetSequences();
-        //virtual void resetCurrSequence() = 0;
         void incSequence();
         void decSequence();
 
@@ -82,9 +75,7 @@ namespace NAV24 {
 
         std::string getSequencePath();
 
-        //void loadData();
         //virtual void loadSequence(const std::string &dsRoot, const std::string &seqPath, size_t idx);
-
         //bool updateLoadState();
         //virtual bool checkLoadState();
 

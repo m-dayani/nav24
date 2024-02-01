@@ -20,7 +20,8 @@ namespace NAV24 {
 
     DataStore::DataStore(const ChannelPtr& server) :
             mpChannel(server), mpDsParams(), mLoadState(TabularTextDS::LoadState::BAD_PATH),
-            mDsFormat(), mDsName(), mSeqCount(0), mSeqTarget(0), mSeqIdx(0), mnMaxIter(0), mTsFactor(1.0),
+            mDsFormat(), mDsName(), mSeqNames(), mSeqCount(0), mSeqTarget(0), mSeqIdx(0),
+            mnMaxIter(0), mTsFactor(1.0),
             mbGtQwFirst(false), mbGtPosFirst(false), mbImuGyroFirst(false) {}
 
     DataStore::DataStore(const ChannelPtr &server, const MsgPtr &configMsg) : DataStore(server) {
@@ -30,11 +31,18 @@ namespace NAV24 {
     void DataStore::notifyChange() {
 
         // todo: generalize
-        MsgPtr msg = make_shared<Message>("Topic/Notify/Sensors", "DS Changed");
-        mpChannel->publish(msg);
+        if (mpChannel) {
+            MsgPtr msg = make_shared<Message>("Topic/Notify/Sensors", "DS Changed");
+            mpChannel->publish(msg);
+        }
     }
 
     void DataStore::receive(const MsgPtr &msg) {
+
+        if (!msg) {
+            DLOG(WARNING) << "DataStore::receive, null message input\n";
+            return;
+        }
 
         // check the topic
         string topic = msg->getTopic();
@@ -46,7 +54,7 @@ namespace NAV24 {
         }
 
         if (topic != DataStore::TOPIC) {
-            // todo: log warning
+            DLOG(WARNING) << "DataStore::receive, wrong topic: " << topic << "\n";
             return;
         }
 
@@ -63,7 +71,7 @@ namespace NAV24 {
                 this->handleChangeRequest(msg);
                 break;
             default:
-                //todo: log warning
+                DLOG(INFO) << "DataStore::receive, unsupported action: " << action << "\n";
                 break;
         }
     }
@@ -74,18 +82,21 @@ namespace NAV24 {
 
         MsgReqPtr request = static_pointer_cast<MsgRequest>(msg);
         if (!request) {
-            // todo: log warning
+            DLOG(WARNING) << "DataStore::handleRequest, wrong request message type\n";
             return;
         }
 
         MsgCbPtr sender = request->getCallback();
+        if (!sender) {
+            DLOG(WARNING) << "DataStore::handleRequest, Null sender detected\n";
+            return;
+        }
 
         // check message
         string tag = request->getMessage();
 
         if (tag == TAG_DS_GET_STAT) {
-            msg->setMessage(this->printLoaderStateStr());
-            sender->receive(msg);
+            sender->receive(make_shared<Message>(msg->getTopic(), this->printLoaderStateStr()));
             return;
         }
 
@@ -101,6 +112,7 @@ namespace NAV24 {
             }
             vector<string> vImgPath{imBase, imFile};
             pParam = make_shared<ParamSeq<string>>("imagePaths", nullptr, vImgPath);
+            // todo: send a map param node or a vector of paths??
             //pParam->insertChild("imagePath", make_shared<ParamType<string>>("imagePath", pParam, imBase));
             //pParam->insertChild("imageFile", make_shared<ParamType<string>>("imageFile", pParam, imBase));
         }
@@ -111,6 +123,9 @@ namespace NAV24 {
         else if (tag == TAG_DS_GET_PATH_GT) {
             string gtFile = this->getSequencePath() + "/" + mPathGT;
             pParam = make_shared<ParamType<string>>("imuPath", nullptr, gtFile);
+        }
+        else {
+            DLOG(INFO) << "DataStore::handleRequest, requested config is not supported: " << tag << "\n";
         }
 
         // create a response message
@@ -126,20 +141,22 @@ namespace NAV24 {
         if (tag == TAG_DS_CH_SEQ_RST) {
             this->resetSequences();
         }
-        else if (tag == TAG_DS_CH_SEG_INC) {
+        else if (tag == TAG_DS_CH_SEQ_INC) {
             this->incSequence();
         }
         else if (tag == TAG_DS_CH_SEQ_DEC) {
             this->decSequence();
         }
         else {
-            // todo: log error
+            DLOG(WARNING) << "DataStore::handleChangeRequest, unsupported change request\n";
+            return;
         }
+        this->notifyChange();
     }
 
     void DataStore::load(const MsgPtr &configMsg) {
 
-        auto pMsg = static_pointer_cast<MsgConfig>(configMsg);
+        auto pMsg = dynamic_pointer_cast<MsgConfig>(configMsg);
         if (pMsg) {
             auto pParam = pMsg->getConfig();
             if (pParam) {
@@ -246,7 +263,7 @@ namespace NAV24 {
 
                     string seqPath = mPathDsRoot + '/' + seqNames[mSeqTarget];
                     if (!TabularTextDS::checkDirectory(seqPath)) {
-                        LOG(ERROR) << "** Failed to find sequence: " << seqPath << endl;
+                        LOG(WARNING) << "** Failed to find sequence: " << seqPath << endl;
                         return false;
                     }
                     else {
@@ -258,7 +275,7 @@ namespace NAV24 {
                     }
                 }
                 else {
-                    LOG(ERROR) << "** Target sequence number is outside range.\n";
+                    LOG(WARNING) << "** Target sequence number is outside range.\n";
                     return false;
                 }
             }
@@ -268,20 +285,22 @@ namespace NAV24 {
                 for (size_t seq = 0; seq < seqCount; seq++) {
                     string seqPath = mPathDsRoot + '/' + seqNames[seq];
                     if (!TabularTextDS::checkDirectory(seqPath)) {
-                        LOG(ERROR) << "** Failed to find sequence: " << seqPath << endl;
+                        LOG(INFO) << "** Failed to find sequence: " << seqPath << endl;
                     }
                     else {
                         mSeqNames.push_back(seqNames[seq]);
                     }
                 }
                 mSeqCount = mSeqNames.size();
-                if (!mSeqCount)
+                if (!mSeqCount) {
+                    LOG(WARNING) << "** No sequence path is available.\n";
                     return false;
+                }
                 mSeqIdx = 0;
             }
         }
         else {
-            LOG(ERROR) << "** Empty sequence names.\n";
+            LOG(WARNING) << "** Empty sequence names.\n";
             return false;
         }
         return true;
@@ -340,21 +359,21 @@ namespace NAV24 {
     void DataStore::resetSequences() {
         if (this->mSeqTarget < 0) {
             this->mSeqIdx = 0;
-            this->notifyChange();
+            //this->notifyChange();
         }
     }
 
     void DataStore::incSequence() {
         if (this->mSeqTarget < 0 && this->mSeqIdx < mSeqCount-1) {
             this->mSeqIdx++;
-            this->notifyChange();
+            //this->notifyChange();
         }
     }
 
     void DataStore::decSequence() {
         if (this->mSeqTarget < 0 && this->mSeqIdx > 1) {
             this->mSeqIdx--;
-            this->notifyChange();
+            //this->notifyChange();
         }
     }
 
