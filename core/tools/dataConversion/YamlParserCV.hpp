@@ -24,24 +24,13 @@ namespace NAV24 {
         static void saveParams(const std::string& fileName, const ParamPtr& rootParam);
 
     protected:
-        enum NodeType {
-            DEFAULT,
-            MAP_NODE,
-            SEQ_NODE,
-            SEQ_INT,
-            SEQ_REAL,
-            SEQ_STR,
-            CV_MAT,
-            INT,
-            REAL,
-            STRING
-        };
-
         static void readParam(const cv::FileNode& node, ParamPtr& pParentParam, std::vector<ParamPtr>& vAllParams);
         static void writeParam(cv::FileStorage& fs, const ParamPtr& param);
 
-        static NodeType getNodeType(const cv::FileNode& node);
+        static Parameter::NodeType getNodeType(const cv::FileNode& node);
         static bool isNodeCvMat(const cv::FileNode& node);
+
+        static std::string sanitizeKey(const std::string& key);
     };
 
 } // NAV24

@@ -16,25 +16,27 @@ namespace NAV24 {
 
     class Message {
     public:
-        Message() : topic(), msg(), targetId(), chId() {}
+        Message() : topic(), msg(), targetId() {}
 
-        Message(const std::string& _topic, const std::string& _msg = "", const int _targetId = 0, const int _chId = 0) :
-                topic(_topic), msg(_msg), targetId(_targetId), chId(_chId) {}
+        Message(const std::string& _topic, const std::string& _msg = "", const int _targetId = 0) :
+                topic(_topic), msg(_msg), targetId(_targetId) {}
 
-        virtual std::string getMessage() { return msg; }
-        virtual void setMessage(const std::string& _msg) { this->msg = _msg; }
+        std::string getMessage() { return msg; }
+        void setMessage(const std::string& _msg) { this->msg = _msg; }
         std::string getTopic() { return topic; }
         void setTopic(const std::string& _topic) { this->topic = _topic; }
         int getTargetId() { return targetId; }
         void setTargetId(int id) { this->targetId = id; }
-        int getChannelId() { return chId; }
-        void setChannelId(int id) { this->chId = id; }
+        //int getChannelId() { return chId; }
+        //void setChannelId(int id) { this->chId = id; }
+
+        virtual std::string toString() { return msg; }
 
     protected:
         std::string topic;
         std::string msg;
         int targetId;
-        int chId;
+        //int chId;
     };
     typedef std::shared_ptr<Message> MsgPtr;
 
@@ -52,7 +54,10 @@ namespace NAV24 {
         MsgRequest(const std::string& topic, const MsgCbPtr& callback) : Message(topic), mpCallback(callback) {}
         MsgRequest(const std::string& topic, const std::string& msg, const int targetId, const MsgCbPtr& callback) :
             Message(topic, msg, targetId), mpCallback(callback) {}
+
         MsgCbPtr getCallback() { return mpCallback; }
+        void setCallback(const MsgCbPtr& callback) { mpCallback = callback; }
+
     protected:
         MsgCbPtr mpCallback;
     };
@@ -63,8 +68,10 @@ namespace NAV24 {
         MsgConfig(const std::string& topic, const ParamPtr& paramPtr) : Message(topic), mConfig(paramPtr) {}
 
         ParamPtr getConfig() { return mConfig; }
+        void setConfig(const ParamPtr& config) { mConfig = config; }
 
-        std::string getMessage() override { return mConfig->printStr(); }
+        std::string toString() override;
+
     protected:
         ParamPtr mConfig;
     };

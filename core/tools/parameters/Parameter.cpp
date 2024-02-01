@@ -5,24 +5,37 @@
 #include "Parameter.hpp"
 #include "YamlParserCV.hpp"
 
+#include <glog/logging.h>
+
 using namespace std;
 
 
 namespace NAV24 {
 
     Parameter::Parameter(const string &name_, const ParamPtr &parent_) :
-        name(name_), parent(parent_), children(), vChildKeys(), type(0) {}
+        parent(parent_), children(), vChildKeys(), type(NodeType::DEFAULT) {
+
+        this->setName(name_);
+    }
+
+    Parameter::Parameter(const string &name_, const ParamPtr &parent_, NodeType type_) :
+        Parameter(name_, parent_) {
+
+        type = type_;
+    }
 
     ParamPtr Parameter::getChild(const string &key) {
+
         if (children.count(key) > 0) {
             return children[key].lock();
         }
         else {
+            DLOG(WARNING) << "Parameter::getChild, Parameter node contains no child with key: " << key << "\n";
             return shared_ptr<Parameter>();
         }
     }
 
-    ParamPtr Parameter::seekNode(const string &key) {
+    ParamPtr Parameter::read(const string &key) {
 
         ParamPtr pParam{nullptr};
         bool initialized = false;
@@ -43,6 +56,41 @@ namespace NAV24 {
             }
         }
         return pParam;
+    }
+
+    void Parameter::insertChild(const string& key, const ParamPtr &pChild) {
+
+        if (key.empty()) {
+            DLOG(WARNING) << "Parameter::insertChild, cannot insert child with empty key\n";
+            return;
+        }
+        if (children.contains(key)) {
+            // update existing param
+            ParamPtr pOldChild = children[key].lock();
+            pOldChild->parent.lock() = nullptr;
+            //pChild->parent = shared_from_this();
+            children[key] = pChild;
+        }
+        else {
+            // insert new param
+            children.insert(make_pair(key, pChild));
+            vChildKeys.push_back(key);
+        }
+    }
+
+    void Parameter::removeChild(const string &key) {
+
+        if (children.contains(key)) {
+
+            vector<string> newKeys{};
+            for (const string& k : vChildKeys) {
+                if (key != k) {
+                    newKeys.push_back(k);
+                }
+            }
+            children[key].lock()->parent.lock() = nullptr;
+            children.erase(key);
+        }
     }
 
     void Parameter::splitKey(std::vector<std::string> &vKeys, const string &s, const std::string& delim) {
@@ -71,15 +119,18 @@ namespace NAV24 {
         return res;
     }
 
-    ParamPtr Parameter::read(const string &key) {
-        return seekNode(key);
-    }
+    /*inline std::string const& Parameter::getName() {
 
-    void Parameter::write(const string &key, const ParamPtr& paramPtr) {
-        // this is wrong (discards child/parent relations)
-        // todo: improve this
-        ParamPtr pParam = seekNode(key);
-        pParam = paramPtr;
+        return name;
+    }*/
+
+    inline void Parameter::setName(const string &name_) {
+
+        if (name_.empty()) {
+            DLOG(WARNING) << "Parameter::setName, name cannot be empty\n";
+            return;
+        }
+        name = name_;
     }
 
     std::string Parameter::printStr(const std::string &prefix) const {
@@ -97,16 +148,6 @@ namespace NAV24 {
             oss << "\n" << pref << child.first << ": " << child.second.lock()->printStr(pref + sep);
         }
         return oss.str();
-    }
-
-    void Parameter::insertChild(const string& key, const ParamPtr &pChild) {
-
-        children.insert(make_pair(key, pChild));
-        vChildKeys.push_back(key);
-    }
-
-    void Parameter::removeChild(const string &key) {
-        //todo: implement
     }
 
 

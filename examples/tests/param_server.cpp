@@ -12,39 +12,23 @@ using namespace std;
 using namespace NAV24;
 
 
-class DummySystem : public Channel, public MsgCallback {
+ParamPtr globalParam = nullptr;
+
+
+class DummySystem : public MsgCallback {
 public:
-
-    DummySystem(const string& settings) {
-
-
-    }
-
-    void publish(const MsgPtr &message) override {
-
-        for (auto channel : mmChannels[message->getTopic()]) {
-            channel->receive(message);
-        }
-    }
-
-    void registerChannel(const MsgCbPtr& callback, const string &topic) override {
-
-        if (mmChannels.count(topic) <= 0) {
-            mmChannels[topic] = vector<MsgCbPtr>();
-        }
-        mmChannels[topic].push_back(callback);
-    }
-
-    void unregisterChannel(const MsgCbPtr& callback, const string &topic) override {
-
-    }
-
     void receive(const MsgPtr &msg) override {
 
-        cout << msg->getMessage() << endl;
+        if (!msg) {
+            DLOG(WARNING) << "Received null message\n";
+            return;
+        }
+        if (dynamic_pointer_cast<MsgConfig>(msg)) {
+            auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
+            globalParam = pMsgConfig->getConfig();
+        }
+        cout << msg->toString() << endl;
     }
-
-    map<string, vector<MsgCbPtr>> mmChannels;
 };
 
 
@@ -53,37 +37,66 @@ int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    if (argc < 2) {
-        cout << "Usage: " << argv[0] << " settings.yaml\n";
-        return 1;
-    }
+    string confFile = "../../config/AUN_ARM1.yaml";
+    string confFile1 = "../../config/EuRoC.yaml";
+    string confNoFile = "wrong/file.yaml";
+    string saveFile = "../../config/DUMMY.yaml";
 
-    string settingsFile = argv[1];
-    cout << "Settings File: " << settingsFile << endl;
+    MsgCbPtr pSystem = make_shared<DummySystem>();
 
-    auto pSystem = make_shared<DummySystem>(settingsFile);
-    ChannelPtr chSystem = dynamic_pointer_cast<Channel>(pSystem);
-    MsgCbPtr recvSystem = dynamic_pointer_cast<MsgCallback>(pSystem);
+    // Testing parameter server normal operation
 
-    // Testing parameter server
-    // Load Settings
-    MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, settingsFile, FCN_PS_LOAD);
-    shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(chSystem, msgLoadSettings);
-    chSystem->registerChannel(pParamServer, ParameterServer::TOPIC);
+    // Load settings
+    MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, confFile1, FCN_PS_LOAD);
+    shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(nullptr, msgLoadSettings);
+
+    // Load different settings
+    MsgPtr msgLoadDiffSettings = make_shared<Message>(ParameterServer::TOPIC, confFile, FCN_PS_LOAD);
+    pParamServer->receive(msgLoadDiffSettings);
 
     // Print Full Status:
-    MsgPtr msgGetFullStat = make_shared<MsgRequest>(ParameterServer::TOPIC, TAG_PS_GET_STAT, FCN_PS_REQ, recvSystem);
-    chSystem->publish(msgGetFullStat);
-
-    // Save Settings
-    string paramsFile = "../../config/DUMMY.yaml";
-    cout << "Saving parameters to: " << paramsFile << endl;
-    MsgPtr msgSaveSettings = make_shared<Message>(ParameterServer::TOPIC, paramsFile, FCN_PS_SAVE);
-    chSystem->publish(msgSaveSettings);
+    MsgPtr msgGetFullStat = make_shared<MsgRequest>(ParameterServer::TOPIC, TAG_PS_GET_STAT, FCN_PS_REQ, pSystem);
+    pParamServer->receive(msgGetFullStat);
 
     // Get required dataset parameters
-    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, recvSystem);
-    chSystem->publish(msgGetDsParams);
+    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pSystem);
+    pParamServer->receive(msgGetDsParams);
+
+    // If you change parameters, ParamServer's parameters will change automatically
+    if (globalParam) {
+        globalParam->setName(globalParam->getName() + "_ps_test");
+    }
+
+    // Save Settings
+    cout << "Saving parameters to: " << saveFile << endl;
+    MsgPtr msgSaveSettings = make_shared<Message>(ParameterServer::TOPIC, saveFile, FCN_PS_SAVE);
+    pParamServer->receive(msgSaveSettings);
+
+    // Save to the same load file
+    MsgPtr msgSaveToLoadFile = make_shared<Message>(ParameterServer::TOPIC, TAG_PS_USE_LOAD_PATH, FCN_PS_SAVE);
+    pParamServer->receive(msgSaveToLoadFile);
+
+    // Testing incorrect use
+
+    MsgPtr msgNull = nullptr;
+    MsgPtr msgEmpty = make_shared<Message>();
+    MsgPtr msgWrongTopic = make_shared<Message>("WRONG/TOPIC");
+    MsgPtr msgWrongAction = make_shared<Message>(ParameterServer::TOPIC, "", 2938);
+    MsgPtr msgWrongPath = make_shared<Message>(ParameterServer::TOPIC, confNoFile, FCN_PS_LOAD);
+    MsgPtr msgWrongMsg = make_shared<MsgRequest>(ParameterServer::TOPIC, "WRONG/MESSAGE", FCN_PS_REQ, pSystem);
+    MsgPtr msgReqNullSender = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, nullptr);
+    MsgPtr msgSaveToNoFile = make_shared<Message>(ParameterServer::TOPIC, confNoFile, FCN_PS_SAVE);
+    MsgPtr msgParams = make_shared<MsgConfig>(ParameterServer::TOPIC, globalParam);
+
+    pParamServer->receive(msgNull);
+    pParamServer->receive(msgEmpty);
+    pParamServer->receive(msgWrongTopic);
+    pParamServer->receive(msgWrongAction);
+    pParamServer->receive(msgWrongPath);
+    pParamServer->receive(msgWrongMsg);
+    pParamServer->receive(msgReqNullSender);
+    pParamServer->receive(msgSaveToNoFile);
+    pParamServer->receive(msgParams);
 
     return 0;
 }

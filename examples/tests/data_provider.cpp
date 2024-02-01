@@ -8,7 +8,6 @@
 
 #include "ParameterServer.hpp"
 #include "ParameterBlueprint.h"
-#include "System.hpp"
 #include "DataStore.hpp"
 
 
@@ -16,12 +15,8 @@ using namespace std;
 using namespace NAV24;
 
 
-class DummySystem : public System {
+class DummySystem : public MsgCallback {
 public:
-    explicit DummySystem(const string& settings) : System(settings) {
-
-    }
-
     void receive(const MsgPtr &msg) override {
 
         MsgConfigPtr pParamMsg = dynamic_pointer_cast<MsgConfig>(msg);

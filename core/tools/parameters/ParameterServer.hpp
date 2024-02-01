@@ -20,10 +20,11 @@ namespace NAV24 {
 #define FCN_PS_SAVE 2
 #define FCN_PS_REQ 3
 #define TAG_PS_GET_STAT "ParamServer/GetStat"
+#define TAG_PS_USE_LOAD_PATH "ParamServer/UseLoadPath"
 
     class ParameterServer : public MsgCallback {
     public:
-        inline static const std::string TAG{"ParameterServer"};
+        //inline static const std::string TAG{"ParameterServer"};
         inline static const std::string TOPIC{"ParamServer"};
 
         explicit ParameterServer(const ChannelPtr& server);

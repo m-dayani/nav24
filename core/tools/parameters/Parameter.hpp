@@ -22,8 +22,22 @@ namespace NAV24 {
     typedef std::weak_ptr<Parameter> ParamPtrW;
     class Parameter {
     public:
+        enum NodeType {
+            DEFAULT,
+            MAP_NODE,
+            SEQ_NODE,
+            SEQ_INT,
+            SEQ_REAL,
+            SEQ_STR,
+            CV_MAT,
+            INT,
+            REAL,
+            STRING
+        };
+
         //explicit Parameter(const std::string& name_);
         Parameter(const std::string& name_, const ParamPtr& parent_);
+        Parameter(const std::string& name_, const ParamPtr& parent_, NodeType type);
 
         // Insert child
         virtual void insertChild(const std::string& key, const ParamPtr& pChild);
@@ -33,8 +47,7 @@ namespace NAV24 {
 
         // Follows the key chain to find the parameter node, then returns the corresponding parameter node
         virtual ParamPtr read(const std::string& key);
-        // Follows the key chain to find the parameter node, then resets it with paramPtr value
-        virtual void write(const std::string& key, const ParamPtr& paramPtr);
+        // To update a param, use a combination of read and insertChild
 
         // Helper methods for key management
         static void splitKey(std::vector<std::string> &vKeys, const std::string& key, const std::string& delim = "/");
@@ -43,18 +56,20 @@ namespace NAV24 {
         // Prints the node recursively from root to the last child
         virtual std::string printStr(const std::string& prefix = "") const;
 
-        void setType(int type_) { type = type_; }
-        int getType() { return type; }
+        void setType(NodeType type_) { type = type_; }
+        NodeType getType() { return type; }
 
         std::string const& getName() { return name; }
-        void setName(const std::string& name_) { name = name_; }
+        void setName(const std::string& name_);// { name = name_; }
+
+        ParamPtr getParent() { return parent.lock(); }
 
     protected:
         ParamPtr getChild(const std::string& key);
-        ParamPtr seekNode(const std::string& key);
+        //ParamPtr seekNode(const std::string& key);
 
         std::string name;
-        int type;
+        NodeType type;
         ParamPtrW parent;
         std::map<std::string, ParamPtrW> children;
         // this is added to solve reversed order of saved config file
@@ -88,7 +103,7 @@ namespace NAV24 {
         void setValue(const std::vector<T>& vData) { mvData = vData; }
 
         void push_back(const T& val) { mvData.push_back(val); }
-        T const& get(int idx) { return mvData[idx]; }
+        //T const& get(int idx) { return mvData[idx]; }
 
     private:
         std::vector<T> mvData;

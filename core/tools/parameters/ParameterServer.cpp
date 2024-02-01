@@ -5,6 +5,9 @@
 #include "ParameterServer.hpp"
 #include "YamlParserCV.hpp"
 
+#include <glog/logging.h>
+
+
 using namespace std;
 
 
@@ -20,19 +23,43 @@ namespace NAV24 {
     }
 
     void ParameterServer::load(const string &settingsFile) {
+
+        if (mpParamRoot || mvpAllParams.size() > 0) {
+            mvpAllParams = vector<ParamPtr>();
+            mpParamRoot = nullptr;
+            DLOG(INFO) << "ParameterServer::load, refreshing parameters\n";
+        }
+
         mpParamRoot = YamlParserCV::loadParams(settingsFile, mvpAllParams);
+
+        if (mvpAllParams.size() > 0) {
+            mConfigFile = settingsFile;
+        }
     }
 
     void ParameterServer::save(const string &pathParams) {
-        YamlParserCV::saveParams(pathParams, mpParamRoot);
+
+        if (pathParams == TAG_PS_USE_LOAD_PATH) {
+            DLOG(INFO) << "ParameterServer::save, saving to " << mConfigFile << "\n";
+            YamlParserCV::saveParams(mConfigFile, mpParamRoot);
+        }
+        else {
+            DLOG(INFO) << "ParameterServer::save, saving to " << pathParams << "\n";
+            YamlParserCV::saveParams(pathParams, mpParamRoot);
+        }
     }
 
     void ParameterServer::receive(const MsgPtr &msg) {
 
+        if (!msg) {
+            DLOG(WARNING) << "ParameterServer::receive, null message input\n";
+            return;
+        }
+
         // check the topic
         string topic = msg->getTopic();
         if (topic != ParameterServer::TOPIC) {
-            // todo: log warning
+            DLOG(WARNING) << "ParameterServer::receive, unsupported topic: " << topic << "\n";
             return;
         }
 
@@ -49,7 +76,7 @@ namespace NAV24 {
                 this->handleRequest(msg);
                 break;
             default:
-                //todo: log warning
+                DLOG(WARNING) << "ParameterServer::receive, unsupported action: " << action << "\n";
                 break;
         }
     }
@@ -58,11 +85,15 @@ namespace NAV24 {
 
         MsgReqPtr request = static_pointer_cast<MsgRequest>(msg);
         if (!request) {
-            // todo: log warning
+            DLOG(WARNING) << "ParameterServer::handleRequest, Null request detected\n";
             return;
         }
 
         MsgCbPtr sender = request->getCallback();
+        if (!sender) {
+            DLOG(WARNING) << "ParameterServer::handleRequest, Null sender detected\n";
+            return;
+        }
 
         // check message
         string tag = request->getMessage();
