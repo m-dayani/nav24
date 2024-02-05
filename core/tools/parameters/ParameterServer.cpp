@@ -7,24 +7,26 @@
 
 #include <glog/logging.h>
 
+#include <utility>
+
 
 using namespace std;
 
 
 namespace NAV24 {
 
-    ParameterServer::ParameterServer(const ChannelPtr &server) :
-        mpChannel(server), mConfigFile(""), mpParamRoot(nullptr), mvpAllParams{} {}
+    ParameterServer::ParameterServer(ChannelPtr server) :
+        mpChannel(std::move(server)), mpParamRoot(nullptr), mvpAllParams{} {}
 
-    ParameterServer::ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg) :
+    /*ParameterServer::ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg) :
         ParameterServer(server) {
 
         this->receive(configMsg);
-    }
+    }*/
 
     void ParameterServer::load(const string &settingsFile) {
 
-        if (mpParamRoot || mvpAllParams.size() > 0) {
+        if (mpParamRoot || !mvpAllParams.empty()) {
             mvpAllParams = vector<ParamPtr>();
             mpParamRoot = nullptr;
             DLOG(INFO) << "ParameterServer::load, refreshing parameters\n";
@@ -32,7 +34,7 @@ namespace NAV24 {
 
         mpParamRoot = YamlParserCV::loadParams(settingsFile, mvpAllParams);
 
-        if (mvpAllParams.size() > 0) {
+        if (!mvpAllParams.empty()) {
             mConfigFile = settingsFile;
         }
     }
@@ -99,7 +101,7 @@ namespace NAV24 {
         string tag = request->getMessage();
 
         if (tag == TAG_PS_GET_STAT) {
-            sender->receive(make_shared<Message>(msg->getTopic(), mpParamRoot->printStr()));
+            sender->receive(make_shared<Message>(msg->getTopic(), mpParamRoot->printStr("")));
             return;
         }
 

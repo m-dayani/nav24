@@ -10,7 +10,7 @@ namespace NAV24 {
     inline std::string MsgConfig::toString()  {
 
         if (mConfig)
-            return mConfig->printStr();
+            return mConfig->printStr("");
         return "";
     }
 

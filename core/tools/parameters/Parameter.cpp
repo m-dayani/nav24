@@ -3,7 +3,6 @@
 //
 
 #include "Parameter.hpp"
-#include "YamlParserCV.hpp"
 
 #include <glog/logging.h>
 
@@ -31,7 +30,7 @@ namespace NAV24 {
         }
         else {
             DLOG(WARNING) << "Parameter::getChild, Parameter node contains no child with key: " << key << "\n";
-            return shared_ptr<Parameter>();
+            return {};
         }
     }
 
@@ -43,7 +42,7 @@ namespace NAV24 {
         vector<string> vKeys{};
         Parameter::splitKey(vKeys, key);
 
-        for (auto k : vKeys) {
+        for (const auto& k : vKeys) {
             if (!initialized) {
                 pParam = this->getChild(k);
                 initialized = true;
@@ -96,7 +95,7 @@ namespace NAV24 {
     void Parameter::splitKey(std::vector<std::string> &vKeys, const string &s, const std::string& delim) {
 
         string key = s;
-        size_t pos = 0;
+        size_t pos;
         std::string token;
 
         while ((pos = key.find(delim)) != std::string::npos) {
@@ -109,7 +108,7 @@ namespace NAV24 {
 
     string Parameter::mergeKey(const std::vector<std::string> &vKey, const std::string& delim) {
 
-        string res = "";
+        string res;
         size_t n = vKey.size();
 
         for (size_t i = 0; i < n; i++) {
@@ -136,15 +135,15 @@ namespace NAV24 {
     std::string Parameter::printStr(const std::string &prefix) const {
 
         ostringstream oss{};
-        string pref = "";
+        string pref;
         if (this->parent.lock()) {
             pref = prefix;
         }
         string sep = " ";
-        if (prefix.size() > 0) {
+        if (!prefix.empty()) {
             sep = prefix[0];
         }
-        for (auto child : children) {
+        for (const auto& child : children) {
             oss << "\n" << pref << child.first << ": " << child.second.lock()->printStr(pref + sep);
         }
         return oss.str();
@@ -156,7 +155,7 @@ namespace NAV24 {
 
         ostringstream oss{};
         string pref = prefix;
-        if (prefix.size() > 0) {
+        if (!prefix.empty()) {
             pref = " ";
         }
         oss << pref << mData;
@@ -168,7 +167,7 @@ namespace NAV24 {
 
         ostringstream oss{};
         string pref = prefix;
-        if (prefix.size() > 0) {
+        if (!prefix.empty()) {
             pref = " ";
         }
         oss << pref << "[";

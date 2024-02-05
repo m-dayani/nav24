@@ -7,6 +7,7 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 
 #include "Parameter.hpp"
@@ -18,14 +19,14 @@ namespace NAV24 {
     public:
         Message() : topic(), msg(), targetId() {}
 
-        Message(const std::string& _topic, const std::string& _msg = "", const int _targetId = 0) :
-                topic(_topic), msg(_msg), targetId(_targetId) {}
+        explicit Message(std::string  _topic, std::string  _msg = "", const int _targetId = 0) :
+                topic(std::move(_topic)), msg(std::move(_msg)), targetId(_targetId) {}
 
         std::string getMessage() { return msg; }
         void setMessage(const std::string& _msg) { this->msg = _msg; }
         std::string getTopic() { return topic; }
         void setTopic(const std::string& _topic) { this->topic = _topic; }
-        int getTargetId() { return targetId; }
+        [[nodiscard]] int getTargetId() const { return targetId; }
         void setTargetId(int id) { this->targetId = id; }
         //int getChannelId() { return chId; }
         //void setChannelId(int id) { this->chId = id; }
@@ -51,9 +52,9 @@ namespace NAV24 {
 
     class MsgRequest : public Message {
     public:
-        MsgRequest(const std::string& topic, const MsgCbPtr& callback) : Message(topic), mpCallback(callback) {}
-        MsgRequest(const std::string& topic, const std::string& msg, const int targetId, const MsgCbPtr& callback) :
-            Message(topic, msg, targetId), mpCallback(callback) {}
+        MsgRequest(const std::string& topic, MsgCbPtr callback) : Message(topic), mpCallback(std::move(callback)) {}
+        MsgRequest(const std::string& topic, const std::string& msg, const int targetId, MsgCbPtr  callback) :
+            Message(topic, msg, targetId), mpCallback(std::move(callback)) {}
 
         MsgCbPtr getCallback() { return mpCallback; }
         void setCallback(const MsgCbPtr& callback) { mpCallback = callback; }
@@ -65,7 +66,7 @@ namespace NAV24 {
 
     class MsgConfig : public Message {
     public:
-        MsgConfig(const std::string& topic, const ParamPtr& paramPtr) : Message(topic), mConfig(paramPtr) {}
+        MsgConfig(const std::string& topic, ParamPtr paramPtr) : Message(topic), mConfig(std::move(paramPtr)) {}
 
         ParamPtr getConfig() { return mConfig; }
         void setConfig(const ParamPtr& config) { mConfig = config; }

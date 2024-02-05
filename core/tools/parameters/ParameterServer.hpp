@@ -27,8 +27,8 @@ namespace NAV24 {
         //inline static const std::string TAG{"ParameterServer"};
         inline static const std::string TOPIC{"ParamServer"};
 
-        explicit ParameterServer(const ChannelPtr& server);
-        ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg);
+        explicit ParameterServer(ChannelPtr  server);
+        //ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg);
 
         void receive(const MsgPtr& msg) override;
 

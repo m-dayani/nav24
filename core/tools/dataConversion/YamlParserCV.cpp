@@ -60,7 +60,7 @@ namespace NAV24 {
             case Parameter::NodeType::MAP_NODE: {
                 pParentParam->setType(nodeType);
                 vector<string> keys = node.keys();
-                for (auto key : keys) {
+                for (const auto& key : keys) {
                     cv::FileNode newNode = node[key];
                     Parameter::NodeType nodeType1 = getNodeType(newNode);
                     if (nodeType1 == Parameter::NodeType::MAP_NODE || nodeType1 == Parameter::NodeType::SEQ_NODE) {
@@ -100,27 +100,27 @@ namespace NAV24 {
                 string key = "un";
                 if (node.isNamed())
                     key = node.name();
-                ParamPtr pParam = nullptr;
+                ParamPtr pParam;
 
                 if (nodeType == Parameter::NodeType::SEQ_REAL) {
                     vector<double> val{};
-                    for (auto iter = node.begin(); iter != node.end(); iter++) {
-                        val.push_back((double) (*iter));
+                    for (auto && iter : node) {
+                        val.push_back((double) iter);
                     }
                     pParam = make_shared<ParamSeq<double>>(key, pParentParam, val);
                 }
                 else if (nodeType == Parameter::NodeType::SEQ_INT) {
                     vector<int> val{};
-                    for (auto iter = node.begin(); iter != node.end(); iter++) {
-                        val.push_back((int) (*iter));
+                    for (auto && iter : node) {
+                        val.push_back((int) iter);
                     }
                     pParam = make_shared<ParamSeq<int>>(key, pParentParam, val);
 
                 }
                 else if (nodeType == Parameter::NodeType::SEQ_STR) {
                     vector<string> val{};
-                    for (auto iter = node.begin(); iter != node.end(); iter++) {
-                        val.push_back((string) (*iter));
+                    for (auto && iter : node) {
+                        val.push_back((string) iter);
                     }
                     pParam = make_shared<ParamSeq<string>>(key, pParentParam, val);
                 }
@@ -134,10 +134,10 @@ namespace NAV24 {
                     pParam = make_shared<ParamType<int>>(key, pParentParam, val);
                 }
                 else if (nodeType == Parameter::NodeType::REAL) {
-                    double val = (double) node;
+                    auto val = (double) node;
                     pParam = make_shared<ParamType<double>>(key, pParentParam, val);
                 }
-                else if (nodeType == Parameter::NodeType::STRING) {
+                else {
                     string val = (string) node;
                     pParam = make_shared<ParamType<string>>(key, pParentParam, val);
                 }
@@ -170,8 +170,7 @@ namespace NAV24 {
 
         if (nodeType == Parameter::NodeType::MAP_NODE) {
             vector<string> vChildKeys = param->getAllChildKeys();
-            for (auto iter = vChildKeys.begin(); iter != vChildKeys.end(); iter++) {
-                string key = *iter;
+            for (const auto& key : vChildKeys) {
                 auto pParam = allChildren[key].lock();
                 if (pParam) {
                     int nodeType1 = pParam->getType();
@@ -188,7 +187,7 @@ namespace NAV24 {
         }
         else if (nodeType == Parameter::NodeType::SEQ_NODE) {
             fs << sanitizeKey(param->getName()) << "[";
-            for (auto child : allChildren) {
+            for (const auto& child : allChildren) {
                 fs << "{";
                 writeParam(fs, child.second.lock());
                 fs << "}";
@@ -217,7 +216,7 @@ namespace NAV24 {
             if (dynamic_pointer_cast<ParamSeq<string>>(param)) {
                 shared_ptr<ParamSeq<string>> paramVecStr = dynamic_pointer_cast<ParamSeq<string>>(param);
                 vector<string> data = paramVecStr->getValue();
-                for (auto d : data) {
+                for (const auto& d : data) {
                     fs << d;
                 }
             }
@@ -293,7 +292,7 @@ namespace NAV24 {
         bool bcols = false, brows = false;
         if (node.isMap()) {
             vector<string> keys = node.keys();
-            for (auto key : keys) {
+            for (const auto& key : keys) {
                 if (key == "rows") brows = true;
                 if (key == "cols") bcols = true;
             }

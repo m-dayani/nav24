@@ -6,6 +6,7 @@
 #include "ParameterServer.hpp"
 
 #include <memory>
+#include <utility>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -18,15 +19,16 @@ namespace NAV24 {
 #define TAG_DS_SEQ "sequence"
 
 
-    DataStore::DataStore(const ChannelPtr& server) :
-            mpChannel(server), mpDsParams(), mLoadState(TabularTextDS::LoadState::BAD_PATH),
+    DataStore::DataStore(ChannelPtr server) :
+            mpChannel(std::move(server)), mpDsParams(), mLoadState(TabularTextDS::LoadState::BAD_PATH),
             mDsFormat(), mDsName(), mSeqNames(), mSeqCount(0), mSeqTarget(0), mSeqIdx(0),
             mnMaxIter(0), mTsFactor(1.0),
             mbGtQwFirst(false), mbGtPosFirst(false), mbImuGyroFirst(false) {}
 
-    DataStore::DataStore(const ChannelPtr &server, const MsgPtr &configMsg) : DataStore(server) {
+    /*DataStore::DataStore(const ChannelPtr &server, const MsgPtr &configMsg) : DataStore(server) {
+
         this->receive(configMsg);
-    }
+    }*/
 
     void DataStore::notifyChange() {
 
@@ -168,7 +170,8 @@ namespace NAV24 {
                     mDsName = pParamNew->getValue();
                 }
                 // Dataset format
-                if (pParamNew = find_param<ParamType<string>>(TAG_DS_FORMAT, pParam)) {
+                pParamNew = find_param<ParamType<string>>(TAG_DS_FORMAT, pParam);
+                if (pParamNew) {
                     mDsFormat = pParamNew->getValue();
                 }
                 // Paths
@@ -200,13 +203,16 @@ namespace NAV24 {
         if (pParamNew) {
             mnMaxIter = pParamNew->getValue();
         }
-        if (pParamNew = find_param<ParamType<int>>("gtQwFirst", pParam)) {
+        pParamNew = find_param<ParamType<int>>("gtQwFirst", pParam);
+        if (pParamNew) {
             mbGtQwFirst = pParamNew->getValue() > 0;
         }
-        if (pParamNew = find_param<ParamType<int>>("imuGyroFirst", pParam)) {
+        pParamNew = find_param<ParamType<int>>("imuGyroFirst", pParam);
+        if (pParamNew) {
             mbImuGyroFirst = pParamNew->getValue() > 0;
         }
-        if (pParamNew = find_param<ParamType<int>>("gtPosFirst", pParam)) {
+        pParamNew = find_param<ParamType<int>>("gtPosFirst", pParam);
+        if (pParamNew) {
             mbGtPosFirst = pParamNew->getValue() > 0;
         }
     }
@@ -223,19 +229,24 @@ namespace NAV24 {
         }
 
         // Assign relative sequence data paths
-        if (pParam = find_param<ParamType<string>>("imageBase", pPathParams)) {
+        pParam = find_param<ParamType<string>>("imageBase", pPathParams);
+        if (pParam) {
             mPathImBase = pParam->getValue();
         }
-        if (pParam = find_param<ParamType<string>>("imageFile", pPathParams)) {
+        pParam = find_param<ParamType<string>>("imageFile", pPathParams);
+        if (pParam) {
             mPathImFile = pParam->getValue();
         }
-        if (pParam = find_param<ParamType<string>>("imu", pPathParams)) {
+        pParam = find_param<ParamType<string>>("imu", pPathParams);
+        if (pParam) {
             mPathImu = pParam->getValue();
         }
-        if (pParam = find_param<ParamType<string>>("gt", pPathParams)) {
+        pParam = find_param<ParamType<string>>("gt", pPathParams);
+        if (pParam) {
             mPathGT = pParam->getValue();
         }
-        if (pParam = find_param<ParamType<string>>("results", pPathParams)) {
+        pParam = find_param<ParamType<string>>("results", pPathParams);
+        if (pParam) {
             mPathResults = pParam->getValue();
         }
 
@@ -280,7 +291,7 @@ namespace NAV24 {
                 }
             }
             else {
-                // If some sequences does not exist, we still want to
+                // If some sequences do not exist, we still want to
                 // be able to work with existing sequences
                 for (size_t seq = 0; seq < seqCount; seq++) {
                     string seqPath = mPathDsRoot + '/' + seqNames[seq];
@@ -352,7 +363,7 @@ namespace NAV24 {
     string DataStore::getSequencePath() {
 
         if (mSeqNames.empty() || mSeqTarget < 0 || mSeqTarget >= mSeqNames.size())
-            return string();
+            return {};
         return mPathDsRoot + '/' + mSeqNames[mSeqTarget];
     }
 
@@ -381,7 +392,7 @@ namespace NAV24 {
 
         if (mLoadState == TabularTextDS::GOOD) {
             if (mSeqTarget < 0) {
-                return seq >= 0 && seq < mSeqCount;
+                return seq < mSeqCount;
             }
             else {
                 return seq == 0;
@@ -405,7 +416,7 @@ namespace NAV24 {
     string DataStore::getSequenceName() const {
 
         if (!checkSequence(mSeqIdx))
-            return string();
+            return {};
         return mSeqNames[mSeqIdx];
     }
 

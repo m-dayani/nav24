@@ -45,7 +45,7 @@ namespace NAV24 {
         std::map<std::string, ParamPtrW> const& getAllChildren() { return children; }
         std::vector<std::string> const& getAllChildKeys() { return vChildKeys; }
 
-        // Follows the key chain to find the parameter node, then returns the corresponding parameter node
+        // Follows the keychain to find the parameter node, then returns the corresponding parameter node
         virtual ParamPtr read(const std::string& key);
         // To update a param, use a combination of read and insertChild
 
@@ -54,7 +54,7 @@ namespace NAV24 {
         static std::string mergeKey(const std::vector<std::string>& vKey, const std::string& delim = "/");
 
         // Prints the node recursively from root to the last child
-        virtual std::string printStr(const std::string& prefix = "") const;
+        [[nodiscard]] virtual std::string printStr(const std::string& prefix) const;
 
         void setType(NodeType type_) { type = type_; }
         NodeType getType() { return type; }
@@ -82,7 +82,7 @@ namespace NAV24 {
         ParamType<T>(const std::string& name_, const ParamPtr& parent_, const T& value) :
                 Parameter(name_, parent_), mData(value) {}
 
-        std::string printStr(const std::string &prefix = "") const override;
+        [[nodiscard]] std::string printStr(const std::string &prefix) const override;
 
         void setValue(const T& data) { mData = data; }
         T const& getValue() { return mData; }
@@ -97,7 +97,7 @@ namespace NAV24 {
         ParamSeq<T>(const std::string& name_, const ParamPtr& parent_, const std::vector<T>& value) :
                 Parameter(name_, parent_), mvData(value) {}
 
-        std::string printStr(const std::string &prefix = "") const override;
+        [[nodiscard]] std::string printStr(const std::string &prefix) const override;
 
         std::vector<T> const& getValue() { return mvData; }
         void setValue(const std::vector<T>& vData) { mvData = vData; }

@@ -37,8 +37,8 @@ namespace NAV24 {
         //inline static const std::string TAG{"DataStore"};
         inline static const std::string TOPIC{"DataStore"};
 
-        explicit DataStore(const ChannelPtr& server);
-        DataStore(const ChannelPtr& server, const MsgPtr& configMsg);
+        explicit DataStore(ChannelPtr  server);
+        //DataStore(const ChannelPtr& server, const MsgPtr& configMsg);
 
         void receive(const MsgPtr& msg) override;
 
@@ -46,16 +46,16 @@ namespace NAV24 {
         void notifyChange();
 
         //Getters/Setters
-        std::string getDatasetName() const { return mDsName; }
-        unsigned int getNumSequences() const { return mSeqCount; }
-        unsigned int getNumTargetSequences() const;
-        unsigned int getMaxNumIter() const { return mnMaxIter; }
-        std::string getSequenceName() const;
-        std::string getOutputBasePath() const { return mPathResults; };
+        [[nodiscard]] std::string getDatasetName() const { return mDsName; }
+        [[nodiscard]] unsigned int getNumSequences() const { return mSeqCount; }
+        [[nodiscard]] unsigned int getNumTargetSequences() const;
+        [[nodiscard]] unsigned int getMaxNumIter() const { return mnMaxIter; }
+        [[nodiscard]] std::string getSequenceName() const;
+        [[nodiscard]] std::string getOutputBasePath() const { return mPathResults; };
 
         //Utils
-        virtual bool isGood() const;
-        virtual bool checkSequence(unsigned int seq) const;
+        [[nodiscard]] virtual bool isGood() const;
+        [[nodiscard]] virtual bool checkSequence(unsigned int seq) const;
 
         virtual void resetSequences();
         void incSequence();
