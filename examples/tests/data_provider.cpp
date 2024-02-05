@@ -28,7 +28,7 @@ public:
                     msgParams->setTargetId(FCN_DS_LOAD);
                     pDataStore->receive(msgParams);
                 }
-                cout << pParam->printStr() << endl;
+                cout << pParam->printStr("") << endl;
             }
         }
         else if (msg) {
@@ -52,7 +52,7 @@ public:
 };
 
 
-int main(int argc, char** argv) {
+int main([[maybe_unused]] int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
@@ -134,8 +134,8 @@ int main(int argc, char** argv) {
     badMessages.push_back(make_shared<Message>(DataStore::TOPIC, TAG_DS_CH_SEQ_DEC, FCN_DS_REQ_CHANGE));
 
     int i = 0;
-    for (auto msg : badMessages) {
-        cout << "processing message #" << i << endl;
+    for (const auto& msg : badMessages) {
+//        cout << "processing message #" << i << endl;
         pDataProvider->receive(msg);
         i++;
     }

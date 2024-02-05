@@ -23,6 +23,10 @@ add_executable(data_loaders tests/data_provider.cpp)
 target_link_libraries(data_loaders LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE data_loaders)
 
+add_executable(camera tests/camera.cpp)
+target_link_libraries(camera LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE camera)
+
 
 
 add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)

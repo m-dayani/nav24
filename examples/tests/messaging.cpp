@@ -31,7 +31,7 @@ public:
         string topic = message->getTopic();
 
         if (mmChannels.contains(topic)) {
-            for (auto channel : mmChannels[topic]) {
+            for (const auto& channel : mmChannels[topic]) {
                 channel->receive(message);
             }
         }
@@ -53,7 +53,7 @@ public:
         if (mmChannels.contains(topic)) {
             vector<MsgCbPtr> oldCallbacks = mmChannels[topic];
             mmChannels[topic] = vector<MsgCbPtr>();
-            for (auto cb : oldCallbacks) {
+            for (const auto& cb : oldCallbacks) {
                 if (callback != cb) {
                     mmChannels[topic].push_back(cb);
                 }
@@ -103,7 +103,7 @@ public:
         if (pMsgConfig) {
             auto param = pMsgConfig->getConfig();
             if (param) {
-                cout << "DummyNode, received parameter: " << param->printStr() << endl;
+                cout << "DummyNode, received parameter: " << param->printStr("") << endl;
             }
             else {
                 cout << "DummyNode, received null parameter!\n";
@@ -116,7 +116,7 @@ public:
 };
 
 
-int main(int argc, char** argv) {
+int main([[maybe_unused]] int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
@@ -162,9 +162,9 @@ int main(int argc, char** argv) {
     cout << "Request message, sender before change: " << msgRequest->getCallback() << endl;
     msgRequest->setCallback(dummyNode);
     cout << "Request message, sender after change: " << msgRequest->getCallback() << endl;
-    cout << "Config message, param before change: " << msgConfig->getConfig()->printStr() << endl;
+    cout << "Config message, param before change: " << msgConfig->getConfig()->printStr("") << endl;
     param->setValue("NewString");
-    cout << "Config message, param after change: " << msgConfig->getConfig()->printStr() << endl << endl;
+    cout << "Config message, param after change: " << msgConfig->getConfig()->printStr("") << endl << endl;
     msgConfig->setConfig(param1);
 
     // Channels and nodes

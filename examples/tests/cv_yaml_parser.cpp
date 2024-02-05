@@ -17,7 +17,7 @@ using namespace cv;
 using namespace NAV24;
 
 
-int main(int argc, char** argv) {
+int main([[maybe_unused]] int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
@@ -89,10 +89,10 @@ int main(int argc, char** argv) {
 
     // Print
     cout << pParam->printStr("\t") << endl;
-    cout << pCamIntrinsics->printStr() << endl;
+    cout << pCamIntrinsics->printStr("") << endl;
     if (pImgPathSeq)
-        cout << pImgPathSeq->printStr() << endl;
-    cout << pEvent->printStr() << endl;
+        cout << pImgPathSeq->printStr("") << endl;
+    cout << pEvent->printStr("") << endl;
 
     // Other operations
     vector<string> mergeKeys{"root", "parent", "child"};
@@ -104,11 +104,11 @@ int main(int argc, char** argv) {
     // Bad operation
     ParamPtr pDummyParam = pParam->read("Key/to/nothing");
     if (pDummyParam) {
-        cout << "Wrong key: " << pDummyParam->printStr()  << endl;
+        cout << "Wrong key: " << pDummyParam->printStr("")  << endl;
     }
     ParamPtr pEmptyKey = pParam->read("");
     if (pEmptyKey) {
-        cout << "Empty-key: " << pEmptyKey->printStr() << endl;
+        cout << "Empty-key: " << pEmptyKey->printStr("") << endl;
     }
     auto pNoCvMat = find_param<NAV24::ParamType<cv::Mat>>("T_non-cv-mat", pParamCplx);
     if (pNoCvMat) {

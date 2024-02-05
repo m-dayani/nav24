@@ -32,7 +32,7 @@ public:
 };
 
 
-int main(int argc, char** argv) {
+int main([[maybe_unused]] int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
@@ -48,7 +48,8 @@ int main(int argc, char** argv) {
 
     // Load settings
     MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, confFile1, FCN_PS_LOAD);
-    shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(nullptr, msgLoadSettings);
+    shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(nullptr);
+    pParamServer->receive(msgLoadSettings);
 
     // Load different settings
     MsgPtr msgLoadDiffSettings = make_shared<Message>(ParameterServer::TOPIC, confFile, FCN_PS_LOAD);
