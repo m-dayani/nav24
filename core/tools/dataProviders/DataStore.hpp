@@ -86,7 +86,9 @@ namespace NAV24 {
     protected:
         ChannelPtr mpChannel;
 
-        ParamPtr mpDsParams;
+        // Never hold a pointer to params, it's ParamServer's property and
+        // changing params can cause problems especially when working with threads
+        //ParamPtr mpDsParams;
 
         TabularTextDS::LoadState mLoadState;
 

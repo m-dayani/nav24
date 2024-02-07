@@ -368,4 +368,19 @@ std::string Converter::toStringQuat(const g2o::Sim3& pose, const std::string& pr
     return oss.str();
 }*/
 
+    std::string Converter::toString(const std::vector<double> &vData, const std::string& prefix) {
+
+        ostringstream oss{};
+        const string& pref = prefix;
+
+        oss << pref << "[";
+        for (int i = 0; i < vData.size(); i++) {
+            oss << vData[i];
+            string sep = (i == vData.size() - 1) ? "" : ", ";
+            oss << sep;
+        }
+        oss << "]";
+        return oss.str();
+    }
+
 } //namespace ORB_SLAM

@@ -33,6 +33,8 @@ set(SENSORS_DIR ${DATA_TYPES_DIR}/sensor)
 list(APPEND LIST_INCLUDE_DIRS ${SENSORS_DIR})
 set(SENSOR_DATA_DIR ${SENSORS_DIR}/data)
 list(APPEND LIST_INCLUDE_DIRS ${SENSOR_DATA_DIR})
+set(SENSOR_CAM_DIR ${SENSORS_DIR}/camera)
+list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_DIR})
 
 set(DATA_LOADERS_DIR ${UTILS_DIR}/dataProviders)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
@@ -46,6 +48,7 @@ list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
 set(ALL_H_FILES
         ${SYSTEM_DIR}/System.hpp
         ${UTILS_DT_CONV_DIR}/YamlParserCV.hpp
+        ${UTILS_DT_CONV_DIR}/DataConversion.hpp
         ${PARAMS_DIR}/Parameter.hpp
         ${PARAMS_DIR}/ParameterServer.hpp
         ${PARAMS_DIR}/ParameterBlueprint.h
@@ -53,16 +56,26 @@ set(ALL_H_FILES
         ${MESSAGING_DIR}/Channel.hpp
         ${DATA_LOADERS_DIR}/DataStore.hpp
         ${DATA_STORE_DIR}/TabularTextDS.hpp
+        ${SENSOR_CAM_DIR}/Calibration.hpp
+        ${SENSOR_CAM_DIR}/Camera.hpp
+        ${SENSOR_DATA_DIR}/SensorData.hpp
+        ${SENSORS_DIR}/Sensor.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
         ${UTILS_DT_CONV_DIR}/YamlParserCV.cpp
+        ${UTILS_DT_CONV_DIR}/DataConversion.cpp
         ${PARAMS_DIR}/Parameter.cpp
         ${PARAMS_DIR}/ParameterServer.cpp
         ${MESSAGING_DIR}/Message.cpp
         ${MESSAGING_DIR}/Channel.cpp
         ${DATA_LOADERS_DIR}/DataStore.cpp
         ${DATA_STORE_DIR}/TabularTextDS.cpp
+        ${SENSOR_CAM_DIR}/Calibration.cpp
+        ${SENSOR_CAM_DIR}/Camera.cpp
+        ${SENSORS_DIR}/Sensor.cpp
+        ${SENSOR_DATA_DIR}/SensorData.cpp
+
 )
 
 include_directories(

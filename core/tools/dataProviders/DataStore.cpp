@@ -20,7 +20,7 @@ namespace NAV24 {
 
 
     DataStore::DataStore(ChannelPtr server) :
-            mpChannel(std::move(server)), mpDsParams(), mLoadState(TabularTextDS::LoadState::BAD_PATH),
+            mpChannel(std::move(server)), mLoadState(TabularTextDS::LoadState::BAD_PATH),
             mDsFormat(), mDsName(), mSeqNames(), mSeqCount(0), mSeqTarget(0), mSeqIdx(0),
             mnMaxIter(0), mTsFactor(1.0),
             mbGtQwFirst(false), mbGtPosFirst(false), mbImuGyroFirst(false) {}
@@ -162,7 +162,7 @@ namespace NAV24 {
         if (pMsg) {
             auto pParam = pMsg->getConfig();
             if (pParam) {
-                mpDsParams = pParam;
+                //mpDsParams = pParam;
                 bool resPath = false, resSeq = false;
                 // Dataset name
                 auto pParamNew = find_param<ParamType<string>>(TAG_DS_NAME, pParam);

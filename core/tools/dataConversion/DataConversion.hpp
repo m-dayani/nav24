@@ -16,8 +16,7 @@
 //#include "../thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
 
-namespace NAV24
-{
+namespace NAV24 {
 
 class Converter {
 public:
@@ -55,6 +54,7 @@ public:
 
     /* -------------------------------------------------------------------------------------------------------------- */
 
+    static std::string toString(const std::vector<double>& vData, const std::string& prefix = std::string());
     static std::string toString(const cv::Mat& pose, const std::string& prefix = std::string());
     //static std::string toString(const g2o::SE3Quat& pose, const std::string& prefix = std::string());
     //static std::string toString(const g2o::Sim3& pose, const std::string& prefix = std::string());
