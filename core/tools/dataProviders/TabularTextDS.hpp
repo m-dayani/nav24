@@ -20,7 +20,6 @@ namespace NAV24 {
         enum PathState {
             INVALID,
             FILE,
-            FILE_CSV,
             DIR
         };
         enum LoadState {
@@ -29,21 +28,40 @@ namespace NAV24 {
             READY,
             GOOD
         };
+        enum OpenState {
+            READ,
+            WRITE
+        };
 
         TabularTextDS();
-        virtual ~TabularTextDS() = default;
+        TabularTextDS(const std::string& baseDir, const std::string& fileName,
+                      std::string  ext=".txt", std::string  delim=" ",
+                      const OpenState& openState=OpenState::READ, bool sortFiles_=true);
+        //virtual ~TabularTextDS() = default;
+
+        void open();
+        void close();
+        void reset();
+
+        std::string printStr(const std::string& prefix);
+
+        // returns the next file path
+        std::string getNextFile();
+        // breaks the next line by delim and returns text data
+        ulong getNextData(std::vector<std::string>& vTxtData);
+        // get next line
+        std::string getNextLine();
+        //ulong readLines(const ulong& nLines, std::vector<std::string>& vLines);
 
         static bool checkDirectory(const std::string &strPath);
         static bool checkFile(const std::string &strPath);
         static bool checkFileAndExtension(const std::string &strPath, const std::string &ext);
-        static bool checkExtension(const boost::filesystem::path &p, const std::string &ext) {
-            return p.has_extension() && p.extension().string() == ext;
-        }
+        static bool checkExtension(const boost::filesystem::path &p, const std::string &ext);
         static bool isComment(const std::string &txt);
 
         unsigned long getCurrByteIdx() const { return this->mnCurrByteIdx; }
 
-        virtual void reset() = 0;
+        //virtual void reset() = 0;
 
     protected:
         bool checkTxtStream();
@@ -52,45 +70,7 @@ namespace NAV24 {
         void openNextDirFile();
         void loadTxtFile();
 
-        template<typename T>
-        unsigned long getTxtData(unsigned long chunkSize, std::vector<T> &outData) {
-
-            if (!this->mTxtDataFile.is_open()) {
-
-                LOG(ERROR) << "Text data file is not open\n";
-                return 0;
-            }
-
-            std::string line;
-
-            unsigned long dtCount = 0;
-
-            //If data manager constantly supply the same outData,
-            // all data will be stacked together.
-            if (chunkSize > 0)
-                outData.reserve(chunkSize);
-
-            while (this->checkTxtStream())
-            {
-                if (chunkSize > 0 && dtCount >= chunkSize)
-                    break;
-
-                getline(this->mTxtDataFile, line);
-                this->mnCurrByteIdx += line.length();
-
-                if (isComment(line))
-                    continue;
-
-                boost::any res = parseLine(line);
-
-                outData.push_back(boost::any_cast<T>(res));
-
-                dtCount++;
-            }
-            return dtCount;
-        }
-
-        virtual boost::any parseLine(const std::string &dataStr) = 0;
+        void resolveFilePaths(const std::string& baseDir, const std::string& fileName);
 
 
         std::string mDataPath;
@@ -107,8 +87,11 @@ namespace NAV24 {
 
         PathState mPathState;
         LoadState mLoadState;
+        OpenState mOpenState;
 
-        double mTsFactor;
+        std::string mExt;
+        std::string mDelim;
+        bool mSortFiles;
     private:
     };
 

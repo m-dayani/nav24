@@ -4,6 +4,7 @@
 
 #include "DataStore.hpp"
 #include "ParameterServer.hpp"
+#include "Camera.hpp"
 
 #include <memory>
 #include <utility>
@@ -82,7 +83,7 @@ namespace NAV24 {
 
         // All these messages have a sender and require a response
 
-        MsgReqPtr request = static_pointer_cast<MsgRequest>(msg);
+        MsgReqPtr request = dynamic_pointer_cast<MsgRequest>(msg);
         if (!request) {
             DLOG(WARNING) << "DataStore::handleRequest, wrong request message type\n";
             return;
@@ -102,29 +103,20 @@ namespace NAV24 {
             return;
         }
 
+        // persist the created param
+        mvpParams.clear();
         ParamPtr pParam = nullptr;
+
         if (tag == TAG_DS_GET_PATH_IMG) {
-            string imBase = this->getSequencePath() + "/" + mPathImBase;
-            if (mPathImBase.empty()) {
-                imBase = mPathImBase;
-            }
-            string imFile = this->getSequencePath() + "/" + mPathImFile;
-            if (mPathImFile.empty()) {
-                imFile = mPathImFile;
-            }
-            vector<string> vImgPath{imBase, imFile};
-            pParam = make_shared<ParamSeq<string>>("imagePaths", nullptr, vImgPath);
-            // todo: send a map param node or a vector of paths??
-            //pParam->insertChild("imagePath", make_shared<ParamType<string>>("imagePath", pParam, imBase));
-            //pParam->insertChild("imageFile", make_shared<ParamType<string>>("imageFile", pParam, imBase));
+            pParam = CamOffline::getFoldersParams(this->getSequencePath(), mPathImBase, mPathImFile, mTsFactor, mvpParams);
         }
         else if (tag == TAG_DS_GET_PATH_IMU) {
-            string imuFile = this->getSequencePath() + "/" + mPathImu;
-            pParam = make_shared<ParamType<string>>("imuPath", nullptr, imuFile);
+            // todo: do the same for imu paths
+            DLOG(INFO) << "DataStore::handleRequest, return imu paths \n";
         }
         else if (tag == TAG_DS_GET_PATH_GT) {
-            string gtFile = this->getSequencePath() + "/" + mPathGT;
-            pParam = make_shared<ParamType<string>>("imuPath", nullptr, gtFile);
+            // todo: do the same for gt paths
+            DLOG(INFO) << "DataStore::handleRequest, return gt paths \n";
         }
         else {
             DLOG(INFO) << "DataStore::handleRequest, requested config is not supported: " << tag << "\n";

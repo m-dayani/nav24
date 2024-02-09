@@ -9,14 +9,15 @@
 #include <vector>
 #include <memory>
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 
-#include "SharedQueue.hpp"
+//#include "SharedQueue.hpp"
+#include "SensorData.hpp"
 
 
 namespace NAV24 {
 
-    struct Image {
+    struct Image : public SensorData {
 
         Image(const cv::Mat& image, std::string  imPath) : mImage(image.clone()), mPath(std::move(imPath)) {}
         virtual ~Image() = default;
@@ -37,8 +38,8 @@ namespace NAV24 {
 
     //typedef std::shared_ptr<ImageTs> ImageTsPtr;
 
-    typedef SharedQueue<ImagePtr> ImageQueue;
-    typedef std::shared_ptr<ImageQueue> ImageQueuePtr;
+    //typedef SharedQueue<ImagePtr> ImageQueue;
+    //typedef std::shared_ptr<ImageQueue> ImageQueuePtr;
 
 } // NAV24
 

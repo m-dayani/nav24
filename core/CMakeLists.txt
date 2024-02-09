@@ -38,8 +38,8 @@ list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_DIR})
 
 set(DATA_LOADERS_DIR ${UTILS_DIR}/dataProviders)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
-set(DATA_STORE_DIR ${DATA_LOADERS_DIR}/dataStore)
-list(APPEND LIST_INCLUDE_DIRS ${DATA_STORE_DIR})
+#set(DATA_STORE_DIR ${DATA_LOADERS_DIR}/dataStore)
+#list(APPEND LIST_INCLUDE_DIRS ${DATA_STORE_DIR})
 
 set(VISUALIZATION_DIR ${UTILS_DIR}/visualization)
 list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
@@ -55,10 +55,11 @@ set(ALL_H_FILES
         ${MESSAGING_DIR}/Message.hpp
         ${MESSAGING_DIR}/Channel.hpp
         ${DATA_LOADERS_DIR}/DataStore.hpp
-        ${DATA_STORE_DIR}/TabularTextDS.hpp
+        ${DATA_LOADERS_DIR}/TabularTextDS.hpp
         ${SENSOR_CAM_DIR}/Calibration.hpp
         ${SENSOR_CAM_DIR}/Camera.hpp
         ${SENSOR_DATA_DIR}/SensorData.hpp
+        ${SENSOR_DATA_DIR}/Image.hpp
         ${SENSORS_DIR}/Sensor.hpp
 )
 set(ALL_SRC_FILES
@@ -70,11 +71,12 @@ set(ALL_SRC_FILES
         ${MESSAGING_DIR}/Message.cpp
         ${MESSAGING_DIR}/Channel.cpp
         ${DATA_LOADERS_DIR}/DataStore.cpp
-        ${DATA_STORE_DIR}/TabularTextDS.cpp
+        ${DATA_LOADERS_DIR}/TabularTextDS.cpp
         ${SENSOR_CAM_DIR}/Calibration.cpp
         ${SENSOR_CAM_DIR}/Camera.cpp
         ${SENSORS_DIR}/Sensor.cpp
         ${SENSOR_DATA_DIR}/SensorData.cpp
+        ${SENSOR_DATA_DIR}/Image.cpp
 
 )
 

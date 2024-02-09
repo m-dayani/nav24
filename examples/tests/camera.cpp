@@ -3,20 +3,19 @@
 //
 
 #include <iostream>
-#include <utility>
-//#include <thread>
-//#include <chrono>
 
 #include <glog/logging.h>
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/core/utility.hpp>
-#include <opencv2/highgui.hpp>
+//#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/core/utility.hpp>
+//#include <opencv2/highgui.hpp>
 
 #include "ParameterServer.hpp"
 #include "ParameterBlueprint.h"
 #include "Calibration.hpp"
 #include "Camera.hpp"
+#include "DataStore.hpp"
+#include "Image.hpp"
 
 
 using namespace std;
@@ -44,19 +43,73 @@ private:
 };*/
 
 
-class DummySystem : public MsgCallback {
+class DummySystem : public MsgCallback, public Channel {
 public:
-    void receive(const MsgPtr &msg) override {
+    void handleImageMsg(const MsgPtr &msg) {
 
-        if (msg) {
-            if (dynamic_pointer_cast<MsgConfig>(msg)) {
-                auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
-                mpParamCamera = pMsgConf->getConfig();
+        if (dynamic_pointer_cast<MsgSensorData>(msg)) {
+            auto msgSensor = dynamic_pointer_cast<MsgSensorData>(msg);
+            auto sensorData = msgSensor->getData();
+
+            if (sensorData && dynamic_pointer_cast<ImageTs>(sensorData)) {
+
+                auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
+
+                if (!pImage || pImage->mImage.empty()) {
+                    return;
+                }
+
+                cv::imshow("Image", pImage->mImage);
+                int dly = 33;
+                if (msgSensor->getTargetId() == FCN_SEN_GET_NEXT)
+                    dly = 0;
+                int keyVal = cv::waitKey(dly);
+                if (keyVal == 'q') {
+                    auto msgStop = make_shared<Message>(Sensor::TOPIC, "stop_play", FCN_SEN_STOP_PLAY);
+                    for (const auto& pCam : mvpCamera) {
+                        if (pCam)
+                            pCam->receive(msgStop);
+                    }
+                }
             }
         }
     }
 
+    void handleConfigMsg(const MsgPtr &msg) {
+
+        if (dynamic_pointer_cast<MsgConfig>(msg)) {
+            auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
+            mpParamCamera = pMsgConf->getConfig();
+        }
+    }
+
+    void receive(const MsgPtr &msg) override {
+
+        if (msg) {
+            this->handleConfigMsg(msg);
+            this->handleImageMsg(msg);
+        }
+    }
+
+    void publish(const MsgPtr &msg) override {
+
+        if (!msg) {
+            DLOG(WARNING) << "DummySystem::publish, Null message detected\n";
+            return;
+        }
+        this->handleImageMsg(msg);
+    }
+
+    void registerChannel(const MsgCbPtr &callback, const string &topic) override {
+
+    }
+
+    void unregisterChannel(const MsgCbPtr &callback, const string &topic) override {
+
+    }
+
     ParamPtr mpParamCamera;
+    vector<shared_ptr<Camera>> mvpCamera{};
 };
 
 
@@ -66,6 +119,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InstallFailureSignalHandler();
 
     string confFile = "../../config/AUN_ARM.yaml";
+    string confFile1 = "../../config/TUM_RGBD.yaml";
 
     shared_ptr<DummySystem> pSystem = make_shared<DummySystem>();
 
@@ -73,6 +127,11 @@ int main([[maybe_unused]] int argc, char** argv) {
     MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, confFile, FCN_PS_LOAD);
     shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(nullptr);
     pParamServer->receive(msgLoadSettings);
+
+    // DataStore
+    shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(nullptr);
+    auto msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pDataProvider);
+    pParamServer->receive(msgGetDsParams);
 
     // Normal operation
 
@@ -89,10 +148,31 @@ int main([[maybe_unused]] int argc, char** argv) {
     }
 
     // Camera
-    shared_ptr<Camera> pCamera = make_shared<Camera>(nullptr);
-    msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_CAM, FCN_PS_REQ, pCamera);
+    auto pCamOffline = make_shared<CamOffline>(pSystem);
+    auto pCamStream = make_shared<CamStream>(pSystem);
+    pSystem->mvpCamera.push_back(pCamOffline);
+    pSystem->mvpCamera.push_back(pCamStream);
+
+    msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_CAM, FCN_PS_REQ, pCamOffline);
+    auto msgGetCamParams1 = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_CAM, FCN_PS_REQ, pCamStream);
+    MsgPtr msgImagePaths = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_PATH_IMG, FCN_DS_REQ, pCamOffline);
+    pDataProvider->receive(msgImagePaths);
     pParamServer->receive(msgGetCamParams);
-    cout << pCamera->toString() << endl;
+    pParamServer->receive(msgGetCamParams1);
+
+    auto msgPrint = make_shared<Message>(Sensor::TOPIC, "print", FCN_SEN_PRINT);
+    auto msgStartPlay = make_shared<Message>(Sensor::TOPIC, "start_play", FCN_SEN_START_PLAY);
+    auto msgGetNext = make_shared<MsgRequest>(Sensor::TOPIC, "get_next", FCN_SEN_GET_NEXT, pSystem);
+    auto msgReset = make_shared<Message>(Sensor::TOPIC, "reset", FCN_SEN_RESET);
+
+    pCamOffline->receive(msgPrint);
+    pCamOffline->receive(msgStartPlay);
+    pCamOffline->receive(msgReset);
+    pCamOffline->receive(msgGetNext);
+    pCamStream->receive(msgPrint);
+    pCamStream->receive(msgStartPlay);
+    pCamStream->receive(msgReset);
+    pCamStream->receive(msgGetNext);
 
     // Wrong operation
 

@@ -117,6 +117,8 @@ namespace NAV24 {
         bool mbGtPosFirst;
         bool mbImuGyroFirst;
 
+        std::vector<ParamPtr> mvpParams;
+
     private:
 
     };

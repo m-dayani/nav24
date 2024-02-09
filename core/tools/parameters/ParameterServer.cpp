@@ -85,7 +85,7 @@ namespace NAV24 {
 
     void ParameterServer::handleRequest(const MsgPtr &msg) {
 
-        MsgReqPtr request = static_pointer_cast<MsgRequest>(msg);
+        MsgReqPtr request = dynamic_pointer_cast<MsgRequest>(msg);
         if (!request) {
             DLOG(WARNING) << "ParameterServer::handleRequest, Null request detected\n";
             return;

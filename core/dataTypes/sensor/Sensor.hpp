@@ -16,6 +16,13 @@
 
 namespace NAV24 {
 
+//#define FCN_SEN_REQ 1
+#define FCN_SEN_PRINT 3
+#define FCN_SEN_STOP_PLAY 5
+#define FCN_SEN_START_PLAY 6
+#define FCN_SEN_GET_NEXT 8
+#define FCN_SEN_RESET 10
+
     struct SensorInterface {
         enum InterfaceType {
             DEFAULT,
@@ -37,19 +44,30 @@ namespace NAV24 {
 
     class Sensor : public MsgCallback {
     public:
-        Sensor() : mName(), mpInterface(), mpChannel() {}
-        explicit Sensor(ChannelPtr pChannel) : mName(), mpInterface(), mpChannel(std::move(pChannel)) {}
+        inline static const std::string TOPIC = "Sensor";
+
+        Sensor() : mName(), mpInterface(), mbIsStopped(true), mpChannel() {}
+        explicit Sensor(ChannelPtr pChannel) :
+                mName(), mpInterface(), mbIsStopped(true), mpChannel(std::move(pChannel)) {}
 
         // All sensors are nodes and at least handle config requests
         void receive(const MsgPtr &msg) override;
 
     protected:
         virtual void loadParams(const MsgPtr &msg);
+
+        virtual void getNext(MsgPtr pReq) = 0;
+        virtual void play() = 0;
+
+        virtual void reset() = 0;
+
         [[nodiscard]] virtual std::string printStr(const std::string& prefix) const;
 
         // All sensors have a name and interface
         std::string mName;
         std::shared_ptr<SensorInterface> mpInterface;
+
+        bool mbIsStopped;
 
         // All sensors have means of communication with other modules
         ChannelPtr mpChannel;

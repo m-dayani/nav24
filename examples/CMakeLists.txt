@@ -27,6 +27,10 @@ add_executable(camera tests/camera.cpp)
 target_link_libraries(camera LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE camera)
 
+add_executable(tabular_text_ds tests/tabular_text_ds.cpp)
+target_link_libraries(tabular_text_ds LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE tabular_text_ds)
+
 
 
 add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)

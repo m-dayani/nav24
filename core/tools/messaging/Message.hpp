@@ -11,6 +11,7 @@
 
 
 #include "Parameter.hpp"
+#include "SensorData.hpp"
 
 
 namespace NAV24 {
@@ -66,7 +67,8 @@ namespace NAV24 {
 
     class MsgConfig : public Message {
     public:
-        MsgConfig(const std::string& topic, ParamPtr paramPtr) : Message(topic), mConfig(std::move(paramPtr)) {}
+        MsgConfig(const std::string& topic, ParamPtr paramPtr) :
+            Message(topic), mConfig(std::move(paramPtr)) {}
 
         ParamPtr getConfig() { return mConfig; }
         void setConfig(const ParamPtr& config) { mConfig = config; }
@@ -78,13 +80,17 @@ namespace NAV24 {
     };
     typedef std::shared_ptr<MsgConfig> MsgConfigPtr;
 
-    /*class MsgSensorData : public Message {
+    class MsgSensorData : public Message {
     public:
-        MsgSensorData(const std::string& topic, const SensorDataPtr& dataPtr) : Message(topic), mSensorData(dataPtr) {}
+        MsgSensorData(const std::string& topic, SensorDataPtr  dataPtr) :
+            Message(topic), mSensorData(std::move(dataPtr)) {}
+
+        SensorDataPtr getData() { return mSensorData; }
+        void setData(const SensorDataPtr& sData) { mSensorData = sData; }
 
     protected:
         SensorDataPtr mSensorData;
-    };*/
+    };
 
 }
 

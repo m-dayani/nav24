@@ -4,6 +4,8 @@
 
 #include "Sensor.hpp"
 
+#include <iostream>
+
 #include <glog/logging.h>
 
 using namespace std;
@@ -25,6 +27,35 @@ namespace NAV24 {
 
         if (dynamic_pointer_cast<MsgConfig>(msg)) {
             this->loadParams(msg);
+        }
+
+        if (msg && msg->getTopic() == Sensor::TOPIC) {
+
+            const int action = msg->getTargetId();
+
+            switch (action) {
+                case FCN_SEN_STOP_PLAY:
+                    mbIsStopped = true;
+                    break;
+                case FCN_SEN_START_PLAY:
+                    this->play();
+                    break;
+                case FCN_SEN_GET_NEXT:
+                    this->getNext(msg);
+                    break;
+                case FCN_SEN_RESET:
+                    this->reset();
+                    break;
+                case FCN_SEN_PRINT: {
+                    string strStat = this->printStr("");
+                    // todo: send a return message to sender
+                    cout << strStat << endl;
+                }
+                    break;
+                default:
+                    DLOG(INFO) << "Sensor::receive, action is not supported: " << action << "\n";
+                    break;
+            }
         }
     }
 
@@ -89,8 +120,13 @@ namespace NAV24 {
 
         ostringstream oss;
 
+        string pref = " ";
+        if (!prefix.empty()) {
+            pref = prefix[0];
+            pref += pref;
+        }
         oss << prefix << "Sensor Name: " << mName << "\n";
-        oss << prefix << "Interface: " << mpInterface->printStr() << "\n";
+        oss << prefix << "Interface: \n" << mpInterface->printStr(pref);
 
         return oss.str();
     }
