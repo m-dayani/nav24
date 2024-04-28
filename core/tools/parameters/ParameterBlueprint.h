@@ -7,7 +7,8 @@
 
 namespace NAV24 {
 
-#define PARAM_DS "Process/DS/0"
+#define PARAM_DS "Process/DS"
+#define PARAM_DS0 "Process/DS/0"
 #define PARAM_CAM "Input/Camera"
 
 }

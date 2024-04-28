@@ -93,8 +93,8 @@ namespace NAV24 {
                     if (sensorType == "mixed") {
                         ifType = SensorInterface::MIXED;
                     }
-                    else if (sensorType == "storage") {
-                        ifType = SensorInterface::STORAGE;
+                    else if (sensorType == "offline") {
+                        ifType = SensorInterface::OFFLINE;
                     }
                     else if (sensorType == "stream") {
                         ifType = SensorInterface::STREAM;

@@ -60,7 +60,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     pParamServer->receive(msgGetFullStat);
 
     // Get required dataset parameters
-    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pSystem);
+    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS0, FCN_PS_REQ, pSystem);
     pParamServer->receive(msgGetDsParams);
 
     // If you change parameters, ParamServer's parameters will change automatically
@@ -85,7 +85,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     MsgPtr msgWrongAction = make_shared<Message>(ParameterServer::TOPIC, "", 2938);
     MsgPtr msgWrongPath = make_shared<Message>(ParameterServer::TOPIC, confNoFile, FCN_PS_LOAD);
     MsgPtr msgWrongMsg = make_shared<MsgRequest>(ParameterServer::TOPIC, "WRONG/MESSAGE", FCN_PS_REQ, pSystem);
-    MsgPtr msgReqNullSender = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, nullptr);
+    MsgPtr msgReqNullSender = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS0, FCN_PS_REQ, nullptr);
     MsgPtr msgSaveToNoFile = make_shared<Message>(ParameterServer::TOPIC, confNoFile, FCN_PS_SAVE);
     MsgPtr msgParams = make_shared<MsgConfig>(ParameterServer::TOPIC, globalParam);
 

@@ -14,8 +14,6 @@
 
 namespace NAV24 {
 
-
-
     class Camera : public Sensor {
     public:
         inline static const std::string TOPIC = "Camera";
@@ -39,7 +37,7 @@ namespace NAV24 {
         CalibPtr mpCalib;
     };
 
-    class CamStream : public Camera {
+    class CamStream : public virtual Camera {
     public:
         explicit CamStream(const ChannelPtr& pChannel) : Camera(pChannel) {}
         ~CamStream();
@@ -56,7 +54,7 @@ namespace NAV24 {
         std::shared_ptr<cv::VideoCapture> mpVideoCap;
     };
 
-    class CamOffline : public Camera {
+    class CamOffline : public virtual Camera {
     public:
         explicit CamOffline(const ChannelPtr& pChannel) : Camera(pChannel), tsFactor(1.0) {}
         ~CamOffline();
@@ -87,18 +85,32 @@ namespace NAV24 {
         std::shared_ptr<TabularTextDS> mpImgDS;
     };
 
-    class CamMixed : public CamStream, CamOffline {
+    class CamMixed : public CamOffline, public CamStream {
     public:
-        //CamMixed() = default;
+        enum CamOperation {
+            NONE,
+            OFFLINE,
+            STREAM,
+            BOTH
+        };
+
+        explicit CamMixed(const ChannelPtr &pChannel);
+
+        void receive(const MsgPtr &msg) override;
 
     protected:
-        void getNext(MsgPtr pReq) override {
+        void getNext(MsgPtr pReq) override;
 
-        }
+        void play() override;
 
-        void play() override {
+        void reset() override;
 
-        }
+        void loadParams(const MsgPtr &msg) override;
+
+        [[nodiscard]] std::string printStr(const std::string &prefix) const override;
+
+    private:
+        CamOperation mCamOp;
     };
 
 }   //NAV24

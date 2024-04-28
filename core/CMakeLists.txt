@@ -16,6 +16,21 @@ find_package(Ceres REQUIRED)
 set(SYSTEM_DIR system)
 list(APPEND LIST_INCLUDE_DIRS ${SYSTEM_DIR})
 
+set(ATLAS_DIR atlas)
+list(APPEND LIST_INCLUDE_DIRS ${ATLAS_DIR})
+
+set(BACKEND_DIR backEnd)
+list(APPEND LIST_INCLUDE_DIRS ${BACKEND_DIR})
+
+set(FRONTEND_DIR frontEnd)
+list(APPEND LIST_INCLUDE_DIRS ${FRONTEND_DIR})
+
+set(OPERATORS_DIR operators)
+list(APPEND LIST_INCLUDE_DIRS ${OPERATORS_DIR})
+
+set(TRAJECTORY_DIR trajectory)
+list(APPEND LIST_INCLUDE_DIRS ${TRAJECTORY_DIR})
+
 set(UTILS_DIR tools)
 list(APPEND LIST_INCLUDE_DIRS ${UTILS_DIR})
 set(UTILS_DT_CONV_DIR ${UTILS_DIR}/dataConversion)
@@ -29,6 +44,10 @@ list(APPEND LIST_INCLUDE_DIRS ${MESSAGING_DIR})
 
 set(DATA_TYPES_DIR dataTypes)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_TYPES_DIR})
+set(WORLD_OBJ_DIR ${DATA_TYPES_DIR}/worldObject)
+list(APPEND LIST_INCLUDE_DIRS ${WORLD_OBJ_DIR})
+set(OBSERVATIONS_DIR ${DATA_TYPES_DIR}/observation)
+list(APPEND LIST_INCLUDE_DIRS ${OBSERVATIONS_DIR})
 set(SENSORS_DIR ${DATA_TYPES_DIR}/sensor)
 list(APPEND LIST_INCLUDE_DIRS ${SENSORS_DIR})
 set(SENSOR_DATA_DIR ${SENSORS_DIR}/data)
@@ -61,6 +80,19 @@ set(ALL_H_FILES
         ${SENSOR_DATA_DIR}/SensorData.hpp
         ${SENSOR_DATA_DIR}/Image.hpp
         ${SENSORS_DIR}/Sensor.hpp
+        ${ATLAS_DIR}/Atlas.hpp
+        ${ATLAS_DIR}/Map.hpp
+        ${BACKEND_DIR}/BackEnd.hpp
+        ${BACKEND_DIR}/CalibCamCv.hpp
+        ${OBSERVATIONS_DIR}/Observation.hpp
+        ${OBSERVATIONS_DIR}/Point2D.hpp
+        ${WORLD_OBJ_DIR}/WorldObject.hpp
+        ${WORLD_OBJ_DIR}/Point3D.hpp
+        ${FRONTEND_DIR}/FrontEnd.hpp
+        ${FRONTEND_DIR}/FE_CalibCamCv.hpp
+        ${OPERATORS_DIR}/Operator.hpp
+        ${TRAJECTORY_DIR}/Trajectory.hpp
+        ${TRAJECTORY_DIR}/TrajManager.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
@@ -77,7 +109,19 @@ set(ALL_SRC_FILES
         ${SENSORS_DIR}/Sensor.cpp
         ${SENSOR_DATA_DIR}/SensorData.cpp
         ${SENSOR_DATA_DIR}/Image.cpp
-
+        ${ATLAS_DIR}/Atlas.cpp
+        ${ATLAS_DIR}/Map.cpp
+        ${BACKEND_DIR}/BackEnd.cpp
+        ${BACKEND_DIR}/CalibCamCv.cpp
+        ${OBSERVATIONS_DIR}/Observation.cpp
+        ${OBSERVATIONS_DIR}/Point2D.cpp
+        ${WORLD_OBJ_DIR}/WorldObject.cpp
+        ${WORLD_OBJ_DIR}/Point3D.cpp
+        ${FRONTEND_DIR}/FrontEnd.cpp
+        ${FRONTEND_DIR}/FE_CalibCamCv.cpp
+        ${OPERATORS_DIR}/Operator.cpp
+        ${TRAJECTORY_DIR}/Trajectory.cpp
+        ${TRAJECTORY_DIR}/TrajManager.cpp
 )
 
 include_directories(

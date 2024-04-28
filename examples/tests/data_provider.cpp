@@ -85,12 +85,12 @@ int main([[maybe_unused]] int argc, char** argv) {
 
     // Change the dataset
     pParamServer->receive(msgLdConfTricky);
-    msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pDataProvider);
+    msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS0, FCN_PS_REQ, pDataProvider);
     pParamServer->receive(msgGetDsParams);
 
     // Change the dataset once again
     pParamServer->receive(msgLdConfNormal);
-    msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pSystem);
+    msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS0, FCN_PS_REQ, pSystem);
     pParamServer->receive(msgGetDsParams);
 
     // Print loader state

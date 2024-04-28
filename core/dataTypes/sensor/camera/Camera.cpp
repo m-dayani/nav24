@@ -10,6 +10,7 @@
 
 #include "DataStore.hpp"
 #include "Image.hpp"
+#include "FrontEnd.hpp"
 
 
 using namespace std;
@@ -117,7 +118,7 @@ namespace NAV24 {
 
         auto ts = ts_chrono.time_since_epoch().count();
         ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, "");
-        auto msgSensor = make_shared<MsgSensorData>(Camera::TOPIC, imgObj);
+        auto msgSensor = make_shared<MsgSensorData>(FE::FrontEnd::TOPIC, imgObj);
         msgSensor->setTargetId(FCN_SEN_GET_NEXT);
 
         sender->receive(msgSensor);
@@ -139,7 +140,7 @@ namespace NAV24 {
 
                 auto ts = ts_chrono.time_since_epoch().count();
                 ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, "");
-                auto msg = make_shared<MsgSensorData>(Camera::TOPIC, imgObj);
+                auto msg = make_shared<MsgSensorData>(FE::FrontEnd::TOPIC, imgObj);
 
                 mpChannel->publish(msg);
 
@@ -233,7 +234,7 @@ namespace NAV24 {
 
         cv::Mat image = cv::imread(nextFile, cv::IMREAD_UNCHANGED);
         ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, nextFile);
-        auto msgSensor = make_shared<MsgSensorData>(Camera::TOPIC, imgObj);
+        auto msgSensor = make_shared<MsgSensorData>(FE::FrontEnd::TOPIC, imgObj);
         msgSensor->setTargetId(FCN_SEN_GET_NEXT);
 
         sender->receive(msgSensor);
@@ -258,7 +259,7 @@ namespace NAV24 {
 
                 cv::Mat image = cv::imread(nextFile, cv::IMREAD_UNCHANGED);
                 ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, nextFile);
-                auto msgSensor = make_shared<MsgSensorData>(Camera::TOPIC, imgObj);
+                auto msgSensor = make_shared<MsgSensorData>(FE::FrontEnd::TOPIC, imgObj);
 
                 mpChannel->publish(msgSensor);
 
@@ -377,5 +378,95 @@ namespace NAV24 {
         vpParams.push_back(pParam);
 
         return pParam;
+    }
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    CamMixed::CamMixed(const ChannelPtr &pChannel) : Camera(pChannel), CamOffline(pChannel), CamStream(pChannel),
+        mCamOp{CamOperation::OFFLINE} {}
+
+    void CamMixed::receive(const MsgPtr &msg) {
+        NAV24::CamOffline::receive(msg);
+
+        if (!msg) {
+            DLOG(WARNING) << "CamMixed::receive, Null message detected, abort\n";
+            return;
+        }
+
+        if (msg->getTargetId() == FCN_SEN_CONFIG) {
+            string camOp = msg->getMessage();
+            if (camOp == TAG_SEN_MX_OFFLINE) {
+                mCamOp = CamOperation::OFFLINE;
+            }
+            else if (camOp == TAG_SEN_MX_STREAM) {
+                mCamOp = CamOperation::STREAM;
+            }
+            else if (camOp == TAG_SEN_MX_BOTH) {
+                mCamOp = CamOperation::BOTH;
+            }
+            else {
+                mCamOp = CamOperation::NONE;
+            }
+        }
+    }
+
+    void CamMixed::getNext(MsgPtr msg) {
+
+        if (!msg) {
+            DLOG(WARNING) << "CamMixed::getNext, Null message detected, abort\n";
+            return;
+        }
+
+        switch (mCamOp) {
+            case OFFLINE:
+                CamOffline::getNext(msg);
+                break;
+            case STREAM:
+                CamStream::getNext(msg);
+                break;
+            case BOTH:
+                CamOffline::getNext(msg);
+                CamStream::getNext(msg);
+                break;
+            case NONE:
+            default:
+                DLOG(WARNING) << "CamMixed::getNext, Action not supported.\n";
+                break;
+        }
+    }
+
+    void CamMixed::play() {
+
+        switch (mCamOp) {
+            case OFFLINE:
+                CamOffline::play();
+                break;
+            case STREAM:
+                CamStream::play();
+                break;
+            case BOTH:
+                CamOffline::play();
+                CamStream::play();
+                break;
+            case NONE:
+            default:
+                DLOG(WARNING) << "CamMixed::play, Action not supported.\n";
+                break;
+        }
+
+    }
+
+    void CamMixed::reset() {
+        CamOffline::reset();
+        CamStream::reset();
+    }
+
+    void CamMixed::loadParams(const MsgPtr &msg) {
+        CamStream::loadParams(msg);
+        CamOffline::loadParams(msg);
+    }
+
+    string CamMixed::printStr(const string &prefix) const {
+        return CamStream::printStr(prefix) + CamOffline::printStr(prefix);
     }
 }   //NAV24

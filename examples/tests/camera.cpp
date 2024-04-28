@@ -130,7 +130,7 @@ int main([[maybe_unused]] int argc, char** argv) {
 
     // DataStore
     shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(nullptr);
-    auto msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pDataProvider);
+    auto msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS0, FCN_PS_REQ, pDataProvider);
     pParamServer->receive(msgGetDsParams);
 
     // Normal operation
@@ -150,6 +150,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     // Camera
     auto pCamOffline = make_shared<CamOffline>(pSystem);
     auto pCamStream = make_shared<CamStream>(pSystem);
+    // TODO: also test mixed camera
     pSystem->mvpCamera.push_back(pCamOffline);
     pSystem->mvpCamera.push_back(pCamStream);
 

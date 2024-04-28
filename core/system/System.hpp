@@ -10,13 +10,23 @@
 #include <map>
 
 #include "Channel.hpp"
+#include "ParameterServer.hpp"
+#include "DataStore.hpp"
+#include "Sensor.hpp"
+#include "Atlas.hpp"
+#include "TrajManager.hpp"
 
 
 namespace NAV24 {
 
-    class System : public Channel, public MsgCallback {
+#define FCN_LD_PARAMS 1
+
+
+class System : public Channel, public MsgCallback, public std::enable_shared_from_this<System> {
     public:
-        System(const std::string& settings);
+        inline static const std::string TOPIC{"System"};
+
+        explicit System();
 
         void publish(const MsgPtr &message) override;
 
@@ -27,7 +37,21 @@ namespace NAV24 {
         void receive(const MsgPtr &msg) override;
 
     protected:
+        void loadSettings(const std::string& settings);
+        void handleConfigMsg(const MsgPtr &msg);
+        void initComponents();
+
+    protected:
         std::map<std::string, std::vector<MsgCbPtr>> mmChannels;
+
+        std::shared_ptr<ParameterServer> mpParamServer;
+        std::map<std::string, std::shared_ptr<DataStore>> mmpDataStores;
+        std::map<std::string, std::shared_ptr<Sensor>> mmpSensors;
+
+        ParamPtr mpTempParam;
+
+        AtlasPtr mpAtlas;
+        TrajManagerPtr mpTrajManager;
     };
 
 }

@@ -22,11 +22,17 @@ namespace NAV24 {
 #define FCN_SEN_START_PLAY 6
 #define FCN_SEN_GET_NEXT 8
 #define FCN_SEN_RESET 10
+#define FCN_SEN_CONFIG 12
+
+#define TAG_SEN_MX_OFFLINE "offline"
+#define TAG_SEN_MX_STREAM "stream"
+#define TAG_SEN_MX_BOTH "both"
+
 
     struct SensorInterface {
         enum InterfaceType {
             DEFAULT,
-            STORAGE,
+            OFFLINE,
             STREAM,
             MIXED
         };
