@@ -35,6 +35,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InstallFailureSignalHandler();
 
     string confFile = "../../config/AUN_ARM.yaml";
+    string saveFile = "../../config/AUN_ARM1.yaml";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
     // Create the system
@@ -86,7 +87,13 @@ int main([[maybe_unused]] int argc, char** argv) {
                                                       FCN_SEN_GET_NEXT, pFeCamCalib);
             mpSystem->publish(msgGetNext);
         }
-        // TODO: Save the results
+        // Calibrate
+        auto msgCalib = make_shared<Message>(FE::CalibCamCv::TOPIC, "", FCN_FE_CAM_CALIB);
+        pFeCamCalib->receive(msgCalib);
+        // Save the results
+        cout << "Saving parameters to: " << saveFile << endl;
+        MsgPtr msgSaveSettings = make_shared<Message>(ParameterServer::TOPIC, saveFile, FCN_PS_SAVE);
+        mpSystem->publish(msgSaveSettings);
     }
     else {
         // If camera is calibrated, run the object tracking front-end

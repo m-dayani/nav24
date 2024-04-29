@@ -3,6 +3,7 @@
 //
 
 #include "Message.hpp"
+#include "Map.hpp"
 
 
 namespace NAV24 {
@@ -14,4 +15,5 @@ namespace NAV24 {
         return "";
     }
 
+    //std::string MsgType<MapPtr>::toString();
 }

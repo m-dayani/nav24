@@ -7,12 +7,13 @@
 
 #include <memory>
 
-#include "SharedQueue.hpp"
+#include "SensorData.hpp"
+#include "Parameter.hpp"
 
 
 namespace NAV24 {
 
-    struct Pose {
+    struct Pose : public SensorData {
 
         Pose() : ts(0.0), q{}, p{} {}
 
@@ -41,11 +42,21 @@ namespace NAV24 {
         float q[4];    //q_w, q_x, q_y, q_z
         float p[3];    //px, py, pz
     };
-
     typedef std::shared_ptr<Pose> PosePtr;
 
-    typedef SharedQueue<PosePtr> PoseQueue;
-    typedef std::shared_ptr<PoseQueue> PoseQueuePtr;
+    class Transformation {
+    public:
+        Transformation(std::string  ref, std::string  tar, PosePtr  T_rt, double _ts_rt);
+
+        static ParamPtr getTransParam(const std::string& ref, const std::string& tar, double t_rt,
+                                      const PosePtr& pPose, std::vector<ParamPtr>& vpParamHolder);
+    protected:
+        PosePtr T_rt;
+        std::string mRef;
+        std::string mTarget;
+        double ts_rt;
+    };
+    typedef std::shared_ptr<Transformation> TransPtr;
 
 } // NAV24
 

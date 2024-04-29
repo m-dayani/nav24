@@ -4,5 +4,12 @@
 
 #include "Map.hpp"
 
+#include <utility>
+
 namespace NAV24 {
+    Map::Map(std::string mapName) : mName(std::move(mapName)), mvpWorldObjects() {}
+
+    void Map::addWorldObject(const WO::woPtr &pWorldObj) {
+        mvpWorldObjects.push_back(pWorldObj);
+    }
 } // NAV24

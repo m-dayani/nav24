@@ -77,6 +77,9 @@ namespace NAV24 {
             case FCN_PS_REQ:
                 this->handleRequest(msg);
                 break;
+            case FCN_PS_CONF:
+                this->changeParams(msg);
+                break;
             default:
                 DLOG(WARNING) << "ParameterServer::receive, unsupported action: " << action << "\n";
                 break;
@@ -113,6 +116,20 @@ namespace NAV24 {
 
         // send back to the caller
         sender->receive(response);
+    }
+
+    void ParameterServer::changeParams(const MsgPtr &msg) {
+
+        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
+            auto confMsg = dynamic_pointer_cast<MsgConfig>(msg);
+            auto pNewParam = confMsg->getConfig();
+            string paramKey = msg->getMessage();
+            auto pParam = mpParamRoot->read(paramKey);
+            if (pParam && pParam->getParent()) {
+                pNewParam->setParent(pParam->getParent());
+                pParam->getParent()->insertChild(pNewParam->getName(), pNewParam);
+            }
+        }
     }
 
 } // NAV24

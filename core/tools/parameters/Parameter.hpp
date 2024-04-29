@@ -63,6 +63,7 @@ namespace NAV24 {
         void setName(const std::string& name_);// { name = name_; }
 
         ParamPtr getParent() { return parent.lock(); }
+        void setParent(const ParamPtr& pParam) { parent.lock() = pParam; }
 
     protected:
         ParamPtr getChild(const std::string& key);

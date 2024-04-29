@@ -20,6 +20,9 @@ namespace NAV24::FE {
 
     protected:
         ChannelPtr mpChannel;
+
+        static int mMapCnt;
+        static int mTrajCnt;
     };
 
 } // NAV24::FE

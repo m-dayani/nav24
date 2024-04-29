@@ -5,4 +5,7 @@
 #include "BackEnd.hpp"
 
 namespace NAV24::BE {
+    void BackEnd::receive(const MsgPtr &msg) {
+
+    }
 } // NAV24::BE

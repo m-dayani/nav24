@@ -25,6 +25,9 @@ namespace NAV24 {
 
         std::string printStr(const std::string& prefix = "");
 
+        static ParamPtr getCalibParams(const cv::Mat& K, const cv::Mat& D, const std::string& distType,
+                                       std::vector<ParamPtr>& vpParamHolder);
+
     protected:
         float fx{-1.f}, fy{-1.f}, cx{-1.f}, cy{-1.f};
         cv::Mat K_cv;

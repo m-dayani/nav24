@@ -15,6 +15,7 @@
 #include "Sensor.hpp"
 #include "Atlas.hpp"
 #include "TrajManager.hpp"
+#include "Pose.hpp"
 
 
 namespace NAV24 {
@@ -47,6 +48,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         std::shared_ptr<ParameterServer> mpParamServer;
         std::map<std::string, std::shared_ptr<DataStore>> mmpDataStores;
         std::map<std::string, std::shared_ptr<Sensor>> mmpSensors;
+        std::map<std::string, TransPtr> mmpTrans;
 
         ParamPtr mpTempParam;
 

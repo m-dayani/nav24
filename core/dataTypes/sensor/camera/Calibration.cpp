@@ -74,5 +74,32 @@ namespace NAV24 {
         return oss.str();
     }
 
+    ParamPtr Calibration::getCalibParams(const cv::Mat &K, const cv::Mat &D, const string &distType,
+                                         vector <ParamPtr> &vpParamHolder) {
+        ParamPtr pRoot = make_shared<Parameter>("calib", nullptr, Parameter::NodeType::MAP_NODE);
+
+        ParamPtr pDistType = make_shared<ParamType<string>>("distType", pRoot, distType);
+        pDistType->setType(Parameter::NodeType::STRING);
+        vector<double> intrinsics = {K.at<double>(0, 0), K.at<double>(1, 1),
+                K.at<double>(0, 2), K.at<double>(1, 2)};
+        ParamPtr pIntrinsics = make_shared<ParamSeq<double>>("intrinsics", pRoot, intrinsics);
+        pIntrinsics->setType(Parameter::NodeType::SEQ_REAL);
+        vector<double> dist(D.rows);
+        for (size_t i = 0; i < dist.size(); i++) dist[i] = D.at<double>(i, 0);
+        ParamPtr pDist = make_shared<ParamSeq<double>>("distCoefs", pRoot, dist);
+        pDist->setType(Parameter::NodeType::SEQ_REAL);
+
+        pRoot->insertChild("distType", pDistType);
+        pRoot->insertChild("intrinsics", pIntrinsics);
+        pRoot->insertChild("distCoefs", pDist);
+
+        vpParamHolder.push_back(pRoot);
+        vpParamHolder.push_back(pDistType);
+        vpParamHolder.push_back(pIntrinsics);
+        vpParamHolder.push_back(pDist);
+
+        return pRoot;
+    }
+
 
 }   //NAV24

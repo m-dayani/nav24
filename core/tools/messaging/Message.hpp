@@ -92,6 +92,24 @@ namespace NAV24 {
         SensorDataPtr mSensorData;
     };
 
+    template<typename T>
+    class MsgType : public Message {
+    public:
+        MsgType(const std::string& topic, const T& data) : Message(topic), mData(data) {}
+        MsgType(const std::string& topic, const int target, const T& data) : Message(topic, "", target), mData(data) {}
+        MsgType(const std::string& topic, const std::string& msgStr, const int target, const T& data) :
+            Message(topic, msgStr, target), mData(data) {}
+
+        T& getData() { return mData; }
+        void setData(const T& data) { mData = data; }
+
+        std::string toString() override {
+            return Message::toString();
+        }
+
+    protected:
+        T mData;
+    };
 }
 
 #endif //NAV24_MESSAGE_HPP

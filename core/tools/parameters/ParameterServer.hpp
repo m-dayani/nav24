@@ -19,6 +19,7 @@ namespace NAV24 {
 #define FCN_PS_LOAD 1
 #define FCN_PS_SAVE 2
 #define FCN_PS_REQ 3
+#define FCN_PS_CONF 4
 #define TAG_PS_GET_STAT "ParamServer/GetStat"
 #define TAG_PS_USE_LOAD_PATH "ParamServer/UseLoadPath"
 
@@ -36,6 +37,7 @@ namespace NAV24 {
         void load(const std::string& settings);
         void save(const std::string& pathParams);
         void handleRequest(const MsgPtr& msg);
+        void changeParams(const MsgPtr& msg);
 
     private:
         ChannelPtr mpChannel;

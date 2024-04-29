@@ -14,15 +14,24 @@
 
 namespace NAV24 {
 
+#define FCN_MAP_CREATE 2
+#define FCN_MAP_ADD_WO 5
+
     class Atlas : public MsgCallback {
     public:
+        inline static const std::string TOPIC = "Atlas";
+
         explicit Atlas(ChannelPtr pChannel);
         void receive(const MsgPtr &msg) override;
 
     protected:
+        void createMap(const MsgPtr &msg);
+        void addWorldObjects(const MsgPtr& msg);
+
+    protected:
         ChannelPtr mpChannel;
 
-        std::map<std::string, Map> mWorlds;
+        std::map<std::string, MapPtr> mWorlds;
         std::string mActiveWorld;
     };
     typedef std::shared_ptr<Atlas> AtlasPtr;

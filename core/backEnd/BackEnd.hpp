@@ -5,11 +5,16 @@
 #ifndef NAV24_BACKEND_HPP
 #define NAV24_BACKEND_HPP
 
+#include "Message.hpp"
+#include "Problem.hpp"
 
 namespace NAV24::BE {
 
-    class BackEnd {
+    class BackEnd : public MsgCallback {
+    public:
+        virtual void solve(const ProblemPtr& problem) = 0;
 
+        void receive(const MsgPtr &msg) override;
     };
 
 } // NAV24::BE

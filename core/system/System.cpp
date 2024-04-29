@@ -6,12 +6,13 @@
 
 #include "ParameterBlueprint.h"
 #include "Camera.hpp"
+#include "DataConversion.hpp"
 
 using namespace std;
 
 namespace NAV24 {
 
-    System::System() : mmChannels{}, mpParamServer(), mmpDataStores(),
+    System::System() : mmChannels{}, mpParamServer(), mmpDataStores(), mmpTrans(),
         mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr) {}
 
     void System::loadSettings(const std::string &settings) {
@@ -98,6 +99,39 @@ namespace NAV24 {
         }
 
         // Load Relations
+        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
+                                               PARAM_REL, FCN_PS_REQ, shared_from_this());
+        mpParamServer->receive(msgGetParams);
+        if (mpTempParam && mpTempParam->getName() == "Relations") {
+            for (const auto& relParamPair : mpTempParam->getAllChildren()) {
+                auto pRelParam = relParamPair.second.lock();
+                if (pRelParam) {
+                    auto pRef = find_param<ParamType<string>>("ref", pRelParam);
+                    string ref = (pRef) ? pRef->getValue() : "";
+                    auto pTar = find_param<ParamType<string>>("target", pRelParam);
+                    string target = (pTar) ? pTar->getValue() : "";
+                    auto p_t_rt = find_param<ParamType<double>>("t_rt", pRelParam);
+                    double t_rt = (p_t_rt) ? p_t_rt->getValue() : 0.0;
+                    auto p_T_rt = find_param<ParamType<cv::Mat>>("T_rt", pRelParam);
+                    cv::Mat T_rt = (p_T_rt) ? p_T_rt->getValue() : cv::Mat();
+
+                    if (!ref.empty()) {
+                        // TODO: work more on pose class
+                        PosePtr pT_rt = make_shared<Pose>();
+                        vector<float> q = Converter::toQuaternion(T_rt.rowRange(0, 3).colRange(0, 3));
+                        for (char i = 0; i < 4; i++) pT_rt->q[i] = q[i];
+                        pT_rt->p[0] = T_rt.at<float>(0, 3);
+                        pT_rt->p[1] = T_rt.at<float>(1, 3);
+                        pT_rt->p[2] = T_rt.at<float>(2, 3);
+
+                        TransPtr pTrans = make_shared<Transformation>(ref, target, pT_rt, t_rt);
+
+                        string transKey = ref + ":" + target;
+                        mmpTrans.insert(make_pair(transKey, pTrans));
+                    }
+                }
+            }
+        }
 
         // Load outputs
 
@@ -155,10 +189,12 @@ namespace NAV24 {
         // Initialize Atlas (Map/World Manager)
         if (!mpAtlas) {
             mpAtlas = make_shared<Atlas>(shared_from_this());
+            this->registerChannel(mpAtlas, Atlas::TOPIC);
         }
         // Initialize Trajectory Manager
         if (!mpTrajManager) {
             mpTrajManager = make_shared<TrajManager>();
+            this->registerChannel(mpTrajManager, TrajManager::TOPIC);
         }
     }
 

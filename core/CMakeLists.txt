@@ -54,6 +54,8 @@ set(SENSOR_DATA_DIR ${SENSORS_DIR}/data)
 list(APPEND LIST_INCLUDE_DIRS ${SENSOR_DATA_DIR})
 set(SENSOR_CAM_DIR ${SENSORS_DIR}/camera)
 list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_DIR})
+set(FRAME_DIR ${DATA_TYPES_DIR}/frame)
+list(APPEND LIST_INCLUDE_DIRS ${FRAME_DIR})
 
 set(DATA_LOADERS_DIR ${UTILS_DIR}/dataProviders)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
@@ -79,11 +81,13 @@ set(ALL_H_FILES
         ${SENSOR_CAM_DIR}/Camera.hpp
         ${SENSOR_DATA_DIR}/SensorData.hpp
         ${SENSOR_DATA_DIR}/Image.hpp
+        ${SENSOR_DATA_DIR}/Pose.hpp
         ${SENSORS_DIR}/Sensor.hpp
         ${ATLAS_DIR}/Atlas.hpp
         ${ATLAS_DIR}/Map.hpp
         ${BACKEND_DIR}/BackEnd.hpp
-        ${BACKEND_DIR}/CalibCamCv.hpp
+        ${BACKEND_DIR}/Problem.hpp
+        ${BACKEND_DIR}/BE_CalibCamCv.hpp
         ${OBSERVATIONS_DIR}/Observation.hpp
         ${OBSERVATIONS_DIR}/Point2D.hpp
         ${WORLD_OBJ_DIR}/WorldObject.hpp
@@ -91,8 +95,10 @@ set(ALL_H_FILES
         ${FRONTEND_DIR}/FrontEnd.hpp
         ${FRONTEND_DIR}/FE_CalibCamCv.hpp
         ${OPERATORS_DIR}/Operator.hpp
+        ${OPERATORS_DIR}/OP_ChBoardDetCv.hpp
         ${TRAJECTORY_DIR}/Trajectory.hpp
         ${TRAJECTORY_DIR}/TrajManager.hpp
+        ${FRAME_DIR}/Frame.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
@@ -109,10 +115,12 @@ set(ALL_SRC_FILES
         ${SENSORS_DIR}/Sensor.cpp
         ${SENSOR_DATA_DIR}/SensorData.cpp
         ${SENSOR_DATA_DIR}/Image.cpp
+        ${SENSOR_DATA_DIR}/Pose.cpp
         ${ATLAS_DIR}/Atlas.cpp
         ${ATLAS_DIR}/Map.cpp
         ${BACKEND_DIR}/BackEnd.cpp
-        ${BACKEND_DIR}/CalibCamCv.cpp
+        ${BACKEND_DIR}/Problem.cpp
+        ${BACKEND_DIR}/BE_CalibCamCv.cpp
         ${OBSERVATIONS_DIR}/Observation.cpp
         ${OBSERVATIONS_DIR}/Point2D.cpp
         ${WORLD_OBJ_DIR}/WorldObject.cpp
@@ -120,8 +128,10 @@ set(ALL_SRC_FILES
         ${FRONTEND_DIR}/FrontEnd.cpp
         ${FRONTEND_DIR}/FE_CalibCamCv.cpp
         ${OPERATORS_DIR}/Operator.cpp
+        ${OPERATORS_DIR}/OP_ChBoardDetCv.cpp
         ${TRAJECTORY_DIR}/Trajectory.cpp
         ${TRAJECTORY_DIR}/TrajManager.cpp
+        ${FRAME_DIR}/Frame.cpp
 )
 
 include_directories(
