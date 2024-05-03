@@ -16,12 +16,14 @@
 #include "Atlas.hpp"
 #include "TrajManager.hpp"
 #include "Pose.hpp"
+#include "Output.hpp"
 
 
 namespace NAV24 {
 
 #define FCN_LD_PARAMS 1
-
+#define FCN_SYS_UPDATE 4
+#define FCN_GET_TRANS 7
 
 class System : public Channel, public MsgCallback, public std::enable_shared_from_this<System> {
     public:
@@ -41,6 +43,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         void loadSettings(const std::string& settings);
         void handleConfigMsg(const MsgPtr &msg);
         void initComponents();
+        void handleRequests(const MsgPtr& msg);
 
     protected:
         std::map<std::string, std::vector<MsgCbPtr>> mmChannels;
@@ -49,6 +52,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         std::map<std::string, std::shared_ptr<DataStore>> mmpDataStores;
         std::map<std::string, std::shared_ptr<Sensor>> mmpSensors;
         std::map<std::string, TransPtr> mmpTrans;
+        std::map<std::string, OutputPtr> mmpOutputs;
 
         ParamPtr mpTempParam;
 

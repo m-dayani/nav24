@@ -48,6 +48,8 @@ namespace NAV24 {
     public:
         Transformation(std::string  ref, std::string  tar, PosePtr  T_rt, double _ts_rt);
 
+        const PosePtr& getPose() { return T_rt; }
+
         static ParamPtr getTransParam(const std::string& ref, const std::string& tar, double t_rt,
                                       const PosePtr& pPose, std::vector<ParamPtr>& vpParamHolder);
     protected:

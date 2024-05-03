@@ -140,22 +140,13 @@ namespace NAV24::FE {
                     auto pFrame = make_shared<FrameImgMono>(pImage->mTimeStamp, pPose, vpCorners, pImage);
                     mvpFrames.push_back(pFrame);
 
-//                    cv::putText(img, "Successful", cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX,
-//                                1.5, cv::Scalar(0, 255, 0), 2);
+
                 }
 
+                // Show results
+//                    cv::putText(img, "Successful", cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX,
+//                                1.5, cv::Scalar(0, 255, 0), 2);
                 //cv::drawChessboardCorners(img, mGridSize, vCorners, res);
-                //cv::calibrateCamera(objPoints, imgPoints, imSize, K, distCoeffs, rvecs, tvecs);
-
-//                cv::imshow("Image", img);
-//                int dly = 33;
-//                if (msgSensor->getTargetId() == FCN_SEN_GET_NEXT)
-//                    dly = 0;
-//                int keyVal = cv::waitKey(dly);
-//                if (keyVal == 'q') {
-//                    auto msgStop = make_shared<Message>(Sensor::TOPIC, "stop_play", FCN_SEN_STOP_PLAY);
-//                    mpChannel->publish(msgStop);
-//                }
             }
         }
     }

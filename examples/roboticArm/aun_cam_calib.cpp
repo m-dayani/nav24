@@ -10,6 +10,7 @@
 #include "ParameterBlueprint.h"
 #include "System.hpp"
 #include "FE_CalibCamCv.hpp"
+#include "FE_ObjTracking.hpp"
 
 using namespace std;
 using namespace NAV24;
@@ -34,12 +35,13 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/AUN_ARM.yaml";
+    string confFile = "../../config/AUN_ARM1.yaml";
     string saveFile = "../../config/AUN_ARM1.yaml";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
     // Create the system
     shared_ptr<System> mpSystem = make_shared<System>();
+    mpSystem->registerChannel(mpSystem, System::TOPIC);
 
     // Load settings
     MsgPtr msgLoadSettings = make_shared<Message>(System::TOPIC, confFile, FCN_LD_PARAMS);
@@ -47,6 +49,7 @@ int main([[maybe_unused]] int argc, char** argv) {
 
     // Check camera calibration
     bool isCamCalibrated = false;
+    // todo: avoid hard-wired strings
     MsgReqPtr msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
                                                         string(PARAM_CAM) + "/0/calib",
                                                         FCN_PS_REQ, pParamRec);
@@ -60,6 +63,9 @@ int main([[maybe_unused]] int argc, char** argv) {
         shared_ptr<FE::CalibCamCv> pFeCamCalib = make_shared<FE::CalibCamCv>(mpSystem);
         // Register front-end to system
         mpSystem->registerChannel(pFeCamCalib, FE::FrontEnd::TOPIC);
+        // Change dataset sequence to calib
+        MsgPtr msgChSeq = make_shared<Message>(DataStore::TOPIC, "calib", FCN_DS_REQ_CH_NS);
+        mpSystem->publish(msgChSeq);
         // Configure front-end
         vector<ParamPtr> vpParamContainer{};
         auto pCalibCamCvParams = FE::CalibCamCv::getDefaultParameters(vpParamContainer);
@@ -97,6 +103,20 @@ int main([[maybe_unused]] int argc, char** argv) {
     }
     else {
         // If camera is calibrated, run the object tracking front-end
+        auto pFeObjTracking = make_shared<FE::ObjTracking>(mpSystem);
+        mpSystem->registerChannel(pFeObjTracking, FE::FrontEnd::TOPIC);
+        // Change dataset sequence to calib
+        MsgPtr msgChSeq = make_shared<Message>(DataStore::TOPIC, "obj_tr_cap", FCN_DS_REQ_CH_NS);
+        mpSystem->publish(msgChSeq);
+        // Initialize Frontend
+        MsgPtr pMsgConfigFeOT = make_shared<MsgConfig>(FE::ObjTracking::TOPIC, nullptr);
+        pFeObjTracking->receive(pMsgConfigFeOT);
+        // Set online camera
+        auto msgConfOnline = make_shared<Message>(Sensor::TOPIC, TAG_SEN_MX_STREAM,FCN_SEN_CONFIG);
+        mpSystem->publish(msgConfOnline);
+        // Run online camera
+        auto msgStartPlay = make_shared<Message>(Sensor::TOPIC, "start_play", FCN_SEN_START_PLAY);
+        mpSystem->publish(msgStartPlay);
     }
 
     return 0;

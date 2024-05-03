@@ -3,10 +3,12 @@
 //
 
 #include "System.hpp"
-
 #include "ParameterBlueprint.h"
 #include "Camera.hpp"
 #include "DataConversion.hpp"
+#include "FrontEnd.hpp"
+#include "ImageViewer.hpp"
+#include "Serial.hpp"
 
 using namespace std;
 
@@ -42,6 +44,7 @@ namespace NAV24 {
                     auto dsParam = find_param<ParamType<string>>("name", mpTempParam);
                     if (dsParam) {
                         mmpDataStores.insert(make_pair(dsParam->getValue(), pDataProvider));
+                        this->registerChannel(pDataProvider, DataStore::TOPIC);
                     }
                 }
             }
@@ -126,7 +129,8 @@ namespace NAV24 {
 
                         TransPtr pTrans = make_shared<Transformation>(ref, target, pT_rt, t_rt);
 
-                        string transKey = ref + ":" + target;
+                        string transKey;
+                        transKey.append(ref).append(":").append(target);
                         mmpTrans.insert(make_pair(transKey, pTrans));
                     }
                 }
@@ -134,6 +138,46 @@ namespace NAV24 {
         }
 
         // Load outputs
+        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
+                                               PARAM_OUT, FCN_PS_REQ, shared_from_this());
+        mpParamServer->receive(msgGetParams);
+        if (mpTempParam && mpTempParam->getName() == "Output") {
+            uint i = 0;
+            for (const auto& outParamPair : mpTempParam->getAllChildren()) {
+                auto pParam = outParamPair.second.lock();
+                if (pParam) {
+                    // todo: optimize parameter retrieval
+                    auto pOutName = find_param<ParamType<string>>("name", pParam);
+                    string outName = (pOutName) ? pOutName->getValue() : "Output" + to_string(i);
+                    auto pIcType = find_param<ParamType<string>>("interface/type", pParam);
+                    string icType = (pIcType) ? pIcType->getValue() : "";
+                    auto pIcTarget = find_param<ParamType<string>>("interface/target", pParam);
+                    string icTarget = (pIcTarget) ? pIcTarget->getValue() : "";
+
+                    OutputPtr pOutput{};
+                    if (icType == "screen") {
+                        if (icTarget == "image") {
+                            pOutput = make_shared<ImageViewer>(shared_from_this());
+                        }
+                    }
+                    else if (icType == "serial") {
+                        pOutput = make_shared<Serial>(shared_from_this());
+                    }
+
+                    if (pOutput) {
+                        // load output params
+                        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
+                                                               string(PARAM_OUT) + "/" + outParamPair.first,
+                                                               FCN_PS_REQ, pOutput);
+                        mpParamServer->receive(msgGetParams);
+                        mmpOutputs.insert(make_pair(outName, pOutput));
+                        this->registerChannel(pOutput, Output::TOPIC);
+
+                    }
+                }
+                i++;
+            }
+        }
 
         // Initialize Components
         this->initComponents();
@@ -174,6 +218,11 @@ namespace NAV24 {
                     case FCN_LD_PARAMS:
                         this->loadSettings(msg->getMessage());
                         break;
+                    case FCN_SYS_UPDATE:
+                        break;
+                    case FCN_GET_TRANS:
+                        this->handleRequests(msg);
+                        break;
                     default:
                         DLOG(WARNING) << "System::receive: Action is not supported\n";
                         break;
@@ -195,6 +244,34 @@ namespace NAV24 {
         if (!mpTrajManager) {
             mpTrajManager = make_shared<TrajManager>();
             this->registerChannel(mpTrajManager, TrajManager::TOPIC);
+        }
+    }
+
+    void System::handleRequests(const MsgPtr& msg) {
+
+        if (!msg || !dynamic_pointer_cast<MsgRequest>(msg)) {
+            DLOG(WARNING) << "System::handleRequests, bad message\n";
+            return;
+        }
+
+        auto msgReq = dynamic_pointer_cast<MsgRequest>(msg);
+        auto sender = msgReq->getCallback();
+
+        if (!sender) {
+            DLOG(WARNING) << "System::handleRequests, bad sender\n";
+            return;
+        }
+
+        int action = msg->getTargetId();
+        string msgStr = msg->getMessage();
+
+        if (action == FCN_GET_TRANS) {
+            if (mmpTrans.count(msgStr) > 0) {
+
+                auto pTrans = mmpTrans[msgStr];
+                auto msgTrans = make_shared<MsgType<TransPtr>>(msg->getTopic(), pTrans);
+                sender->receive(msgTrans);
+            }
         }
     }
 

@@ -11,6 +11,8 @@ namespace NAV24 {
 #define PARAM_DS0 "Process/DS/0"
 #define PARAM_CAM "Input/Camera"
 #define PARAM_REL "Input/Relations"
+#define PARAM_OP "Process/OP"
+#define PARAM_OUT "Output"
 
 }
 

@@ -14,6 +14,8 @@
 
 namespace NAV24 {
 
+#define FCN_CAM_GET_CALIB 23
+
     class Camera : public Sensor {
     public:
         inline static const std::string TOPIC = "Camera";

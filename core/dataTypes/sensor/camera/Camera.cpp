@@ -29,6 +29,26 @@ namespace NAV24 {
 
     void Camera::receive(const NAV24::MsgPtr &msg) {
         Sensor::receive(msg);
+
+        if (msg) {
+            if (msg->getTargetId() == FCN_CAM_GET_CALIB) {
+                auto pMsgReq = dynamic_pointer_cast<MsgRequest>(msg);
+                if (pMsgReq) {
+                    auto sender = pMsgReq->getCallback();
+                    if (sender) {
+                        CalibPtr pCalib{};
+                        if (dynamic_cast<CamOffline*>(this)) {
+                            pCalib = CamOffline::Camera::mpCalib;
+                        }
+                        else if (dynamic_cast<CamStream*>(this)) {
+                            pCalib = CamStream::Camera::mpCalib;
+                        }
+                        auto pMsgCalib = make_shared<MsgType<CalibPtr>>(TOPIC, pCalib);
+                        sender->receive(pMsgCalib);
+                    }
+                }
+            }
+        }
     }
 
     void Camera::loadParams(const NAV24::MsgPtr &msg) {
@@ -386,7 +406,8 @@ namespace NAV24 {
         mCamOp{CamOperation::OFFLINE} {}
 
     void CamMixed::receive(const MsgPtr &msg) {
-        NAV24::CamOffline::receive(msg);
+        CamOffline::receive(msg);
+        //CamStream::receive(msg);
 
         if (!msg) {
             DLOG(WARNING) << "CamMixed::receive, Null message detected, abort\n";

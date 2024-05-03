@@ -7,15 +7,20 @@
 
 #include <memory>
 
+#include "Pose.hpp"
+
 
 namespace NAV24 {
 
     class Trajectory {
     public:
-        explicit Trajectory(const std::string& traj) : mName() {}
+        explicit Trajectory(const std::string& traj) : mName(), mvpPoseChain() {}
+
+        void addPose(const PosePtr& pose);
 
     protected:
         std::string mName;
+        std::vector<PosePtr> mvpPoseChain;
     };
     typedef std::shared_ptr<Trajectory> TrajPtr;
 

@@ -118,7 +118,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/AUN_ARM.yaml";
+    string confFile = "../../config/BluePrint.yaml";
     string confFile1 = "../../config/TUM_RGBD.yaml";
 
     shared_ptr<DummySystem> pSystem = make_shared<DummySystem>();

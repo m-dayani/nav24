@@ -21,12 +21,14 @@ namespace NAV24 {
 #define FCN_DS_LOAD 1
 #define FCN_DS_REQ 3
 #define FCN_DS_REQ_CHANGE 4
+#define FCN_DS_REQ_CH_NS 22
 //#define FCN_DS_PRINT 5
 
 #define TAG_DS_GET_STAT "DataProvider/GetStat"
 #define TAG_DS_GET_PATH_IMG "DataProvider/GetImagePath"
 #define TAG_DS_GET_PATH_IMU "DataProvider/GetImuPath"
 #define TAG_DS_GET_PATH_GT "DataProvider/GetGtPath"
+#define TAG_DS_GET_PATH_MODEL "DataProvider/GetModelPath"
 
 #define TAG_DS_CH_SEQ_RST "DataProvider/ResetSequences"
 #define TAG_DS_CH_SEQ_INC "DataProvider/IncrementSequences"
@@ -60,6 +62,7 @@ namespace NAV24 {
         virtual void resetSequences();
         void incSequence();
         void decSequence();
+        void changeSeqByName(const std::string& seqName);
 
         virtual std::string printLoaderStateStr();
 

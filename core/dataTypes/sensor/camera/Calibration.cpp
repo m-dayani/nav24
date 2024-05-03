@@ -5,6 +5,8 @@
 #include "Calibration.hpp"
 
 #include <glog/logging.h>
+#include <opencv2/calib3d.hpp>
+#include <Eigen/Eigen>
 
 #include "DataConversion.hpp"
 
@@ -57,8 +59,12 @@ namespace NAV24 {
         auto pParamDistCoefs = find_param<ParamSeq<double>>(PARAM_KEY_DIST_COEFS, pParams);
         if (pParamDistCoefs) {
             vector<double> vDistCoefs = pParamDistCoefs->getValue();
+            D_cv = cv::Mat((int) vDistCoefs.size(), 1, CV_64FC1);
+            int i = 0;
             for (const auto& d : vDistCoefs) {
                 D.push_back(d);
+                D_cv.at<double>(i, 0) = d;
+                i++;
             }
         }
     }
@@ -85,7 +91,7 @@ namespace NAV24 {
         ParamPtr pIntrinsics = make_shared<ParamSeq<double>>("intrinsics", pRoot, intrinsics);
         pIntrinsics->setType(Parameter::NodeType::SEQ_REAL);
         vector<double> dist(D.rows);
-        for (size_t i = 0; i < dist.size(); i++) dist[i] = D.at<double>(i, 0);
+        for (size_t i = 0; i < dist.size(); i++) dist[i] = D.at<double>((int) i, 0);
         ParamPtr pDist = make_shared<ParamSeq<double>>("distCoefs", pRoot, dist);
         pDist->setType(Parameter::NodeType::SEQ_REAL);
 
@@ -99,6 +105,36 @@ namespace NAV24 {
         vpParamHolder.push_back(pDist);
 
         return pRoot;
+    }
+
+    cv::Point2f Calibration::undistPoint(const cv::Point2f &distPt) {
+
+        cv::Mat ptOrig(2, 1, CV_32FC1), ptUndist(2, 1, CV_32FC1);
+        ptOrig.at<float>(0, 0) = distPt.x;
+        ptOrig.at<float>(1, 0) = distPt.y;
+        // todo: distortion might be more complex
+        cv::undistortPoints(ptOrig, ptUndist, K_cv, D_cv);
+
+        return {ptUndist.at<float>(0, 0), ptUndist.at<float>(1, 0)};
+    }
+
+    cv::Point3f Calibration::unproject(const cv::Point2f &pt2d) {
+
+        Eigen::Vector3f pt3d, Pt3d;
+        pt3d << pt2d.x, pt2d.y, 1.f;
+        Pt3d = K_ei.inverse() * pt3d;
+
+        return {Pt3d.x(), Pt3d.y(), Pt3d.z()};
+    }
+
+    cv::Point2f Calibration::project(const cv::Point3f &pt3d) {
+
+        Eigen::Vector3f Pt3d;
+        Pt3d << pt3d.x, pt3d.y, pt3d.z;
+        Pt3d /= Pt3d[2];
+        Eigen::Vector3f projPt = K_ei * Pt3d;
+
+        return {projPt.x(), projPt.y()};
     }
 
 

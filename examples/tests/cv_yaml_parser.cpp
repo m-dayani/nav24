@@ -23,7 +23,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InstallFailureSignalHandler();
 
     // A simple config file
-    string fileName = "../../config/AUN_ARM.yaml";
+    string fileName = "../../config/BluePrint.yaml";
     // A much harder file
     string configComplex = "../../config/EvETHZ.yaml";
     // A non-existing file

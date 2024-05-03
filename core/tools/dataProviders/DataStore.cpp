@@ -73,6 +73,10 @@ namespace NAV24 {
             case FCN_DS_REQ_CHANGE:
                 this->handleChangeRequest(msg);
                 break;
+            case FCN_DS_REQ_CH_NS:
+                this->changeSeqByName(msg->getMessage());
+                this->notifyChange();
+                break;
             default:
                 DLOG(INFO) << "DataStore::receive, unsupported action: " << action << "\n";
                 break;
@@ -108,7 +112,8 @@ namespace NAV24 {
         ParamPtr pParam = nullptr;
 
         if (tag == TAG_DS_GET_PATH_IMG) {
-            pParam = CamOffline::getFoldersParams(this->getSequencePath(), mPathImBase, mPathImFile, mTsFactor, mvpParams);
+            pParam = CamOffline::getFoldersParams(this->getSequencePath(), mPathImBase,
+                                                  mPathImFile, mTsFactor, mvpParams);
         }
         else if (tag == TAG_DS_GET_PATH_IMU) {
             // todo: do the same for imu paths
@@ -117,6 +122,12 @@ namespace NAV24 {
         else if (tag == TAG_DS_GET_PATH_GT) {
             // todo: do the same for gt paths
             DLOG(INFO) << "DataStore::handleRequest, return gt paths \n";
+        }
+        else if (tag == TAG_DS_GET_PATH_MODEL) {
+            // todo: generalize this
+            string path = this->getSequencePath() + "/models";
+            pParam = make_shared<ParamType<string>>("models_base", nullptr, path);
+            mvpParams.push_back(pParam);
         }
         else {
             DLOG(INFO) << "DataStore::handleRequest, requested config is not supported: " << tag << "\n";
@@ -354,9 +365,21 @@ namespace NAV24 {
 
     string DataStore::getSequencePath() {
 
-        if (mSeqNames.empty() || mSeqTarget < 0 || mSeqTarget >= mSeqNames.size())
+        if (mSeqNames.empty()) {
+            DLOG(WARNING) << "DataStore::getSequencePath, sequence names vector is empty\n";
             return {};
-        return mPathDsRoot + '/' + mSeqNames[mSeqTarget];
+        }
+        if (mSeqTarget < 0) {
+            if (mSeqIdx >= 0 && mSeqIdx < mSeqCount) {
+                return mPathDsRoot + '/' + mSeqNames[mSeqIdx];
+            }
+        }
+        else {
+            if (mSeqTarget < mSeqCount) {
+                return mPathDsRoot + '/' + mSeqNames[mSeqTarget];
+            }
+        }
+        return {};
     }
 
     void DataStore::resetSequences() {
@@ -377,6 +400,16 @@ namespace NAV24 {
         if (this->mSeqTarget < 0 && this->mSeqIdx > 1) {
             this->mSeqIdx--;
             //this->notifyChange();
+        }
+    }
+
+    void DataStore::changeSeqByName(const string &seqName) {
+
+        for (int i = 0; i < mSeqCount; i++) {
+            if (mSeqNames[i] == seqName) {
+                mSeqIdx = i;
+                return;
+            }
         }
     }
 

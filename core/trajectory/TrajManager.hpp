@@ -15,6 +15,7 @@
 namespace NAV24 {
 
 #define FCN_TRJ_CREATE 3
+#define FCN_TRJ_POSE_ADD 4
 
     class TrajManager : public MsgCallback {
     public:
@@ -24,6 +25,7 @@ namespace NAV24 {
 
     protected:
         void createTrajectory(const MsgPtr &msg);
+        void addPose(const MsgPtr &msg);
 
     protected:
         ChannelPtr mpChannel;

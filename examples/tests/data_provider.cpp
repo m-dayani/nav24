@@ -57,7 +57,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string configFile = "../../config/AUN_ARM.yaml";
+    string configFile = "../../config/BluePrint.yaml";
     string configFile1 = "../../config/AUN_ARM1.yaml";
     string configFile2 = "../../config/EuRoC.yaml";
 

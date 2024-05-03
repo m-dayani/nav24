@@ -5,6 +5,7 @@
 #include <glog/logging.h>
 
 #include "TrajManager.hpp"
+#include "Pose.hpp"
 
 using namespace std;
 
@@ -17,6 +18,9 @@ namespace NAV24 {
             switch (msg->getTargetId()) {
                 case FCN_TRJ_CREATE:
                     this->createTrajectory(msg);
+                    break;
+                case FCN_TRJ_POSE_ADD:
+                    this->addPose(msg);
                     break;
                 default:
                     DLOG(WARNING) << "TrajManager::receive, message action is not supported\n";
@@ -32,6 +36,20 @@ namespace NAV24 {
             auto pTraj = make_shared<Trajectory>(trajName);
             mmpTrajectory.insert(make_pair(trajName, pTraj));
             mActiveTraj = trajName;
+        }
+    }
+
+    void TrajManager::addPose(const MsgPtr &msg) {
+
+        if (msg) {
+            string trajName = msg->getMessage();
+            auto msgAddOne = dynamic_pointer_cast<MsgType<PosePtr>>(msg);
+            if (msgAddOne) {
+                if (mmpTrajectory.count(trajName) > 0) {
+                    auto pTraj = mmpTrajectory[trajName];
+                    pTraj->addPose(msgAddOne->getData());
+                }
+            }
         }
     }
 } // NAV24

@@ -11,6 +11,51 @@ find_package(Ceres REQUIRED)
 # Note: One can add g2o as an external package:
 #find_package(g2o REQUIRED)
 
+find_package(serial REQUIRED)
+
+# ONNX Runtime and CUDA (for loading dl models like YOLO)
+set(ONNX_RUNTIME_PATH "/opt/onnxruntime" CACHE STRING "ONNX Runtime directory path")
+set(CUDA_LIBRARIES_PATH "/opt/cuda11" CACHE STRING "CUDA libraries path compatible with the ONNX Runtime")
+
+# Create Onnxruntime imported target
+add_library(onnxruntime SHARED IMPORTED)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(ONNX_IMPORTED_LOCATION "${ONNX_RUNTIME_PATH}/lib/onnxruntime.dll")
+    set(ONNX_IMPORTED_IMPLIB "${ONNX_RUNTIME_PATH}/lib/onnxruntime.lib")
+    set(ONNX_INTERFACE_INCLUDE_DIRECTORIES "${ONNX_RUNTIME_PATH}/include")
+    if(NOT EXISTS ${ONNX_IMPORTED_LOCATION})
+        message(FATAL_ERROR "Excepted Onnxruntime library '${ONNX_IMPORTED_LOCATION}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
+    endif()
+    if(NOT EXISTS ${ONNX_IMPORTED_IMPLIB})
+        message(FATAL_ERROR "Excepted Onnxruntime imported library '${ONNX_IMPORTED_IMPLIB}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
+    endif()
+    if(NOT EXISTS ${ONNX_INTERFACE_INCLUDE_DIRECTORIES})
+        message(FATAL_ERROR "Excepted Onnxruntime include directory '${ONNX_INTERFACE_INCLUDE_DIRECTORIES}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
+    endif()
+
+    set_target_properties(onnxruntime PROPERTIES
+            IMPORTED_LOCATION ${ONNX_IMPORTED_LOCATION}
+            IMPORTED_IMPLIB   ${ONNX_IMPORTED_IMPLIB}
+            INTERFACE_INCLUDE_DIRECTORIES ${ONNX_INTERFACE_INCLUDE_DIRECTORIES}
+    )
+elseif(UNIX)
+    set(ONNX_IMPORTED_LOCATION "${ONNX_RUNTIME_PATH}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}onnxruntime${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(ONNX_INTERFACE_INCLUDE_DIRECTORIES "${ONNX_RUNTIME_PATH}/include")
+    if(NOT EXISTS ${ONNX_IMPORTED_LOCATION})
+        message(FATAL_ERROR "Excepted Onnxruntime library '${ONNX_IMPORTED_LOCATION}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
+    endif()
+    if(NOT EXISTS ${ONNX_INTERFACE_INCLUDE_DIRECTORIES})
+        message(FATAL_ERROR "Excepted Onnxruntime include directory '${ONNX_INTERFACE_INCLUDE_DIRECTORIES}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
+    endif()
+
+    set_target_properties(onnxruntime PROPERTIES
+            IMPORTED_LOCATION ${ONNX_IMPORTED_LOCATION}
+            INTERFACE_INCLUDE_DIRECTORIES ${ONNX_INTERFACE_INCLUDE_DIRECTORIES}
+    )
+else()
+    message(FATAL_ERROR "Unsupported target platform.")
+endif()
+
 #list(APPEND LIST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SYSTEM_DIR system)
@@ -65,6 +110,9 @@ list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
 set(VISUALIZATION_DIR ${UTILS_DIR}/visualization)
 list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
 
+set(OUTPUT_DIR ${UTILS_DIR}/output)
+list(APPEND LIST_INCLUDE_DIRS ${OUTPUT_DIR})
+
 
 set(ALL_H_FILES
         ${SYSTEM_DIR}/System.hpp
@@ -94,11 +142,17 @@ set(ALL_H_FILES
         ${WORLD_OBJ_DIR}/Point3D.hpp
         ${FRONTEND_DIR}/FrontEnd.hpp
         ${FRONTEND_DIR}/FE_CalibCamCv.hpp
+        ${FRONTEND_DIR}/FE_ObjTracking.hpp
         ${OPERATORS_DIR}/Operator.hpp
         ${OPERATORS_DIR}/OP_ChBoardDetCv.hpp
+        ${OPERATORS_DIR}/OP_ObjTracking.hpp
+        ${OPERATORS_DIR}/OP_ObjTrackingYolo.hpp
         ${TRAJECTORY_DIR}/Trajectory.hpp
         ${TRAJECTORY_DIR}/TrajManager.hpp
         ${FRAME_DIR}/Frame.hpp
+        ${OUTPUT_DIR}/Output.hpp
+        ${OUTPUT_DIR}/Serial.hpp
+        ${OUTPUT_DIR}/ImageViewer.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
@@ -127,11 +181,17 @@ set(ALL_SRC_FILES
         ${WORLD_OBJ_DIR}/Point3D.cpp
         ${FRONTEND_DIR}/FrontEnd.cpp
         ${FRONTEND_DIR}/FE_CalibCamCv.cpp
+        ${FRONTEND_DIR}/FE_ObjTracking.cpp
         ${OPERATORS_DIR}/Operator.cpp
         ${OPERATORS_DIR}/OP_ChBoardDetCv.cpp
+        ${OPERATORS_DIR}/OP_ObjTracking.cpp
+        ${OPERATORS_DIR}/OP_ObjTrackingYolo.cpp
         ${TRAJECTORY_DIR}/Trajectory.cpp
         ${TRAJECTORY_DIR}/TrajManager.cpp
         ${FRAME_DIR}/Frame.cpp
+        ${OUTPUT_DIR}/Output.cpp
+        ${OUTPUT_DIR}/Serial.cpp
+        ${OUTPUT_DIR}/ImageViewer.cpp
 )
 
 include_directories(
@@ -141,6 +201,7 @@ include_directories(
 #        ${Pangolin_INCLUDE_DIRS}
         ${CERES_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
+        ${serial_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME} SHARED
@@ -159,6 +220,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+target_link_directories(${PROJECT_NAME} PUBLIC
+        "${CUDA_LIBRARIES_PATH}/lib64"
+)
+
 target_link_libraries(${PROJECT_NAME}
         ${EIGEN3_LIBS}
         ${CERES_LIBRARIES}
@@ -166,10 +231,12 @@ target_link_libraries(${PROJECT_NAME}
 #        ${Pangolin_LIBRARIES}
 #        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
 #        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
+        ${serial_LIBRARIES}
         -lboost_system
         -lboost_filesystem
         -lboost_serialization
 #        -lcrypto
+        onnxruntime
 )
 
 install(TARGETS ${PROJECT_NAME}
