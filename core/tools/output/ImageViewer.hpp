@@ -9,6 +9,7 @@
 #include <memory>
 #include <deque>
 #include <queue>
+#include <map>
 
 #include "Image.hpp"
 #include "Output.hpp"
@@ -22,29 +23,23 @@ namespace NAV24 {
         inline static const std::string TOPIC = "ImageViewer";
 
 //        explicit ImageViewer(float fps, std::string  winName = "Window") :
-//                mfps(fps), mbStop(false), mWindowName(std::move(winName)), mqpImages() {}
+//                mFps(fps), mbStop(false), mWindowName(std::move(winName)), mmqpImages() {}
 
-        explicit ImageViewer(ChannelPtr  pChannel);
+        explicit ImageViewer(const ChannelPtr&  pChannel);
 
         void receive(const MsgPtr &msg) override;
 
     protected:
-        void initialize(const MsgPtr& msg);
+        void setup(const MsgPtr& msg) override;
 
-        void run();
-        void requestStop() { mbStop = true; }
-        [[nodiscard]] bool isStopped() const { return mbStop; }
+        void run() override;
+        void requestStop(const std::string& channel) override;
 
-
-        ChannelPtr mpChannel;
-
-        std::string mName;
-        std::shared_ptr<SensorInterface> mpInterface;
-
-        std::queue<ImagePtr> mqpImages;
-        float mfps;
-        bool mbStop;
-        std::string mWindowName;
+    protected:
+        std::map<std::string, std::shared_ptr<std::queue<ImagePtr>>> mmqpImages;
+        std::mutex mMtxImgQueue;
+        std::mutex mMtxImage;
+        float mFps;
     };
 
 } // NAV24

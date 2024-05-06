@@ -5,8 +5,10 @@
 #ifndef NAV24_OP_OBJTRACKINGYOLO_HPP
 #define NAV24_OP_OBJTRACKINGYOLO_HPP
 
+#include <queue>
 #include <onnxruntime_cxx_api.h>
 
+#include "Image.hpp"
 #include "OP_ObjTracking.hpp"
 
 
@@ -93,8 +95,12 @@ namespace NAV24::OP {
         //static ParamPtr getDefParams(const std::string& model_base, const std::string& model_file);
 
     protected:
+        void setup(const MsgPtr& msg) override;
+        void handleRequest(const MsgPtr &reqMsg) override;
+        void run() override;
+        void stop() override;
 
-        void initialize(const MsgPtr& msg);
+        void process(const ImagePtr& pImage);
 
         /// Get input image size to the model
         /// @return input image size of the model
@@ -139,6 +145,11 @@ namespace NAV24::OP {
         float rectConfidenceThreshold{};
         float iouThreshold{};
         float resizeScales{};//letterbox scale
+
+        std::queue<ImagePtr> mqpImages;
+        std::mutex mMtxImgBuff;
+
+        double mLastTs;
     };
 } // NAV24::OP
 

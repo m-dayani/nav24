@@ -10,6 +10,7 @@
 #include <utility>
 #include <regex>
 #include <iostream>
+#include <thread>
 #include <glog/logging.h>
 
 #include "Image.hpp"
@@ -73,7 +74,9 @@ namespace NAV24::OP {
         return target;
     }
 
-    ObjTrYoloOnnx::ObjTrYoloOnnx(ChannelPtr pChannel) : mpChannel(std::move(pChannel)), mCudaDevice(-1), imgSize(), modelType() {}
+    ObjTrYoloOnnx::ObjTrYoloOnnx(ChannelPtr pChannel) :
+        mpChannel(std::move(pChannel)), mCudaDevice(-1), imgSize(),
+        modelType(), mqpImages(), mMtxImgBuff(), mLastTs(-1.0) {}
 
     int64_t ObjTrYoloOnnx::image_size() const {
 
@@ -166,49 +169,29 @@ namespace NAV24::OP {
 
             auto msgSensor = dynamic_pointer_cast<MsgSensorData>(msg);
             auto sensorData = msgSensor->getData();
-
             if (sensorData && dynamic_pointer_cast<ImageTs>(sensorData)) {
 
                 auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
-
-                if (!pImage || pImage->mImage.empty()) {
-                    DLOG(WARNING) << "CalibCamCv::handleImageMsg, empty image detected\n";
-                    return;
-                }
-
-                auto image = pImage->mImage.clone();
-                assert(!image.empty() && image.channels() == 3);
-                int image_size = static_cast<int>(this->image_size());
-                //if (image_size < 0) image_size = 640;
-                cv::resize(image, image, {image_size, image_size});
-
-                auto [array, shape] = convert_image(image);
-                auto detections = this->detect(array.data(), shape);
-
-                if (detections.empty()) {
-                    DLOG(WARNING) << "ObjTrYoloOnnx::detect, detections is empty\n";
-                    return;
-                }
-
-                display_image(image, detections[0]);
-
-                auto w = image.cols, h = image.rows;
-                cv::Size imgSizeCv(w, h);
-                for (const auto &d : detections[0]) {
-
-                    cv::Point2f ptObs = find_center(d, imgSizeCv);
-
-                    auto pMsgPtObs = make_shared<MsgType<cv::Point2f>>(FE::FrontEnd::TOPIC, ptObs);
-
-                    mpChannel->publish(pMsgPtObs);
+                if (pImage && !pImage->mImage.empty()) {
+                    mMtxImgBuff.lock();
+                    mqpImages.push(pImage);
+                    mMtxImgBuff.unlock();
                 }
             }
         }
 
         if (dynamic_pointer_cast<MsgConfig>(msg)) {
-            this->initialize(msg);
+            this->setup(msg);
         }
 
+        if (dynamic_pointer_cast<MsgRequest>(msg)) {
+            this->handleRequest(msg);
+        }
+
+        int action = msg->getTargetId();
+        if (action == FCN_OBJ_TR_STOP) {
+            this->stop();
+        }
     }
 
     cv::Point2f ObjTrYoloOnnx::find_center(const Result &d, const cv::Size& imgSize) {
@@ -222,7 +205,7 @@ namespace NAV24::OP {
         return {dx + dw / 2.f, dy + dh / 2.f};
     }
 
-    void ObjTrYoloOnnx::initialize(const MsgPtr &msg) {
+    void ObjTrYoloOnnx::setup(const MsgPtr &msg) {
 
         auto configMsg = dynamic_pointer_cast<MsgConfig>(msg);
         if (configMsg) {
@@ -361,6 +344,94 @@ namespace NAV24::OP {
             return "[YOLO_V8]:Create session failed.";
         }
 
+    }
+
+    void ObjTrYoloOnnx::run() {
+
+        while(true) {
+            mMtxImgBuff.lock();
+            ImagePtr pImage;
+            if (!mqpImages.empty()) {
+                pImage = mqpImages.front();
+                mqpImages.pop();
+            }
+            mMtxImgBuff.unlock();
+
+            this->process(pImage);
+
+            mMtxStop.lock();
+            bool bStop = mbStop;
+            mMtxStop.unlock();
+            if (bStop) {
+                break;
+            }
+        }
+    }
+
+    void ObjTrYoloOnnx::stop() {
+        MsgCallback::stop();
+    }
+
+    void ObjTrYoloOnnx::process(const ImagePtr &pImage) {
+
+        if (!pImage || pImage->mImage.empty()) {
+            DLOG(WARNING) << "ObjTrYoloOnnx::process, empty image detected\n";
+            return;
+        }
+
+        if (dynamic_pointer_cast<ImageTs>(pImage)) {
+            double currTs = dynamic_pointer_cast<ImageTs>(pImage)->mTimeStamp;
+            if (mLastTs >= 0) {
+                if (mLastTs >= currTs) {
+                    DLOG(WARNING) << "ObjTrYoloOnnx::process, timestamp error: " << mLastTs << " >= " << currTs << "\n";
+                }
+            }
+            mLastTs = currTs;
+        }
+        auto image = pImage->mImage.clone();
+        assert(!image.empty() && image.channels() == 3);
+        int image_size = static_cast<int>(this->image_size());
+        //if (image_size < 0) image_size = 640;
+        cv::resize(image, image, {image_size, image_size});
+
+        auto [array, shape] = convert_image(image);
+        auto detections = this->detect(array.data(), shape);
+
+        if (detections.empty()) {
+            DLOG(WARNING) << "ObjTrYoloOnnx::detect, detections is empty\n";
+            return;
+        }
+
+        display_image(image, detections[0]);
+
+        auto w = image.cols, h = image.rows;
+        cv::Size imgSizeCv(w, h);
+        for (const auto &d : detections[0]) {
+
+            cv::Point2f ptObs = find_center(d, imgSizeCv);
+
+            auto pMsgPtObs = make_shared<MsgType<cv::Point2f>>(FE::FrontEnd::TOPIC, ptObs);
+
+            mpChannel->publish(pMsgPtObs);
+        }
+    }
+
+    void ObjTrYoloOnnx::handleRequest(const MsgPtr &msg) {
+        ObjTracking::handleRequest(msg);
+
+        if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
+
+            auto pReqMsg = dynamic_pointer_cast<MsgRequest>(msg);
+            auto sender = pReqMsg->getCallback();
+            if (sender) {
+                int action = msg->getTargetId();
+                if (action == FCN_OBJ_TR_RUN) {
+                    auto pThRun = make_shared<thread>(&ObjTrYoloOnnx::run, this);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(msg->getTopic(), pThRun);
+                    sender->receive(msgRes);
+                }
+            }
+        }
     }
 
 } // NAV24::OP

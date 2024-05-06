@@ -132,4 +132,12 @@ namespace NAV24 {
         }
     }
 
+    void ParameterServer::setup(const MsgPtr &configMsg) {
+
+    }
+
+    void ParameterServer::run() {
+
+    }
+
 } // NAV24

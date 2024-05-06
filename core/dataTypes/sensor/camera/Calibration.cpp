@@ -26,7 +26,7 @@ namespace NAV24 {
     void Calibration::loadParams(const ParamPtr& pParams) {
 
         if (!pParams) {
-            DLOG(WARNING) << "Calibration::loadParams, Null param detected, abort\n";
+            DLOG(WARNING) << "Calibration::setup, Null param detected, abort\n";
             return;
         }
 

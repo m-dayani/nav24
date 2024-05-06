@@ -2,11 +2,12 @@
 // Created by masoud on 2/6/24.
 //
 
-#include "Sensor.hpp"
-
 #include <iostream>
-
 #include <glog/logging.h>
+
+#include "Sensor.hpp"
+#include "System.hpp"
+
 
 using namespace std;
 
@@ -26,19 +27,19 @@ namespace NAV24 {
         }
 
         if (dynamic_pointer_cast<MsgConfig>(msg)) {
-            this->loadParams(msg);
+            this->setup(msg);
         }
 
-        if (msg && msg->getTopic() == Sensor::TOPIC) {
+        if (msg->getTopic() == Sensor::TOPIC) {
 
             const int action = msg->getTargetId();
 
             switch (action) {
                 case FCN_SEN_STOP_PLAY:
-                    mbIsStopped = true;
+                    this->stop();
                     break;
                 case FCN_SEN_START_PLAY:
-                    this->play();
+                    this->run();
                     break;
                 case FCN_SEN_GET_NEXT:
                     this->getNext(msg);
@@ -57,18 +58,23 @@ namespace NAV24 {
                     break;
             }
         }
+
+        int action = msg->getTargetId();
+        if (action == FCN_SYS_STOP) {
+            this->stop();
+        }
     }
 
-    void Sensor::loadParams(const MsgPtr &msg) {
+    void Sensor::setup(const MsgPtr &msg) {
 
         if (!msg) {
-            DLOG(WARNING) << "Sensor::loadParams, null parameter detected, abort\n";
+            DLOG(WARNING) << "Sensor::setup, null parameter detected, abort\n";
             return;
         }
 
         auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
         if (!pMsgConfig) {
-            DLOG(WARNING) << "Sensor::loadParams, wrong message type, abort\n";
+            DLOG(WARNING) << "Sensor::setup, wrong message type, abort\n";
             return;
         }
 
@@ -129,6 +135,19 @@ namespace NAV24 {
         oss << prefix << "Interface: \n" << mpInterface->printStr(pref);
 
         return oss.str();
+    }
+
+    void Sensor::handleRequest(const MsgPtr &reqMsg) {
+
+    }
+
+    void Sensor::run() {
+
+    }
+
+    void Sensor::stop() {
+        MsgCallback::stop();
+        mbIsStopped = true;
     }
 
     std::string SensorInterface::printStr(const string &prefix) const {

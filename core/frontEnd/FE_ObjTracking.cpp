@@ -27,7 +27,7 @@ using namespace std;
 namespace NAV24::FE {
 
     ObjTracking::ObjTracking(const ChannelPtr &pChannel) : FrontEnd(pChannel), mbInitialized(false),
-        mvpParamHolder(), mMapName(), mTrajectory(), mLastImPoint(0, 0) {
+        mvpParamHolder(), mMapName(), mTrajectory(), mLastImPoint(0, 0), mMtxLastPt(), mpThTracker() {
 
         mpObjTracker = make_shared<OP::ObjTrYoloOnnx>(pChannel);
     }
@@ -44,7 +44,7 @@ namespace NAV24::FE {
                     if (pParams) {
                     }
                     if (!mbInitialized) {
-                        this->initialize();
+                        this->setup(msg);
                     }
                 }
             }
@@ -54,7 +54,9 @@ namespace NAV24::FE {
 
                 if (msg && dynamic_pointer_cast<MsgType<cv::Point2f>>(msg)) {
                     auto msgPtObs = dynamic_pointer_cast<MsgType<cv::Point2f>>(msg);
+                    mMtxLastPt.lock();
                     mLastImPoint = msgPtObs->getData();
+                    mMtxLastPt.unlock();
                 }
             }
             if (msg->getTopic() == System::TOPIC) {
@@ -66,12 +68,19 @@ namespace NAV24::FE {
             if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
                 mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
             }
+            if (dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg)) {
+                auto pThMsg = dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg);
+                mpThTracker = pThMsg->getData();
+            }
+            if (msg->getTargetId() == FCN_SYS_STOP) {
+                this->stop();
+            }
         }
     }
 
     //ParamPtr ObjTracking::getDefaultParameters(std::vector<ParamPtr> &vpParamContainer) { return {}; }
 
-    void ObjTracking::initialize() {
+    void ObjTracking::setup(const MsgPtr &msg) {
 
         // Create a tracking map
         // Never store a local map or anything else (leave this to each manager)
@@ -103,6 +112,10 @@ namespace NAV24::FE {
                                                           FCN_DS_REQ, mpObjTracker);
         mpChannel->publish(msgYoloModelPath);
 
+        // Run ObjTracking operator in background
+        auto msgReqRun = make_shared<MsgRequest>(TOPIC, "", FCN_OBJ_TR_RUN, shared_from_this());
+        mpObjTracker->receive(msgReqRun);
+
         // Load camera's calib parameters
         auto msgReqCalib = make_shared<MsgRequest>(Sensor::TOPIC, "",
                                                    FCN_CAM_GET_CALIB, shared_from_this());
@@ -127,7 +140,6 @@ namespace NAV24::FE {
                 }
 
                 cv::Mat img = pImage->mImage.clone();
-                //img = cv::imread("", cv::IMREAD_UNCHANGED);
                 cv::Mat gray;
                 cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
 
@@ -139,13 +151,16 @@ namespace NAV24::FE {
 //                cout << "Time taken by YOLO obj detection: " << duration.count() << " microseconds" << endl;
 
                 // Back-project image coords to find world loc
+                mMtxLastPt.lock();
+                cv::Point2f lastPoint = mLastImPoint;
+                mMtxLastPt.unlock();
                 Eigen::Vector3d Pw;
-                auto img_x = mLastImPoint.x, img_y = mLastImPoint.y;
+                auto img_x = lastPoint.x, img_y = lastPoint.y;
                 auto img_w = static_cast<float>(gray.cols), img_h = static_cast<float>(gray.rows);
                 if (mpCalib && img_x > 0 && img_x < img_w && img_y > 0 && img_y < img_h) {
 
                     // Get undistorted, normalized point
-                    cv::Point2f undistPt = mpCalib->undistPoint(mLastImPoint);
+                    cv::Point2f undistPt = mpCalib->undistPoint(lastPoint);
                     cv::Point3f Pc = mpCalib->unproject(undistPt);
 
                     Eigen::Vector3d Pc_eig;
@@ -167,12 +182,21 @@ namespace NAV24::FE {
                 mpChannel->publish(msgSerial);
 
                 // Show results
-                cv::putText(img, locStr.str(), mLastImPoint, cv::FONT_HERSHEY_SIMPLEX, 0.8,
+                cv::putText(img, locStr.str(), lastPoint, cv::FONT_HERSHEY_SIMPLEX, 0.8,
                             cv::Scalar(0, 255, 0), 2);
                 pImage = make_shared<ImageTs>(img, pImage->mTimeStamp, pImage->mPath);
                 auto msgImShow = make_shared<MsgSensorData>(Output::TOPIC, pImage);
                 mpChannel->publish(msgImShow);
             }
+        }
+    }
+
+    void ObjTracking::stop() {
+        MsgCallback::stop();
+        auto msgStop = make_shared<Message>(OP::ObjTracking::TOPIC, "", FCN_OBJ_TR_STOP);
+        if (mpObjTracker) {
+            mpObjTracker->receive(msgStop);
+            mpThTracker->join();
         }
     }
 

@@ -122,7 +122,7 @@ set(ALL_H_FILES
         ${PARAMS_DIR}/ParameterServer.hpp
         ${PARAMS_DIR}/ParameterBlueprint.h
         ${MESSAGING_DIR}/Message.hpp
-        ${MESSAGING_DIR}/Channel.hpp
+        ${MESSAGING_DIR}/Interface.hpp
         ${DATA_LOADERS_DIR}/DataStore.hpp
         ${DATA_LOADERS_DIR}/TabularTextDS.hpp
         ${SENSOR_CAM_DIR}/Calibration.hpp
@@ -161,7 +161,7 @@ set(ALL_SRC_FILES
         ${PARAMS_DIR}/Parameter.cpp
         ${PARAMS_DIR}/ParameterServer.cpp
         ${MESSAGING_DIR}/Message.cpp
-        ${MESSAGING_DIR}/Channel.cpp
+        ${MESSAGING_DIR}/Interface.cpp
         ${DATA_LOADERS_DIR}/DataStore.cpp
         ${DATA_LOADERS_DIR}/TabularTextDS.cpp
         ${SENSOR_CAM_DIR}/Calibration.cpp

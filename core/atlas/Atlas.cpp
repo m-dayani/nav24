@@ -63,5 +63,17 @@ namespace NAV24 {
         }
     }
 
+    void Atlas::setup(const MsgPtr &configMsg) {
+
+    }
+
+    void Atlas::handleRequest(const MsgPtr &reqMsg) {
+
+    }
+
+    void Atlas::run() {
+
+    }
+
 
 } // NAV24

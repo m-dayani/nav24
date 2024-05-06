@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 #include "Trajectory.hpp"
 
 
@@ -26,6 +26,12 @@ namespace NAV24 {
     protected:
         void createTrajectory(const MsgPtr &msg);
         void addPose(const MsgPtr &msg);
+
+        void setup(const MsgPtr &configMsg) override;
+
+        void handleRequest(const MsgPtr &reqMsg) override;
+
+        void run() override;
 
     protected:
         ChannelPtr mpChannel;

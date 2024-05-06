@@ -51,11 +51,11 @@ namespace NAV24 {
         }
     }
 
-    void Camera::loadParams(const NAV24::MsgPtr &msg) {
-        Sensor::loadParams(msg);
+    void Camera::setup(const MsgPtr &msg) {
+        Sensor::setup(msg);
 
         if (!msg || !dynamic_pointer_cast<MsgConfig>(msg)) {
-            DLOG(WARNING) << "Camera::loadParams, bad config message, abort\n";
+            DLOG(WARNING) << "Camera::setup, bad config message, abort\n";
             return;
         }
 
@@ -144,7 +144,7 @@ namespace NAV24 {
         sender->receive(msgSensor);
     }
 
-    void CamStream::play() {
+    void CamStream::run() {
 
         if (mpChannel && mpVideoCap) {
             mbIsStopped = false;
@@ -171,8 +171,8 @@ namespace NAV24 {
         }
     }
 
-    void CamStream::loadParams(const MsgPtr &msg) {
-        Camera::loadParams(msg);
+    void CamStream::setup(const MsgPtr &msg) {
+        Camera::setup(msg);
 
         if (mpInterface) {
             // Initialize OpenCV VideoCapture
@@ -260,7 +260,7 @@ namespace NAV24 {
         sender->receive(msgSensor);
     }
 
-    void CamOffline::play() {
+    void CamOffline::run() {
 
         if (mpChannel && mpImgDS) {
 
@@ -293,17 +293,17 @@ namespace NAV24 {
         }
     }
 
-    void CamOffline::loadParams(const MsgPtr &msg) {
-        Camera::loadParams(msg);
+    void CamOffline::setup(const MsgPtr &msg) {
+        Camera::setup(msg);
 
         if (!msg || !dynamic_pointer_cast<MsgConfig>(msg)) {
-            DLOG(WARNING) << "CamOffline::loadParams, bad config message, abort\n";
+            DLOG(WARNING) << "CamOffline::setup, bad config message, abort\n";
             return;
         }
 
         // We only need to load image path params here
         if (msg->getTopic() != DataStore::TOPIC) {
-            DLOG(INFO) << "CamOffline::loadParams, No image paths message, abort\n";
+            DLOG(INFO) << "CamOffline::setup, No image paths message, abort\n";
             return;
         }
 
@@ -456,22 +456,22 @@ namespace NAV24 {
         }
     }
 
-    void CamMixed::play() {
+    void CamMixed::run() {
 
         switch (mCamOp) {
             case OFFLINE:
-                CamOffline::play();
+                CamOffline::run();
                 break;
             case STREAM:
-                CamStream::play();
+                CamStream::run();
                 break;
             case BOTH:
-                CamOffline::play();
-                CamStream::play();
+                CamOffline::run();
+                CamStream::run();
                 break;
             case NONE:
             default:
-                DLOG(WARNING) << "CamMixed::play, Action not supported.\n";
+                DLOG(WARNING) << "CamMixed::run, Action not supported.\n";
                 break;
         }
 
@@ -482,9 +482,9 @@ namespace NAV24 {
         CamStream::reset();
     }
 
-    void CamMixed::loadParams(const MsgPtr &msg) {
-        CamStream::loadParams(msg);
-        CamOffline::loadParams(msg);
+    void CamMixed::setup(const MsgPtr &msg) {
+        CamStream::setup(msg);
+        CamOffline::setup(msg);
     }
 
     string CamMixed::printStr(const string &prefix) const {

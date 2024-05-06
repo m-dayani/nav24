@@ -8,24 +8,68 @@
 #include "DataConversion.hpp"
 #include "FrontEnd.hpp"
 #include "ImageViewer.hpp"
-#include "Serial.hpp"
 
 using namespace std;
 
 namespace NAV24 {
 
     System::System() : mmChannels{}, mpParamServer(), mmpDataStores(), mmpTrans(),
-        mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr) {}
+                       mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr), mpThreads() {}
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    void System::publish(const MsgPtr &message) {
+
+        for (const auto& channel : mmChannels[message->getTopic()]) {
+            channel->receive(message);
+        }
+    }
+
+    void System::registerChannel(const MsgCbPtr &callback, const string &topic) {
+
+        if (mmChannels.count(topic) <= 0) {
+            mmChannels[topic] = vector<MsgCbPtr>();
+        }
+        mmChannels[topic].push_back(callback);
+    }
+
+    void System::unregisterChannel(const MsgCbPtr &callback, const string &topic) {
+
+    }
+
+    /* -------------------------------------------------------------------------------------------------------------- */
 
     void System::loadSettings(const std::string &settings) {
 
         // Load params
+        this->loadParameters(settings);
+
+        // Load datasets
+        this->loadDatasets();
+
+        // Load inputs (sensors)
+        this->loadSensors();
+
+        // Load Relations
+        this->loadRelations();
+
+        // Load outputs
+        this->loadOutputs();
+
+        // Initialize Components
+        this->initComponents();
+    }
+
+    void System::loadParameters(const std::string &settings) {
+
         MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, settings, FCN_PS_LOAD);
         mpParamServer = make_shared<ParameterServer>(shared_from_this());
         mpParamServer->receive(msgLoadSettings);
         this->registerChannel(mpParamServer, ParameterServer::TOPIC);
+    }
 
-        // Load datasets
+    void System::loadDatasets() {
+
         auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
                                                     PARAM_DS, FCN_PS_REQ, shared_from_this());
         mpParamServer->receive(msgGetParams);
@@ -49,9 +93,11 @@ namespace NAV24 {
                 }
             }
         }
+    }
 
-        // Load inputs (sensors)
-        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
+    void System::loadSensors() {
+
+        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
                                                PARAM_CAM, FCN_PS_REQ, shared_from_this());
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Camera") {
@@ -100,9 +146,11 @@ namespace NAV24 {
         for (const auto& pSensor : mmpSensors) {
             this->registerChannel(pSensor.second, Sensor::TOPIC);
         }
+    }
 
-        // Load Relations
-        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
+    void System::loadRelations() {
+
+        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
                                                PARAM_REL, FCN_PS_REQ, shared_from_this());
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Relations") {
@@ -136,100 +184,32 @@ namespace NAV24 {
                 }
             }
         }
+    }
 
-        // Load outputs
-        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
+    void System::loadOutputs() {
+
+        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
                                                PARAM_OUT, FCN_PS_REQ, shared_from_this());
         mpParamServer->receive(msgGetParams);
-        if (mpTempParam && mpTempParam->getName() == "Output") {
-            uint i = 0;
+        if (mpTempParam && mpTempParam->getName() == PARAM_OUT) {
             for (const auto& outParamPair : mpTempParam->getAllChildren()) {
                 auto pParam = outParamPair.second.lock();
                 if (pParam) {
-                    // todo: optimize parameter retrieval
-                    auto pOutName = find_param<ParamType<string>>("name", pParam);
-                    string outName = (pOutName) ? pOutName->getValue() : "Output" + to_string(i);
-                    auto pIcType = find_param<ParamType<string>>("interface/type", pParam);
-                    string icType = (pIcType) ? pIcType->getValue() : "";
-                    auto pIcTarget = find_param<ParamType<string>>("interface/target", pParam);
-                    string icTarget = (pIcTarget) ? pIcTarget->getValue() : "";
-
-                    OutputPtr pOutput{};
-                    if (icType == "screen") {
-                        if (icTarget == "image") {
-                            pOutput = make_shared<ImageViewer>(shared_from_this());
-                        }
-                    }
-                    else if (icType == "serial") {
-                        pOutput = make_shared<Serial>(shared_from_this());
-                    }
-
+                    OutputPtr pOutput = Output::getNewInstance(pParam, shared_from_this());
                     if (pOutput) {
                         // load output params
                         msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
                                                                string(PARAM_OUT) + "/" + outParamPair.first,
                                                                FCN_PS_REQ, pOutput);
                         mpParamServer->receive(msgGetParams);
-                        mmpOutputs.insert(make_pair(outName, pOutput));
+                        mmpOutputs.insert(make_pair(pOutput->getName(), pOutput));
                         this->registerChannel(pOutput, Output::TOPIC);
-
+                        auto msgRunOutput = make_shared<MsgRequest>(Output::TOPIC, "", FCN_SYS_RUN, shared_from_this());
+                        pOutput->receive(msgRunOutput);
+                        //mpThreads.push_back(thread(&Output::run, pOutput));
                     }
                 }
-                i++;
             }
-        }
-
-        // Initialize Components
-        this->initComponents();
-    }
-
-    void System::publish(const MsgPtr &message) {
-
-        for (const auto& channel : mmChannels[message->getTopic()]) {
-            channel->receive(message);
-        }
-    }
-
-    void System::registerChannel(const MsgCbPtr &callback, const string &topic) {
-
-        if (mmChannels.count(topic) <= 0) {
-            mmChannels[topic] = vector<MsgCbPtr>();
-        }
-        mmChannels[topic].push_back(callback);
-    }
-
-    void System::unregisterChannel(const MsgCbPtr &callback, const string &topic) {
-
-    }
-
-    void System::handleConfigMsg(const MsgPtr &msg) {
-
-        if (dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
-            mpTempParam = pMsgConf->getConfig();
-        }
-    }
-
-    void System::receive(const MsgPtr &msg) {
-
-        if (msg) {
-            if (msg->getTopic() == System::TOPIC) {
-                switch (msg->getTargetId()) {
-                    case FCN_LD_PARAMS:
-                        this->loadSettings(msg->getMessage());
-                        break;
-                    case FCN_SYS_UPDATE:
-                        break;
-                    case FCN_GET_TRANS:
-                        this->handleRequests(msg);
-                        break;
-                    default:
-                        DLOG(WARNING) << "System::receive: Action is not supported\n";
-                        break;
-                }
-            }
-            this->handleConfigMsg(msg);
-            //this->handleImageMsg(msg);
         }
     }
 
@@ -247,7 +227,49 @@ namespace NAV24 {
         }
     }
 
-    void System::handleRequests(const MsgPtr& msg) {
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    void System::receive(const MsgPtr &msg) {
+
+        if (msg) {
+            if (msg->getTopic() == System::TOPIC) {
+                switch (msg->getTargetId()) {
+                    case FCN_LD_PARAMS:
+                        this->loadSettings(msg->getMessage());
+                        break;
+                    case FCN_SYS_UPDATE:
+                        break;
+                    case FCN_GET_TRANS:
+                        this->handleRequest(msg);
+                        break;
+                    default:
+                        DLOG(WARNING) << "System::receive: Action is not supported\n";
+                        break;
+                }
+                if (dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg)) {
+                    auto msgThread = dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg);
+                    auto pThread = msgThread->getData();
+                    if (pThread) {
+                        mpThreads.push_back(pThread);
+                    }
+                }
+                if (msg->getTargetId() == FCN_SYS_STOP) {
+                    this->stop();
+                }
+            }
+            this->handleConfigMsg(msg);
+        }
+    }
+
+    void System::handleConfigMsg(const MsgPtr &msg) {
+
+        if (dynamic_pointer_cast<MsgConfig>(msg)) {
+            auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
+            mpTempParam = pMsgConf->getConfig();
+        }
+    }
+
+    void System::handleRequest(const MsgPtr& msg) {
 
         if (!msg || !dynamic_pointer_cast<MsgRequest>(msg)) {
             DLOG(WARNING) << "System::handleRequests, bad message\n";
@@ -271,6 +293,29 @@ namespace NAV24 {
                 auto pTrans = mmpTrans[msgStr];
                 auto msgTrans = make_shared<MsgType<TransPtr>>(msg->getTopic(), pTrans);
                 sender->receive(msgTrans);
+            }
+        }
+    }
+
+    void System::setup(const MsgPtr &configMsg) {
+
+    }
+
+    void System::run() {
+
+    }
+
+    void System::stop() {
+        MsgCallback::stop();
+
+        auto msgStop = make_shared<Message>(TOPIC, "", FCN_SYS_STOP);
+
+        for (const auto& pChPair : mmChannels) {
+            auto pChannels = pChPair.second;
+            for (const auto& pCh : pChannels) {
+                if (pCh) {
+                    pCh->receive(msgStop);
+                }
             }
         }
     }

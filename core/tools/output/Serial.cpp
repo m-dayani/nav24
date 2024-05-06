@@ -2,23 +2,20 @@
 // Created by masoud on 4/30/24.
 //
 
-#include "Serial.hpp"
-
-#include <utility>
 #include <glog/logging.h>
+
+#include "Serial.hpp"
 
 
 using namespace std;
 
 namespace NAV24 {
 
-    Serial::Serial(ChannelPtr pChannel) : mpChannel(std::move(pChannel)) {
-
-//        mpSerial = make_shared<serial::Serial>("/dev/ttyUSB0", SER_DEF_BAUD,
-//                                               serial::Timeout::simpleTimeout(1000));
-    }
+    Serial::Serial(const ChannelPtr& pChannel) : Output(pChannel),
+        mWriteBuffer(), mReadBuffer(), mMtxReadBuff(), mMtxWriteBuff() {}
 
     void Serial::receive(const MsgPtr &msg) {
+        Output::receive(msg);
 
         if (msg) {
             string topic = msg->getTopic();
@@ -42,47 +39,47 @@ namespace NAV24 {
                     }
                         break;
                     default:
-                        DLOG(WARNING) << "Serial::receive, unsupported action: " << msg->getTargetId() << "\n";
+                        DVLOG(2) << "Serial::receive, unsupported action: " << msg->getTargetId() << "\n";
                         break;
                 }
             }
-            if (dynamic_pointer_cast<MsgConfig>(msg)) {
-                this->initialize(msg);
+        }
+    }
+
+    void Serial::setup(const MsgPtr &msg) {
+        Output::setup(msg);
+
+        if (mpInterface) {
+            try {
+                mpSerial = make_shared<serial::Serial>(mpInterface->target, mpInterface->port,
+                                                       serial::Timeout::simpleTimeout(1000));
+            }
+            catch (const exception &e) {
+                DLOG(WARNING) << e.what();
+                mpSerial = nullptr;
             }
         }
     }
 
-    void Serial::initialize(const MsgPtr &msg) {
+    void Serial::run() {
 
-        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto msgConfig = dynamic_pointer_cast<MsgConfig>(msg);
-            auto pParam = msgConfig->getConfig();
-            if (pParam) {
-                auto pOutName = find_param<ParamType<string>>("name", pParam);
-                mName = (pOutName) ? pOutName->getValue() : "OutputSerial0";
-                auto pIcType = find_param<ParamType<string>>("interface/type", pParam);
-                string icType = (pIcType) ? pIcType->getValue() : "serial";
-                auto pIcTarget = find_param<ParamType<string>>("interface/target", pParam);
-                string icTarget = (pIcTarget) ? pIcTarget->getValue() : "/dev/ttyUSB0";
-                auto pIcPort = find_param<ParamType<int>>("interface/port", pParam);
-                int icPort = (pIcPort) ? pIcPort->getValue() : SER_DEF_BAUD;
+        if (!mpSerial) {
+            DLOG(ERROR) << "Serial::run, serial interface is null\n";
+            return;
+        }
 
-                // todo: make interface type consistent
-                mpInterface = make_shared<SensorInterface>(SensorInterface::InterfaceType::DEFAULT,
-                                                           icTarget, icPort);
+        while (!mbStop) {
+            if (!mReadBuffer.empty()) {
 
-                try {
-                    mpSerial = make_shared<serial::Serial>(icTarget, icPort,
-                                                           serial::Timeout::simpleTimeout(1000));
-                }
-                catch (const exception& e) {
-                    DLOG(WARNING) << e.what();
-                    mpSerial = nullptr;
-                }
+            }
+            if (!mWriteBuffer.empty()) {
+
             }
         }
     }
 
+    void Serial::requestStop(const string &channel) {
 
+    }
 } // NAV24
 

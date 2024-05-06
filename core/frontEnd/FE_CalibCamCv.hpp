@@ -27,7 +27,7 @@ namespace NAV24::FE {
         static ParamPtr getDefaultParameters(std::vector<ParamPtr>& vpParamContainer);
 
     protected:
-        void initialize() override;
+        void setup(const MsgPtr &msg) override;
         void handleImageMsg(const MsgPtr &msg);
         void calibrate();
 

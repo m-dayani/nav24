@@ -42,14 +42,36 @@ namespace NAV24 {
     };
     typedef std::shared_ptr<Message> MsgPtr;
 
+    /* -------------------------------------------------------------------------------------------------------------- */
+
     class MsgCallback {
     public:
+        MsgCallback() : mbStop(false), mMtxStop() {}
         virtual void receive(const MsgPtr& msg) = 0;
     protected:
-        //virtual void setup(const MsgPtr& configMsg) = 0;
-        //virtual void handleRequest(const MsgPtr& reqMsg) = 0;
+        virtual void setup(const MsgPtr& configMsg) = 0;
+        virtual void handleRequest(const MsgPtr& reqMsg) = 0;
+        virtual void run() = 0;
+        virtual void stop() { mbStop = true; };
+    protected:
+        bool mbStop;
+        std::mutex mMtxStop;
     };
     typedef std::shared_ptr<MsgCallback> MsgCbPtr;
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    class Channel;
+    typedef std::shared_ptr<Channel> ChannelPtr;
+    class Channel {
+    public:
+        virtual void publish(const MsgPtr& message) = 0;
+        //virtual void receive(const Message& message) = 0; -> this is implemented by the request class
+        virtual void registerChannel(const MsgCbPtr& callback, const std::string& topic) = 0;
+        virtual void unregisterChannel(const MsgCbPtr& callback, const std::string& topic) = 0;
+    };
+
+    /* -------------------------------------------------------------------------------------------------------------- */
 
     class MsgRequest : public Message {
     public:

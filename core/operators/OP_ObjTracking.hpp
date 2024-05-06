@@ -10,14 +10,25 @@
 #include <vector>
 
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 #include "Operator.hpp"
 #include "Sensor.hpp"
 
 
 namespace NAV24::OP {
-    class ObjTracking : public MsgCallback, public Operator {
 
+#define FCN_OBJ_TR_RUN 4
+#define FCN_OBJ_TR_STOP 6
+
+    class ObjTracking : public MsgCallback, public Operator {
+    public:
+        inline static const std::string TOPIC = "ObjTracking";
+    protected:
+        void setup(const MsgPtr &configMsg) override;
+
+        void handleRequest(const MsgPtr &reqMsg) override;
+
+        void run() override;
     };
 } // NAV24::OP
 

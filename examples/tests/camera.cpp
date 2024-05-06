@@ -25,7 +25,7 @@ using namespace NAV24;
 public:
     explicit Camera(std::string img_path) : imgPath(std::move(img_path)) {}
 
-    void play() {
+    void run() {
         vector<cv::String> fn;
         cv::glob(imgPath, fn, false);
 
@@ -108,6 +108,20 @@ public:
 
     }
 
+protected:
+    void setup(const MsgPtr &configMsg) override {
+
+    }
+
+    void handleRequest(const MsgPtr &reqMsg) override {
+
+    }
+
+    void run() override {
+
+    }
+
+public:
     ParamPtr mpParamCamera;
     vector<shared_ptr<Camera>> mvpCamera{};
 };

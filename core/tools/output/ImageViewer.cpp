@@ -5,56 +5,111 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <utility>
 #include <glog/logging.h>
 
 #include "ImageViewer.hpp"
+#include "System.hpp"
 
 using namespace std;
 
 namespace NAV24 {
 
-    ImageViewer::ImageViewer(ChannelPtr pChannel) :
-        Output(), mpChannel(std::move(pChannel)), mfps(24), mbStop(false), mWindowName(), mqpImages() {}
+    ImageViewer::ImageViewer(const ChannelPtr& pChannel) :
+            Output(pChannel), mFps(30), mmqpImages(), mMtxImgQueue(), mMtxImage() {}
+
+    void ImageViewer::requestStop(const std::string &channel) {
+
+        mMtxImgQueue.lock();
+        if (mmqpImages.count(channel) > 0) {
+            auto imageQueue = mmqpImages[channel];
+            // flush the queue
+            while(!imageQueue->empty()) {
+                //mMtxImage.lock();
+                imageQueue->pop();
+                //mMtxImage.unlock();
+            }
+            mmqpImages.erase(channel);
+        }
+
+        if (mmqpImages.empty()) {
+            mMtxStop.lock();
+            mbStop = true;
+            mMtxStop.unlock();
+        }
+        mMtxImgQueue.unlock();
+    }
 
     void ImageViewer::run()  {
 
-        cv::namedWindow(mWindowName, cv::WINDOW_AUTOSIZE);
+        while (true) {
+            mMtxStop.lock();
+            bool bStop = mbStop;
+            mMtxStop.unlock();
 
-        while (!mbStop) {
+            mMtxImgQueue.lock();
+            auto imageChannels = mmqpImages;
+            mMtxImgQueue.unlock();
 
-            if (!mqpImages.empty()) {
+            for (auto& imageQueuePair : imageChannels) {
 
-                ImagePtr pImage = mqpImages.front();
+                string winName = imageQueuePair.first;
 
-                if (pImage->mImage.empty()) {
-                    mqpImages.pop();
-                    break;
+                mMtxImage.lock();
+                ImagePtr pImage;
+                auto imageQueue = imageQueuePair.second;
+                if (imageQueue && !imageQueue->empty()) {
+
+                    pImage = imageQueue->front();
+                    imageQueue->pop();
+
+                    if (!pImage || pImage->mImage.empty()) {
+                        this->requestStop(winName);
+                    }
+                }
+                mMtxImage.unlock();
+
+                if (!pImage) {
+                    continue;
                 }
 
                 double imTs = 0.0;
-                if (dynamic_cast<ImageTs*>(pImage.get())) {
-                    auto* pImageTs = dynamic_cast<ImageTs*>(pImage.get());
+                if (dynamic_pointer_cast<ImageTs>(pImage)) {
+                    auto pImageTs = dynamic_pointer_cast<ImageTs>(pImage);
                     imTs = pImageTs->mTimeStamp;
                 }
                 cv::Mat imageToShow = pImage->mImage.clone();
 
-                cv::cvtColor(imageToShow, imageToShow, cv::COLOR_GRAY2RGB);
+                //cv::cvtColor(imageToShow, imageToShow, cv::COLOR_GRAY2RGB);
 
-                cv::putText(imageToShow, std::to_string(imTs), cv::Point2f(10,10),
-                            cv::FONT_HERSHEY_COMPLEX_SMALL,((float)imageToShow.cols*1.5f)/720.f,
+                cv::putText(imageToShow, std::to_string(imTs), cv::Point2f(10, 10),
+                            cv::FONT_HERSHEY_COMPLEX_SMALL, ((float) imageToShow.cols * 1.5f) / 720.f,
                             cv::Scalar(0, 180, 0), 1);
 
-                cv::imshow(mWindowName, imageToShow);
-                cv::waitKey(static_cast<int>(1000.f / mfps));
-                mqpImages.pop();
+                cv::imshow(winName, imageToShow);
+                int keyVal = cv::waitKey(static_cast<int>(1000.f / mFps));
+
+                if (keyVal == 'q') {
+                    this->requestStop(winName);
+                    bStop = true;
+                    auto msgStop = make_shared<Message>(Sensor::TOPIC, "stop_play", FCN_SEN_STOP_PLAY);
+                    mpChannel->publish(msgStop);
+                }
+
+                if (bStop) {
+                    break;
+                }
+            }
+            if (bStop) {
+                break;
             }
         }
 
-        cv::destroyWindow(mWindowName);
+        cv::destroyAllWindows();
+        //cv::destroyWindow(mWindowName);
     }
 
     void ImageViewer::receive(const MsgPtr &msg) {
+        Output::receive(msg);
 
         if (msg) {
             string topic = msg->getTopic();
@@ -77,43 +132,22 @@ namespace NAV24 {
                             return;
                         }
 
-                        cv::imshow(winName, pImage->mImage);
-                        int keyVal = cv::waitKey(1);
-                        if (keyVal == 'q') {
-                            // todo: don't do this here (this must be done in the players routine)
-                            auto msgStop = make_shared<Message>(Sensor::TOPIC,
-                                                                "stop_play", FCN_SEN_STOP_PLAY);
-                            mpChannel->publish(msgStop);
+                        mMtxImgQueue.lock();
+                        if (mmqpImages.count(winName) <= 0) {
+                            mmqpImages[winName] = make_shared<queue<ImagePtr>>();
                         }
+                        mMtxImage.lock();
+                        mmqpImages[winName]->push(pImage);
+                        mMtxImage.unlock();
+                        mMtxImgQueue.unlock();
                     }
                 }
-            }
-            if (dynamic_pointer_cast<MsgConfig>(msg)) {
-                this->initialize(msg);
             }
         }
     }
 
-    void ImageViewer::initialize(const MsgPtr &msg) {
-
-        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto msgConfig = dynamic_pointer_cast<MsgConfig>(msg);
-            auto pParam = msgConfig->getConfig();
-            if (pParam) {
-                auto pOutName = find_param<ParamType<string>>("name", pParam);
-                mName = (pOutName) ? pOutName->getValue() : "OutputImage0";
-                auto pIcType = find_param<ParamType<string>>("interface/type", pParam);
-                string icType = (pIcType) ? pIcType->getValue() : "";
-                auto pIcTarget = find_param<ParamType<string>>("interface/target", pParam);
-                string icTarget = (pIcTarget) ? pIcTarget->getValue() : "";
-                auto pIcPort = find_param<ParamType<int>>("interface/port", pParam);
-                int icPort = (pIcPort) ? pIcPort->getValue() : 0;
-
-                // todo: make interface type consistent
-                mpInterface = make_shared<SensorInterface>(SensorInterface::InterfaceType::DEFAULT,
-                                                           icTarget, icPort);
-            }
-        }
+    void ImageViewer::setup(const MsgPtr &msg) {
+        Output::setup(msg);
     }
 
 } // NAV24

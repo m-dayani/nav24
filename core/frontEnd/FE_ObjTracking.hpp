@@ -26,10 +26,12 @@ class ObjTracking : public FrontEnd, public std::enable_shared_from_this<ObjTrac
         //static ParamPtr getDefaultParameters(std::vector<ParamPtr>& vpParamContainer);
 
     protected:
-        void initialize() override;
+        void setup(const MsgPtr &msg) override;
         void handleImageMsg(const MsgPtr &msg);
 
-    protected:
+    void stop() override;
+
+protected:
         bool mbInitialized;
 
         std::string mMapName;
@@ -42,8 +44,10 @@ class ObjTracking : public FrontEnd, public std::enable_shared_from_this<ObjTrac
         std::vector<ParamPtr> mvpParamHolder;
 
         std::shared_ptr<OP::ObjTrYoloOnnx> mpObjTracker;
+        std::shared_ptr<std::thread> mpThTracker;
 
         cv::Point2f mLastImPoint;
+        std::mutex mMtxLastPt;
 
         CalibPtr mpCalib;
     };

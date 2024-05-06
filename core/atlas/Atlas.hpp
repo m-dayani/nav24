@@ -9,7 +9,7 @@
 #include <map>
 
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 #include "Map.hpp"
 
 namespace NAV24 {
@@ -25,6 +25,10 @@ namespace NAV24 {
         void receive(const MsgPtr &msg) override;
 
     protected:
+        void setup(const MsgPtr &configMsg) override;
+        void handleRequest(const MsgPtr &reqMsg) override;
+        void run() override;
+
         void createMap(const MsgPtr &msg);
         void addWorldObjects(const MsgPtr& msg);
 

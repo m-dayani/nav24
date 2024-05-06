@@ -11,7 +11,7 @@
 #include <memory>
 
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 
 
 namespace NAV24 {
@@ -29,25 +29,6 @@ namespace NAV24 {
 #define TAG_SEN_MX_BOTH "both"
 
 
-    struct SensorInterface {
-        enum InterfaceType {
-            DEFAULT,
-            OFFLINE,
-            STREAM,
-            MIXED
-        };
-
-        SensorInterface() : interfaceType(DEFAULT), target(), port(0) {}
-        SensorInterface(InterfaceType intType, std::string target_, int port_) :
-            interfaceType(intType), target(std::move(target_)), port(port_) {}
-
-        [[nodiscard]] std::string printStr(const std::string& prefix = "") const;
-
-        InterfaceType interfaceType;
-        std::string target;
-        int port;
-    };
-
     class Sensor : public MsgCallback {
     public:
         inline static const std::string TOPIC = "Sensor";
@@ -60,10 +41,15 @@ namespace NAV24 {
         void receive(const MsgPtr &msg) override;
 
     protected:
-        virtual void loadParams(const MsgPtr &msg);
+        void setup(const MsgPtr &msg) override;
 
         virtual void getNext(MsgPtr pReq) = 0;
-        virtual void play() = 0;
+        //virtual void run() = 0;
+        void handleRequest(const MsgPtr &reqMsg) override;
+
+        void run() override;
+
+        void stop() override;
 
         virtual void reset() = 0;
 

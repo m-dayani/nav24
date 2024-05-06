@@ -6,7 +6,7 @@
 #define NAV24_FRONTEND_HPP
 
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 
 namespace NAV24::FE {
 
@@ -16,7 +16,11 @@ namespace NAV24::FE {
         explicit FrontEnd(ChannelPtr  pChannel);
 
     protected:
-        virtual void initialize() = 0;
+        //virtual void setup(const MsgPtr& msg) = 0;
+        void handleRequest(const MsgPtr &reqMsg) override;
+
+        void run() override;
+
 
     protected:
         ChannelPtr mpChannel;

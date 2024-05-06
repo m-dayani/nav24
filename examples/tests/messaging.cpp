@@ -10,7 +10,7 @@
 
 #include "Parameter.hpp"
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 
 using namespace std;
 using namespace NAV24;
@@ -74,6 +74,21 @@ public:
         cout << msg->getMessage() << endl;
     }
 
+protected:
+    void setup(const MsgPtr &configMsg) override {
+
+    }
+
+    void handleRequest(const MsgPtr &reqMsg) override {
+
+    }
+
+    void run() override {
+
+    }
+
+public:
+
     map<string, vector<MsgCbPtr>> mmChannels;
 };
 
@@ -112,6 +127,19 @@ public:
         }
 
         cout << msg->toString() << endl;
+    }
+
+protected:
+    void setup(const MsgPtr &configMsg) override {
+
+    }
+
+    void handleRequest(const MsgPtr &reqMsg) override {
+
+    }
+
+    void run() override {
+
     }
 };
 

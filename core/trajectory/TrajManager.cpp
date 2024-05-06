@@ -52,4 +52,16 @@ namespace NAV24 {
             }
         }
     }
+
+    void TrajManager::setup(const MsgPtr &configMsg) {
+
+    }
+
+    void TrajManager::handleRequest(const MsgPtr &reqMsg) {
+
+    }
+
+    void TrajManager::run() {
+
+    }
 } // NAV24

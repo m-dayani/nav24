@@ -26,7 +26,7 @@ namespace NAV24 {
         cv::FileStorage fs;
         fs.open(fileName, cv::FileStorage::READ);
         if (!fs.isOpened()) {
-            DLOG(ERROR) << "YamlParserCV::loadParams, Config file not found: " << fileName << "\n";
+            DLOG(ERROR) << "YamlParserCV::setup, Config file not found: " << fileName << "\n";
             return pRootParam;
         }
 

@@ -3,8 +3,6 @@
 //
 
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <glog/logging.h>
 
@@ -62,7 +60,7 @@ namespace NAV24::FE {
                         }
                     }
                     if (!mbInitialized) {
-                        this->initialize();
+                        this->setup(msg);
                     }
                 }
 
@@ -77,7 +75,7 @@ namespace NAV24::FE {
         }
     }
 
-    void CalibCamCv::initialize() {
+    void CalibCamCv::setup(const MsgPtr& msg) {
 
         // Create a calibration map
         // Never store a local map or anything else (leave this to each manager)

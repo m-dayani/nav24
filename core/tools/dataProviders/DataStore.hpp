@@ -13,7 +13,7 @@
 
 #include "TabularTextDS.hpp"
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 
 
 namespace NAV24 {
@@ -82,9 +82,11 @@ namespace NAV24 {
         //bool updateLoadState();
         //virtual bool checkLoadState();
 
-        void handleRequest(const MsgPtr& msg);
+        void handleRequest(const MsgPtr& msg) override;
         void handleChangeRequest(const MsgPtr& msg);
-        void load(const MsgPtr& configMsg);
+        void setup(const MsgPtr& configMsg) override;
+
+        void run() override;
 
     protected:
         ChannelPtr mpChannel;

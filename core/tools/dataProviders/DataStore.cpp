@@ -52,7 +52,7 @@ namespace NAV24 {
 
         // check for param server response
         if (topic == ParameterServer::TOPIC) {
-            this->load(msg);
+            this->setup(msg);
             return;
         }
 
@@ -65,7 +65,7 @@ namespace NAV24 {
         int action = msg->getTargetId();
         switch (action) {
             case FCN_DS_LOAD:
-                this->load(msg);
+                this->setup(msg);
                 break;
             case FCN_DS_REQ:
                 this->handleRequest(msg);
@@ -159,7 +159,7 @@ namespace NAV24 {
         this->notifyChange();
     }
 
-    void DataStore::load(const MsgPtr &configMsg) {
+    void DataStore::setup(const MsgPtr &configMsg) {
 
         auto pMsg = dynamic_pointer_cast<MsgConfig>(configMsg);
         if (pMsg) {
@@ -468,6 +468,10 @@ namespace NAV24 {
         //oss << "\t\tCurrent Sequence Num. Images: " << this->getNumImages() << endl;
 
         return oss.str();
+    }
+
+    void DataStore::run() {
+
     }
 
 } // NAV24

@@ -34,7 +34,7 @@ int main([[maybe_unused]] int argc, char** argv) {
 
     vector<ParamPtr> vAllParams{}, vAllParams1{}, vAllParams2{};
 
-    // 1. YamlParserCV::loadParams
+    // 1. YamlParserCV::setup
 
     ParamPtr pParam = YamlParserCV::loadParams(fileName, vAllParams);
     ParamPtr pParamCplx = YamlParserCV::loadParams(configComplex, vAllParams1);

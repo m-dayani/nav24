@@ -8,8 +8,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <thread>
 
-#include "Channel.hpp"
+#include "Interface.hpp"
 #include "ParameterServer.hpp"
 #include "DataStore.hpp"
 #include "Sensor.hpp"
@@ -24,6 +25,8 @@ namespace NAV24 {
 #define FCN_LD_PARAMS 1
 #define FCN_SYS_UPDATE 4
 #define FCN_GET_TRANS 7
+#define FCN_SYS_RUN 8
+#define FCN_SYS_STOP 10
 
 class System : public Channel, public MsgCallback, public std::enable_shared_from_this<System> {
     public:
@@ -41,9 +44,22 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
 
     protected:
         void loadSettings(const std::string& settings);
-        void handleConfigMsg(const MsgPtr &msg);
+        void loadParameters(const std::string& settings);
+        void loadDatasets();
+        void loadSensors();
+        void loadRelations();
+        void loadOutputs();
+
         void initComponents();
-        void handleRequests(const MsgPtr& msg);
+
+        void setup(const MsgPtr &configMsg) override;
+
+        void run() override;
+
+    void stop() override;
+
+    void handleConfigMsg(const MsgPtr &msg);
+        void handleRequest(const MsgPtr& msg) override;
 
     protected:
         std::map<std::string, std::vector<MsgCbPtr>> mmChannels;
@@ -53,6 +69,8 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         std::map<std::string, std::shared_ptr<Sensor>> mmpSensors;
         std::map<std::string, TransPtr> mmpTrans;
         std::map<std::string, OutputPtr> mmpOutputs;
+
+        std::vector<std::shared_ptr<std::thread>> mpThreads;
 
         ParamPtr mpTempParam;
 

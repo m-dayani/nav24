@@ -29,6 +29,19 @@ public:
         }
         cout << msg->toString() << endl;
     }
+
+protected:
+    void setup(const MsgPtr &configMsg) override {
+
+    }
+
+    void handleRequest(const MsgPtr &reqMsg) override {
+
+    }
+
+    void run() override {
+
+    }
 };
 
 

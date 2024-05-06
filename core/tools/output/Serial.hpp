@@ -5,16 +5,18 @@
 #ifndef NAV24_SERIAL_HPP
 #define NAV24_SERIAL_HPP
 
+#include <queue>
 #include <serial/serial.h>
 
 #include "Output.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 #include "Sensor.hpp"
 
 
 namespace NAV24 {
 
 #define SER_DEF_BAUD 9600
+#define SER_DEF_PORT "/dev/ttyUSB0"
 
 #define FCN_SER_OPEN 6
 #define FCN_SER_READ 11
@@ -24,17 +26,23 @@ namespace NAV24 {
     public:
         inline static const std::string TOPIC = "Serial";
 
-        explicit Serial(ChannelPtr  pChannel);
+        explicit Serial(const ChannelPtr&  pChannel);
 
         void receive(const MsgPtr &msg) override;
 
     protected:
-        void initialize(const MsgPtr& msg);
+        void setup(const MsgPtr& msg) override;
 
-        std::string mName;
-        ChannelPtr mpChannel;
-        std::shared_ptr<SensorInterface> mpInterface;
+        void run() override;
+        void requestStop(const std::string &channel) override;
+
+    protected:
         std::shared_ptr<serial::Serial> mpSerial;
+
+        std::queue<std::string> mReadBuffer;
+        std::mutex mMtxReadBuff;
+        std::queue<std::string> mWriteBuffer;
+        std::mutex mMtxWriteBuff;
     };
 } // NAV24
 

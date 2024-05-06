@@ -25,12 +25,12 @@ namespace NAV24 {
         void receive(const MsgPtr &msg) override;
 
         // remove these test methods
-        //void playTest() { this->play(); }
+        //void playTest() { this->run(); }
         //void getNextTest(const MsgPtr &msg) { this->getNext(msg); }
         //std::string toString() { return printStr(""); }
 
     protected:
-        void loadParams(const MsgPtr &msg) override;
+        void setup(const MsgPtr &msg) override;
         [[nodiscard]] std::string printStr(const std::string &prefix) const override;
 
     protected:
@@ -45,13 +45,13 @@ namespace NAV24 {
         ~CamStream();
 
     protected:
-        void loadParams(const MsgPtr &msg) override;
+        void setup(const MsgPtr &msg) override;
 
         void reset() override;
 
     protected:
         void getNext(MsgPtr pReq) override;
-        void play() override;
+        void run() override;
 
         std::shared_ptr<cv::VideoCapture> mpVideoCap;
     };
@@ -68,11 +68,11 @@ namespace NAV24 {
                                          std::vector<ParamPtr>& vpParam);
 
     protected:
-        void loadParams(const MsgPtr &msg) override;
+        void setup(const MsgPtr &msg) override;
 
         void getNextImageFile(std::string& path, double& ts);
         void getNext(MsgPtr pReq) override;
-        void play() override;
+        void run() override;
 
         void reset() override;
 
@@ -103,11 +103,11 @@ namespace NAV24 {
     protected:
         void getNext(MsgPtr pReq) override;
 
-        void play() override;
+        void run() override;
 
         void reset() override;
 
-        void loadParams(const MsgPtr &msg) override;
+        void setup(const MsgPtr &msg) override;
 
         [[nodiscard]] std::string printStr(const std::string &prefix) const override;
 

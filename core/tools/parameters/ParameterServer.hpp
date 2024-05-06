@@ -11,7 +11,7 @@
 #include <opencv2/core/core.hpp>
 
 #include "Message.hpp"
-#include "Channel.hpp"
+#include "Interface.hpp"
 
 
 namespace NAV24 {
@@ -36,8 +36,12 @@ namespace NAV24 {
     protected:
         void load(const std::string& settings);
         void save(const std::string& pathParams);
-        void handleRequest(const MsgPtr& msg);
+        void handleRequest(const MsgPtr& msg) override;
         void changeParams(const MsgPtr& msg);
+
+        void setup(const MsgPtr &configMsg) override;
+
+        void run() override;
 
     private:
         ChannelPtr mpChannel;

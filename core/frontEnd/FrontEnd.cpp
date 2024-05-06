@@ -11,4 +11,12 @@ namespace NAV24::FE {
     int FrontEnd::mTrajCnt = 0;
 
     FrontEnd::FrontEnd(ChannelPtr pChannel) : mpChannel(std::move(pChannel)) {}
+
+    void FrontEnd::handleRequest(const MsgPtr &reqMsg) {
+
+    }
+
+    void FrontEnd::run() {
+
+    }
 } // NAV24::FE

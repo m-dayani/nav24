@@ -15,6 +15,13 @@ namespace NAV24::BE {
         virtual void solve(const ProblemPtr& problem) = 0;
 
         void receive(const MsgPtr &msg) override;
+
+    protected:
+        void setup(const MsgPtr &configMsg) override;
+
+        void handleRequest(const MsgPtr &reqMsg) override;
+
+        void run() override;
     };
 
 } // NAV24::BE
