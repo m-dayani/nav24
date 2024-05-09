@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Message.hpp"
@@ -23,12 +24,19 @@ namespace NAV24::OP {
     class ObjTracking : public MsgCallback, public Operator {
     public:
         inline static const std::string TOPIC = "ObjTracking";
+
+        ObjTracking() : MsgCallback(), Operator(), mpChannel() {}
+        explicit ObjTracking(ChannelPtr  pChannel) : MsgCallback(), Operator(), mpChannel(std::move(pChannel)) {}
+
+        static cv::Point2f find_center(const cv::Rect2f& rect);
+
     protected:
         void setup(const MsgPtr &configMsg) override;
-
         void handleRequest(const MsgPtr &reqMsg) override;
-
         void run() override;
+
+    protected:
+        ChannelPtr mpChannel;
     };
 } // NAV24::OP
 

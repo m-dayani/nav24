@@ -35,6 +35,7 @@ namespace NAV24 {
 
         void run() override;
         void requestStop(const std::string &channel) override;
+        void stop() override;
 
     protected:
         std::shared_ptr<serial::Serial> mpSerial;

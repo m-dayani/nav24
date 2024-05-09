@@ -147,6 +147,7 @@ set(ALL_H_FILES
         ${OPERATORS_DIR}/OP_ChBoardDetCv.hpp
         ${OPERATORS_DIR}/OP_ObjTracking.hpp
         ${OPERATORS_DIR}/OP_ObjTrackingYolo.hpp
+        ${OPERATORS_DIR}/OP_ObjTrackingCv.hpp
         ${TRAJECTORY_DIR}/Trajectory.hpp
         ${TRAJECTORY_DIR}/TrajManager.hpp
         ${FRAME_DIR}/Frame.hpp
@@ -186,6 +187,7 @@ set(ALL_SRC_FILES
         ${OPERATORS_DIR}/OP_ChBoardDetCv.cpp
         ${OPERATORS_DIR}/OP_ObjTracking.cpp
         ${OPERATORS_DIR}/OP_ObjTrackingYolo.cpp
+        ${OPERATORS_DIR}/OP_ObjTrackingCv.cpp
         ${TRAJECTORY_DIR}/Trajectory.cpp
         ${TRAJECTORY_DIR}/TrajManager.cpp
         ${FRAME_DIR}/Frame.cpp

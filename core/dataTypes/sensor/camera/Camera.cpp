@@ -2,12 +2,13 @@
 // Created by masoud on 2/6/24.
 //
 
-#include "Camera.hpp"
-
+#include <thread>
+#include <chrono>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <opencv2/highgui.hpp>
 
+#include "Camera.hpp"
 #include "DataStore.hpp"
 #include "Image.hpp"
 #include "FrontEnd.hpp"
@@ -164,6 +165,10 @@ namespace NAV24 {
 
                 mpChannel->publish(msg);
 
+                if (fps > 0) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(1000.f / fps)));
+                }
+
                 if (mbIsStopped) {
                     break;
                 }
@@ -177,6 +182,10 @@ namespace NAV24 {
         if (mpInterface) {
             // Initialize OpenCV VideoCapture
             mpVideoCap = make_shared<cv::VideoCapture>(mpInterface->port);
+            if (mpVideoCap) {
+                mpVideoCap->set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+                mpVideoCap->set(cv::CAP_PROP_FRAME_WIDTH, 640);
+            }
         }
     }
 

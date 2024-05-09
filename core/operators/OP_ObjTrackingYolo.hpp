@@ -88,8 +88,9 @@ namespace NAV24::OP {
     /// The YOLO model class that does the detection and tracking
     class ObjTrYoloOnnx : public ObjTracking {
     public:
+        inline static const std::string TOPIC = "OP::ObjTrYoloOnnx";
 
-        explicit ObjTrYoloOnnx(ChannelPtr  pChannel);
+        explicit ObjTrYoloOnnx(const ChannelPtr&  pChannel);
         void receive(const MsgPtr &msg) override;
 
         //static ParamPtr getDefParams(const std::string& model_base, const std::string& model_file);
@@ -119,8 +120,6 @@ namespace NAV24::OP {
         std::string CreateSession(DL_INIT_PARAM& iParams);
 
     protected:
-        ChannelPtr mpChannel;
-
         std::string mName;
 
         std::string mModelName;

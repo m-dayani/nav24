@@ -74,8 +74,8 @@ namespace NAV24::OP {
         return target;
     }
 
-    ObjTrYoloOnnx::ObjTrYoloOnnx(ChannelPtr pChannel) :
-        mpChannel(std::move(pChannel)), mCudaDevice(-1), imgSize(),
+    ObjTrYoloOnnx::ObjTrYoloOnnx(const ChannelPtr& pChannel) :
+        ObjTracking(pChannel), mCudaDevice(-1), imgSize(),
         modelType(), mqpImages(), mMtxImgBuff(), mLastTs(-1.0) {}
 
     int64_t ObjTrYoloOnnx::image_size() const {
@@ -408,9 +408,10 @@ namespace NAV24::OP {
         cv::Size imgSizeCv(w, h);
         for (const auto &d : detections[0]) {
 
-            cv::Point2f ptObs = find_center(d, imgSizeCv);
-
-            auto pMsgPtObs = make_shared<MsgType<cv::Point2f>>(FE::FrontEnd::TOPIC, ptObs);
+            //cv::Point2f ptObs = find_center(d, imgSizeCv);
+            //auto pMsgPtObs = make_shared<MsgType<cv::Point2f>>(FE::FrontEnd::TOPIC, ptObs);
+            cv::Rect2f detRect(d.x * w, d.y * h, d.w * w, d.h * h);
+            auto pMsgPtObs = make_shared<MsgType<cv::Rect2f>>(FE::FrontEnd::TOPIC, detRect);
 
             mpChannel->publish(pMsgPtObs);
         }

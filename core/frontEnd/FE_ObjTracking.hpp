@@ -10,6 +10,7 @@
 #include "WorldObject.hpp"
 #include "FrontEnd.hpp"
 #include "Frame.hpp"
+#include "OP_ObjTracking.hpp"
 #include "OP_ObjTrackingYolo.hpp"
 #include "Calibration.hpp"
 
@@ -26,6 +27,8 @@ class ObjTracking : public FrontEnd, public std::enable_shared_from_this<ObjTrac
         //static ParamPtr getDefaultParameters(std::vector<ParamPtr>& vpParamContainer);
 
     protected:
+        void initMainTracker();
+        void initYoloDetector();
         void setup(const MsgPtr &msg) override;
         void handleImageMsg(const MsgPtr &msg);
 
@@ -43,11 +46,18 @@ protected:
 
         std::vector<ParamPtr> mvpParamHolder;
 
-        std::shared_ptr<OP::ObjTrYoloOnnx> mpObjTracker;
-        std::shared_ptr<std::thread> mpThTracker;
+        std::shared_ptr<OP::ObjTracking> mpObjTracker;
+        std::shared_ptr<OP::ObjTrYoloOnnx> mpYoloDetector;
+        std::vector<std::shared_ptr<std::thread>> mvpThTrackers;
 
+        cv::Rect2f mYoloDet;
+        std::mutex mMtxYoloDet;
         cv::Point2f mLastImPoint;
         std::mutex mMtxLastPt;
+
+        bool mbYoloUpdated;
+        bool mbTrInitBbox;
+        bool mbTrInitFrame;
 
         CalibPtr mpCalib;
     };

@@ -20,4 +20,9 @@ namespace NAV24::OP {
     void ObjTracking::run() {
 
     }
+
+    cv::Point2f ObjTracking::find_center(const cv::Rect2f &rect) {
+
+        return {rect.x + rect.width * 0.5f, rect.y + rect.height * 0.5f};
+    }
 } // NAV24::OP

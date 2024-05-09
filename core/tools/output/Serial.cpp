@@ -5,6 +5,8 @@
 #include <glog/logging.h>
 
 #include "Serial.hpp"
+#include "System.hpp"
+#include "FrontEnd.hpp"
 
 
 using namespace std;
@@ -23,11 +25,15 @@ namespace NAV24 {
 
                 switch (msg->getTargetId()) {
                     case FCN_SER_OPEN:
+                        // todo: implement open and close, considering mpSerial might already be open
                         break;
                     case FCN_SER_WRITE: {
-                        if (mpSerial) {
-                            size_t bytes_wrote = mpSerial->write(msg->getMessage());
-                        }
+//                        if (mpSerial) {
+//                            size_t bytes_wrote = mpSerial->write(msg->getMessage());
+//                        }
+                        mMtxWriteBuff.lock();
+                        mWriteBuffer.push(msg->getMessage());
+                        mMtxWriteBuff.unlock();
                     }
                         break;
                     case FCN_SER_READ: {
@@ -43,6 +49,9 @@ namespace NAV24 {
                         break;
                 }
             }
+            if (topic == System::TOPIC && msg->getTargetId() == FCN_SYS_STOP) {
+                this->stop();
+            }
         }
     }
 
@@ -52,10 +61,17 @@ namespace NAV24 {
         if (mpInterface) {
             try {
                 mpSerial = make_shared<serial::Serial>(mpInterface->target, mpInterface->port,
-                                                       serial::Timeout::simpleTimeout(1000));
+                                                       serial::Timeout::simpleTimeout(100));
+                // when you instantiate serial class, it opens automatically
+                if(mpSerial && mpSerial->isOpen()) {
+                    DLOG(INFO) << "Serial::setup, serial: " << mpInterface->target << ", interface opened successfully\n";
+                }
             }
             catch (const exception &e) {
                 DLOG(WARNING) << e.what();
+                if (mpSerial && mpSerial->isOpen()) {
+                    mpSerial->close();
+                }
                 mpSerial = nullptr;
             }
         }
@@ -68,18 +84,47 @@ namespace NAV24 {
             return;
         }
 
+        //int count = 0;
         while (!mbStop) {
             if (!mReadBuffer.empty()) {
 
             }
+            std::string msg2write;
+            mMtxWriteBuff.lock();
             if (!mWriteBuffer.empty()) {
-
+                msg2write = mWriteBuffer.front();
+                mWriteBuffer.pop();
+                DLOG(INFO) << "Serial::run, msg to write: " << msg2write << "\n";
             }
+            mMtxWriteBuff.unlock();
+
+            if (!msg2write.empty()) {
+
+                size_t bytes_wrote = mpSerial->write(msg2write);
+
+                string result = mpSerial->read(msg2write.length()+1);
+
+                // publish the message
+                if (!result.empty()) {
+                    auto msgRes = make_shared<Message>(FE::FrontEnd::TOPIC, result, FCN_SER_READ);
+                    mpChannel->publish(msgRes);
+                }
+
+//                cout << "Iteration: " << count << ", Bytes written: ";
+//                cout << bytes_wrote << ", Bytes read: ";
+//                cout << result.length() << ", String read: " << result << endl;
+            }
+            //count++;
         }
     }
 
     void Serial::requestStop(const string &channel) {
+        this->stop();
+    }
 
+    void Serial::stop() {
+        MsgCallback::stop();
+        mpSerial->close();
     }
 } // NAV24
 

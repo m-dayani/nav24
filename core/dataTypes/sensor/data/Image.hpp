@@ -22,6 +22,8 @@ namespace NAV24 {
         Image(const cv::Mat& image, std::string  imPath) : mImage(image.clone()), mPath(std::move(imPath)) {}
         virtual ~Image() = default;
 
+        virtual std::string printStr() const;
+
         cv::Mat mImage;
         std::string mPath;
     };
@@ -32,6 +34,8 @@ namespace NAV24 {
 
         ImageTs(const cv::Mat& image, double ts, const std::string& imPath) :
                 Image(image, imPath), mTimeStamp(ts) {}
+
+        std::string printStr() const override;
 
         double mTimeStamp;
     };
