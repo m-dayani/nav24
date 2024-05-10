@@ -2,8 +2,6 @@
 // Created by masoud on 4/30/24.
 //
 
-#include <utility>
-
 #include "Output.hpp"
 #include "Serial.hpp"
 #include "ImageViewer.hpp"
@@ -14,8 +12,7 @@ using namespace std;
 
 namespace NAV24 {
 
-    Output::Output(ChannelPtr pChannel) :
-        mpChannel(std::move(pChannel)), mName(), mpInterface() {}
+    Output::Output(const ChannelPtr& pChannel) : MsgCallback(pChannel), mpInterface() {}
 
     void Output::receive(const MsgPtr &msg) {
 
@@ -37,7 +34,8 @@ namespace NAV24 {
             if (sender) {
                 if (msg->getTargetId() == FCN_SYS_RUN) {
                     auto pThread = make_shared<thread>(&Output::run, this);
-                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(System::TOPIC, pThread);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThread,
+                                                                           System::TOPIC);
                     sender->receive(msgRes);
                 }
             }

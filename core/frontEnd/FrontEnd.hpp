@@ -8,12 +8,13 @@
 #include "Message.hpp"
 #include "Interface.hpp"
 
+
 namespace NAV24::FE {
 
     class FrontEnd : public MsgCallback {
     public:
         inline static const std::string TOPIC = "FrontEnd";
-        explicit FrontEnd(ChannelPtr  pChannel);
+        explicit FrontEnd(const ChannelPtr&  pChannel);
 
     protected:
         //virtual void setup(const MsgPtr& msg) = 0;
@@ -21,10 +22,7 @@ namespace NAV24::FE {
 
         void run() override;
 
-
     protected:
-        ChannelPtr mpChannel;
-
         static int mMapCnt;
         static int mTrajCnt;
     };

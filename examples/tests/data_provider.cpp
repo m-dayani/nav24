@@ -56,10 +56,10 @@ public:
 
 class DummyChannel : public Channel {
 public:
-    void publish(const MsgPtr &message) override {
+    void send(const MsgPtr &message) override {
 
         if (message) {
-            cout << "DummyChannel::publish, message to send: " << message->toString() << endl;
+            cout << "DummyChannel::send, message to send: " << message->toString() << endl;
         }
     }
     void registerChannel(const MsgCbPtr &callback, const string &topic) override {}

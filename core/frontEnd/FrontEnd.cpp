@@ -4,13 +4,12 @@
 
 #include "FrontEnd.hpp"
 
-#include <utility>
 
 namespace NAV24::FE {
     int FrontEnd::mMapCnt = 0;
     int FrontEnd::mTrajCnt = 0;
 
-    FrontEnd::FrontEnd(ChannelPtr pChannel) : mpChannel(std::move(pChannel)) {}
+    FrontEnd::FrontEnd(const ChannelPtr& pChannel) : MsgCallback(pChannel) {}
 
     void FrontEnd::handleRequest(const MsgPtr &reqMsg) {
 

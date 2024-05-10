@@ -21,7 +21,7 @@ namespace NAV24 {
     public:
         inline static const std::string TOPIC = "Atlas";
 
-        explicit Atlas(ChannelPtr pChannel);
+        explicit Atlas(const ChannelPtr& pChannel);
         void receive(const MsgPtr &msg) override;
 
     protected:
@@ -33,8 +33,6 @@ namespace NAV24 {
         void addWorldObjects(const MsgPtr& msg);
 
     protected:
-        ChannelPtr mpChannel;
-
         std::map<std::string, MapPtr> mWorlds;
         std::string mActiveWorld;
     };

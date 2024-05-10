@@ -21,7 +21,8 @@ namespace NAV24 {
 
         if (msg) {
             string topic = msg->getTopic();
-            if (topic == Output::TOPIC || topic == Serial::TOPIC) {
+            int catId = msg->getChId();
+            if (catId == ID_CH_OUTPUT || topic == Output::TOPIC || topic == Serial::TOPIC) {
 
                 switch (msg->getTargetId()) {
                     case FCN_SER_OPEN:
@@ -101,12 +102,14 @@ namespace NAV24 {
             if (!msg2write.empty()) {
 
                 size_t bytes_wrote = mpSerial->write(msg2write);
+                DVLOG(2) << "Serial::run, wrote " << bytes_wrote << " bytes\n";
 
                 string result = mpSerial->read(msg2write.length()+1);
 
-                // publish the message
+                // send the message
                 if (!result.empty()) {
-                    auto msgRes = make_shared<Message>(FE::FrontEnd::TOPIC, result, FCN_SER_READ);
+                    auto msgRes = make_shared<Message>(ID_TP_SDATA, FE::FrontEnd::TOPIC,
+                                                       FCN_SER_READ, result);
                     mpChannel->publish(msgRes);
                 }
 

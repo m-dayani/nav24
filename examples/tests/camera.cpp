@@ -91,10 +91,10 @@ public:
         }
     }
 
-    void publish(const MsgPtr &msg) override {
+    void send(const MsgPtr &msg) override {
 
         if (!msg) {
-            DLOG(WARNING) << "DummySystem::publish, Null message detected\n";
+            DLOG(WARNING) << "DummySystem::send, Null message detected\n";
             return;
         }
         this->handleImageMsg(msg);

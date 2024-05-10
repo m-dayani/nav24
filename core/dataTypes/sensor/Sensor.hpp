@@ -16,7 +16,6 @@
 
 namespace NAV24 {
 
-//#define FCN_SEN_REQ 1
 #define FCN_SEN_PRINT 3
 #define FCN_SEN_STOP_PLAY 5
 #define FCN_SEN_START_PLAY 6
@@ -33,36 +32,28 @@ namespace NAV24 {
     public:
         inline static const std::string TOPIC = "Sensor";
 
-        Sensor() : mName(), mpInterface(), mbIsStopped(true), mpChannel() {}
-        explicit Sensor(ChannelPtr pChannel) :
-                mName(), mpInterface(), mbIsStopped(true), mpChannel(std::move(pChannel)) {}
+        Sensor() : mpInterface() {}
+        explicit Sensor(const ChannelPtr& pChannel);
 
         // All sensors are nodes and at least handle config requests
         void receive(const MsgPtr &msg) override;
 
     protected:
         void setup(const MsgPtr &msg) override;
+        //void handleRequest(const MsgPtr &reqMsg) override;
 
         virtual void getNext(MsgPtr pReq) = 0;
-        //virtual void run() = 0;
-        void handleRequest(const MsgPtr &reqMsg) override;
-
-        void run() override;
-
-        void stop() override;
+        //void run() override;
+        //void stop() override;
 
         virtual void reset() = 0;
 
         [[nodiscard]] virtual std::string printStr(const std::string& prefix) const;
 
+    protected:
         // All sensors have a name and interface
-        std::string mName;
-        std::shared_ptr<SensorInterface> mpInterface;
-
-        bool mbIsStopped;
-
         // All sensors have means of communication with other modules
-        ChannelPtr mpChannel;
+        std::shared_ptr<SensorInterface> mpInterface;
     };
 
 }   //NAV24

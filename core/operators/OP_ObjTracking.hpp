@@ -25,8 +25,8 @@ namespace NAV24::OP {
     public:
         inline static const std::string TOPIC = "ObjTracking";
 
-        ObjTracking() : MsgCallback(), Operator(), mpChannel() {}
-        explicit ObjTracking(ChannelPtr  pChannel) : MsgCallback(), Operator(), mpChannel(std::move(pChannel)) {}
+        ObjTracking() : MsgCallback(), Operator() {}
+        explicit ObjTracking(const ChannelPtr& pChannel) : MsgCallback(pChannel), Operator() {}
 
         static cv::Point2f find_center(const cv::Rect2f& rect);
 
@@ -36,7 +36,7 @@ namespace NAV24::OP {
         void run() override;
 
     protected:
-        ChannelPtr mpChannel;
+
     };
 } // NAV24::OP
 

@@ -20,6 +20,7 @@ namespace NAV24 {
 #define FCN_PS_SAVE 2
 #define FCN_PS_REQ 3
 #define FCN_PS_CONF 4
+#define FCN_PS_PRINT 5
 #define TAG_PS_GET_STAT "ParamServer/GetStat"
 #define TAG_PS_USE_LOAD_PATH "ParamServer/UseLoadPath"
 
@@ -28,7 +29,7 @@ namespace NAV24 {
         //inline static const std::string TAG{"ParameterServer"};
         inline static const std::string TOPIC{"ParamServer"};
 
-        explicit ParameterServer(ChannelPtr  server);
+        explicit ParameterServer(const ChannelPtr&  server);
         //ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg);
 
         void receive(const MsgPtr& msg) override;
@@ -44,8 +45,6 @@ namespace NAV24 {
         void run() override;
 
     private:
-        ChannelPtr mpChannel;
-
         std::string mConfigFile;
 
         ParamPtr mpParamRoot;

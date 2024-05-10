@@ -2,15 +2,16 @@
 // Created by root on 5/16/21.
 //
 
+#include <memory>
+
 #include "DataStore.hpp"
 #include "ParameterServer.hpp"
 #include "Camera.hpp"
 
-#include <memory>
-#include <utility>
 
 using namespace std;
 using namespace boost::filesystem;
+
 
 namespace NAV24 {
 
@@ -20,23 +21,20 @@ namespace NAV24 {
 #define TAG_DS_SEQ "sequence"
 
 
-    DataStore::DataStore(ChannelPtr server) :
-            mpChannel(std::move(server)), mLoadState(TabularTextDS::LoadState::BAD_PATH),
+    DataStore::DataStore(const ChannelPtr& server) :
+            MsgCallback(server), mLoadState(TabularTextDS::LoadState::BAD_PATH),
             mDsFormat(), mDsName(), mSeqNames(), mSeqCount(0), mSeqTarget(0), mSeqIdx(0),
-            mnMaxIter(0), mTsFactor(1.0),
-            mbGtQwFirst(false), mbGtPosFirst(false), mbImuGyroFirst(false) {}
+            mnMaxIter(0), mTsFactor(1.0), mbGtQwFirst(false), mbGtPosFirst(false), mbImuGyroFirst(false) {
 
-    /*DataStore::DataStore(const ChannelPtr &server, const MsgPtr &configMsg) : DataStore(server) {
-
-        this->receive(configMsg);
-    }*/
+        mName = mDsName;
+    }
 
     void DataStore::notifyChange() {
 
         // todo: generalize
         if (mpChannel) {
-            MsgPtr msg = make_shared<Message>("Topic/Notify/Sensors", "DS Changed");
-            mpChannel->publish(msg);
+            MsgPtr msg = make_shared<Message>(ID_CH_NOTIFY_CHANGE, DEF_TOPIC, DEF_ACTION, "DS Changed");
+            mpChannel->send(msg);
         }
     }
 
@@ -47,16 +45,16 @@ namespace NAV24 {
             return;
         }
 
-        // check the topic
-        string topic = msg->getTopic();
-
-        // check for param server response
-        if (topic == ParameterServer::TOPIC) {
+        // check for param server response (config message)
+        if (dynamic_pointer_cast<MsgConfig>(msg)) {
             this->setup(msg);
             return;
         }
 
-        if (topic != DataStore::TOPIC) {
+        // check the topic
+        int catId = msg->getChId();
+        string topic = msg->getTopic();
+        if (catId != ID_CH_DS || (!topic.empty() && topic != DataStore::TOPIC)) {
             DLOG(WARNING) << "DataStore::receive, wrong topic: " << topic << "\n";
             return;
         }
@@ -103,7 +101,7 @@ namespace NAV24 {
         string tag = request->getMessage();
 
         if (tag == TAG_DS_GET_STAT) {
-            sender->receive(make_shared<Message>(msg->getTopic(), this->printLoaderStateStr()));
+            sender->receive(make_shared<Message>(DEF_CAT, DEF_TOPIC, FCN_DS_PRINT, this->printLoaderStateStr()));
             return;
         }
 
@@ -134,7 +132,7 @@ namespace NAV24 {
         }
 
         // create a response message
-        MsgPtr response = make_shared<MsgConfig>(msg->getTopic(), pParam);
+        MsgPtr response = make_shared<MsgConfig>(DEF_CAT, pParam, TOPIC);
 
         // send back to the caller
         sender->receive(response);
@@ -171,6 +169,7 @@ namespace NAV24 {
                 auto pParamNew = find_param<ParamType<string>>(TAG_DS_NAME, pParam);
                 if (pParamNew) {
                     mDsName = pParamNew->getValue();
+                    mName = mDsName;
                 }
                 // Dataset format
                 pParamNew = find_param<ParamType<string>>(TAG_DS_FORMAT, pParam);
@@ -470,8 +469,6 @@ namespace NAV24 {
         return oss.str();
     }
 
-    void DataStore::run() {
-
-    }
+    void DataStore::run() {}
 
 } // NAV24

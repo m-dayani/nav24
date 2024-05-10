@@ -17,7 +17,10 @@ namespace NAV24 {
 
     Transformation::Transformation(std::string ref, std::string tar, PosePtr T_rt,
                                    double _ts_rt) : mRef(std::move(ref)), mTarget(std::move(tar)),
-                                   T_rt(std::move(T_rt)), ts_rt(_ts_rt) {}
+                                   T_rt(std::move(T_rt)), ts_rt(_ts_rt), mTransKey() {
+
+        mTransKey.append(mRef).append(":").append(mTarget);
+    }
 
     ParamPtr
     Transformation::getTransParam(const std::string &ref, const std::string &tar, double t_rt,
@@ -57,5 +60,33 @@ namespace NAV24 {
         vpParamHolder.push_back(p_T_rt);
 
         return pRoot;
+    }
+
+    std::shared_ptr<Transformation> Transformation::getTrans(const ParamPtr &pRelParam) {
+
+        auto pRef = find_param<ParamType<string>>("ref", pRelParam);
+        string ref = (pRef) ? pRef->getValue() : "";
+        auto pTar = find_param<ParamType<string>>("target", pRelParam);
+        string target = (pTar) ? pTar->getValue() : "";
+        auto p_t_rt = find_param<ParamType<double>>("t_rt", pRelParam);
+        double t_rt = (p_t_rt) ? p_t_rt->getValue() : 0.0;
+        auto p_T_rt = find_param<ParamType<cv::Mat>>("T_rt", pRelParam);
+        cv::Mat T_rt = (p_T_rt) ? p_T_rt->getValue() : cv::Mat();
+
+        TransPtr pTrans = nullptr;
+
+        if (!ref.empty()) {
+            // TODO: work more on pose class
+            PosePtr pT_rt = make_shared<Pose>();
+            vector<float> q = Converter::toQuaternion(T_rt.rowRange(0, 3).colRange(0, 3));
+            for (char i = 0; i < 4; i++) pT_rt->q[i] = q[i];
+            pT_rt->p[0] = T_rt.at<float>(0, 3);
+            pT_rt->p[1] = T_rt.at<float>(1, 3);
+            pT_rt->p[2] = T_rt.at<float>(2, 3);
+
+            pTrans = make_shared<Transformation>(ref, target, pT_rt, t_rt);
+        }
+
+        return pTrans;
     }
 } // NAV24

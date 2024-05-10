@@ -2,12 +2,10 @@
 // Created by root on 5/10/21.
 //
 
-#include "ParameterServer.hpp"
-#include "YamlParserCV.hpp"
-
 #include <glog/logging.h>
 
-#include <utility>
+#include "ParameterServer.hpp"
+#include "YamlParserCV.hpp"
 
 
 using namespace std;
@@ -15,14 +13,8 @@ using namespace std;
 
 namespace NAV24 {
 
-    ParameterServer::ParameterServer(ChannelPtr server) :
-        mpChannel(std::move(server)), mpParamRoot(nullptr), mvpAllParams{} {}
-
-    /*ParameterServer::ParameterServer(const ChannelPtr& server, const MsgPtr& configMsg) :
-        ParameterServer(server) {
-
-        this->receive(configMsg);
-    }*/
+    ParameterServer::ParameterServer(const ChannelPtr& server) :
+        MsgCallback(server), mpParamRoot(), mvpAllParams() {}
 
     void ParameterServer::load(const string &settingsFile) {
 
@@ -58,9 +50,10 @@ namespace NAV24 {
             return;
         }
 
-        // check the topic
+        // check the category and topic
+        int catId = msg->getChId();
         string topic = msg->getTopic();
-        if (topic != ParameterServer::TOPIC) {
+        if (catId != ID_CH_PARAMS || (!topic.empty() && topic != ParameterServer::TOPIC)) {
             DLOG(WARNING) << "ParameterServer::receive, unsupported topic: " << topic << "\n";
             return;
         }
@@ -104,7 +97,8 @@ namespace NAV24 {
         string tag = request->getMessage();
 
         if (tag == TAG_PS_GET_STAT) {
-            sender->receive(make_shared<Message>(msg->getTopic(), mpParamRoot->printStr("")));
+            sender->receive(make_shared<Message>(DEF_CAT, DEF_TOPIC, FCN_PS_PRINT,
+                                                 mpParamRoot->printStr("")));
             return;
         }
 
@@ -112,7 +106,7 @@ namespace NAV24 {
         auto pParam = mpParamRoot->read(tag);
 
         // create a response message
-        MsgPtr response = make_shared<MsgConfig>(msg->getTopic(), pParam);
+        MsgPtr response = make_shared<MsgConfig>(DEF_CAT, pParam, TOPIC);
 
         // send back to the caller
         sender->receive(response);
@@ -132,12 +126,8 @@ namespace NAV24 {
         }
     }
 
-    void ParameterServer::setup(const MsgPtr &configMsg) {
+    void ParameterServer::setup(const MsgPtr &configMsg) {}
 
-    }
-
-    void ParameterServer::run() {
-
-    }
+    void ParameterServer::run() {}
 
 } // NAV24

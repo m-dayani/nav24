@@ -52,10 +52,15 @@ namespace NAV24 {
 
         static ParamPtr getTransParam(const std::string& ref, const std::string& tar, double t_rt,
                                       const PosePtr& pPose, std::vector<ParamPtr>& vpParamHolder);
+        static std::shared_ptr<Transformation> getTrans(const ParamPtr& pParam);
+
+        [[nodiscard]] std::string getTransKey() const { return mTransKey; }
+
     protected:
         PosePtr T_rt;
         std::string mRef;
         std::string mTarget;
+        std::string mTransKey;
         double ts_rt;
     };
     typedef std::shared_ptr<Transformation> TransPtr;

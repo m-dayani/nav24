@@ -13,6 +13,8 @@
 
 namespace NAV24 {
 
+#define IC_DEF_PORT
+
     struct SensorInterface {
         enum InterfaceType {
             DEFAULT,
@@ -21,7 +23,7 @@ namespace NAV24 {
             MIXED
         };
 
-        SensorInterface() : interfaceType(DEFAULT), target(), port(0) {}
+        SensorInterface() : interfaceType(DEFAULT), target(), port(IC_DEF_PORT) {}
         SensorInterface(InterfaceType intType, std::string target_, int port_) :
                 interfaceType(intType), target(std::move(target_)), port(port_) {}
 
@@ -31,6 +33,6 @@ namespace NAV24 {
         std::string target;
         int port;
     };
-}
+} // NAV24
 
 #endif //NAV24_INTERFACE_HPP

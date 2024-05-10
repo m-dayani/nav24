@@ -6,6 +6,7 @@
 #define NAV24_TRAJECTORY_HPP
 
 #include <memory>
+#include <utility>
 
 #include "Pose.hpp"
 
@@ -14,7 +15,7 @@ namespace NAV24 {
 
     class Trajectory {
     public:
-        explicit Trajectory(const std::string& traj) : mName(), mvpPoseChain() {}
+        explicit Trajectory(std::string traj) : mName(std::move(traj)), mvpPoseChain() {}
 
         void addPose(const PosePtr& pose);
 

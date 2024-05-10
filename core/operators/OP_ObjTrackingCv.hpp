@@ -38,8 +38,6 @@ namespace NAV24::OP {
         void handleRequest(const MsgPtr &reqMsg) override;
 
         void process(const cv::Mat& image);
-        void run() override;
-        void stop() override;
 
     private:
         std::size_t mTrIdx;

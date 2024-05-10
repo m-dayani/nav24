@@ -7,17 +7,17 @@
 
 #include "Sensor.hpp"
 #include "System.hpp"
+#include "ParameterBlueprint.h"
 
 
 using namespace std;
 
+
 namespace NAV24 {
 
-#define PARAM_KEY_SENSOR_NAME "name"
-#define PARAM_KEY_SENSOR_INTERFACE "interface"
-#define PARAM_KEY_SENSOR_IF_TYPE "type"
-#define PARAM_KEY_SENSOR_IF_TARGET "target"
-#define PARAM_KEY_SENSOR_IF_PORT "port"
+    Sensor::Sensor(const ChannelPtr &pChannel) : MsgCallback(pChannel), mpInterface() {
+        DLOG(INFO) << "Sensor::Sensor, Constructor\n";
+    }
 
     void Sensor::receive(const NAV24::MsgPtr &msg) {
 
@@ -28,12 +28,12 @@ namespace NAV24 {
 
         if (dynamic_pointer_cast<MsgConfig>(msg)) {
             this->setup(msg);
+            return;
         }
 
+        const int action = msg->getTargetId();
+
         if (msg->getTopic() == Sensor::TOPIC) {
-
-            const int action = msg->getTargetId();
-
             switch (action) {
                 case FCN_SEN_STOP_PLAY:
                     this->stop();
@@ -59,7 +59,6 @@ namespace NAV24 {
             }
         }
 
-        int action = msg->getTargetId();
         if (action == FCN_SYS_STOP) {
             this->stop();
         }
@@ -81,19 +80,19 @@ namespace NAV24 {
         auto pSensorParams = pMsgConfig->getConfig();
         if (pSensorParams) {
             // Sensor name
-            auto pSensorName = find_param<ParamType<string>>(PARAM_KEY_SENSOR_NAME, pSensorParams);
+            auto pSensorName = find_param<ParamType<string>>(PKEY_NAME, pSensorParams);
             if (pSensorName) {
                 mName = pSensorName->getValue();
             }
 
             // Sensor interface
-            auto pSensorInterface = pSensorParams->read(PARAM_KEY_SENSOR_INTERFACE);
+            auto pSensorInterface = pSensorParams->read(PKEY_INTERFACE);
             if (pSensorInterface) {
                 SensorInterface::InterfaceType ifType = SensorInterface::DEFAULT;
                 string ifTarget;
                 int ifPort = 0;
 
-                auto pSensorIfType = find_param<ParamType<string>>(PARAM_KEY_SENSOR_IF_TYPE, pSensorInterface);
+                auto pSensorIfType = find_param<ParamType<string>>(PKEY_IF_TYPE, pSensorInterface);
                 if (pSensorIfType) {
                     string sensorType = pSensorIfType->getValue();
                     if (sensorType == "mixed") {
@@ -107,12 +106,12 @@ namespace NAV24 {
                     }
                 }
 
-                auto pSensorIfTarget = find_param<ParamType<string>>(PARAM_KEY_SENSOR_IF_TARGET, pSensorInterface);
+                auto pSensorIfTarget = find_param<ParamType<string>>(PKEY_IF_TARGET, pSensorInterface);
                 if (pSensorIfTarget) {
                     ifTarget = pSensorIfTarget->getValue();
                 }
 
-                auto pSensorIfPort = find_param<ParamType<int>>(PARAM_KEY_SENSOR_IF_PORT, pSensorInterface);
+                auto pSensorIfPort = find_param<ParamType<int>>(PKEY_IF_PORT, pSensorInterface);
                 if (pSensorIfPort) {
                     ifPort = pSensorIfPort->getValue();
                 }
@@ -137,18 +136,13 @@ namespace NAV24 {
         return oss.str();
     }
 
-    void Sensor::handleRequest(const MsgPtr &reqMsg) {
+    /*void Sensor::handleRequest(const MsgPtr &reqMsg) {}
 
-    }
-
-    void Sensor::run() {
-
-    }
+    void Sensor::run() {}
 
     void Sensor::stop() {
         MsgCallback::stop();
-        mbIsStopped = true;
-    }
+    }*/
 
     std::string SensorInterface::printStr(const string &prefix) const {
 

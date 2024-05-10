@@ -34,8 +34,6 @@ namespace NAV24 {
         void run() override;
 
     protected:
-        ChannelPtr mpChannel;
-
         std::map<std::string, TrajPtr> mmpTrajectory;
         std::string mActiveTraj;
     };

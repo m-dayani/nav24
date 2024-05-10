@@ -22,6 +22,7 @@ namespace NAV24 {
 #define FCN_DS_REQ 3
 #define FCN_DS_REQ_CHANGE 4
 #define FCN_DS_REQ_CH_NS 22
+#define FCN_DS_PRINT 12
 //#define FCN_DS_PRINT 5
 
 #define TAG_DS_GET_STAT "DataProvider/GetStat"
@@ -39,7 +40,7 @@ namespace NAV24 {
         //inline static const std::string TAG{"DataStore"};
         inline static const std::string TOPIC{"DataStore"};
 
-        explicit DataStore(ChannelPtr  server);
+        explicit DataStore(const ChannelPtr&  server);
         //DataStore(const ChannelPtr& server, const MsgPtr& configMsg);
 
         void receive(const MsgPtr& msg) override;
@@ -89,8 +90,6 @@ namespace NAV24 {
         void run() override;
 
     protected:
-        ChannelPtr mpChannel;
-
         // Never hold a pointer to params, it's ParamServer's property and
         // changing params can cause problems especially when working with threads
         //ParamPtr mpDsParams;

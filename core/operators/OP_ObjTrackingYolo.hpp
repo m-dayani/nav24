@@ -120,8 +120,6 @@ namespace NAV24::OP {
         std::string CreateSession(DL_INIT_PARAM& iParams);
 
     protected:
-        std::string mName;
-
         std::string mModelName;
         std::string mModelBase;
         std::string mModelPath;

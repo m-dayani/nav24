@@ -32,13 +32,15 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
     public:
         inline static const std::string TOPIC{"System"};
 
-        explicit System();
+        System();
 
+        void send(const MsgPtr &message) override;
         void publish(const MsgPtr &message) override;
 
-        void registerChannel(const MsgCbPtr& callback, const std::string &topic) override;
-
-        void unregisterChannel(const MsgCbPtr& callback, const std::string &topic) override;
+        void registerChannel(int catId, const MsgCbPtr& callback) override;
+        void unregisterChannel(int catId, const MsgCbPtr& callback) override;
+        void registerPublisher(int chId, const MsgCbPtr &callback) override;
+        void registerSubscriber(int chId, const MsgCbPtr &callback) override;
 
         void receive(const MsgPtr &msg) override;
 
@@ -46,9 +48,10 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         void loadSettings(const std::string& settings);
         void loadParameters(const std::string& settings);
         void loadDatasets();
-        void loadSensors();
         void loadRelations();
         void loadOutputs();
+        void loadSensors();
+        void loadCameras();
 
         void initComponents();
 
@@ -62,7 +65,10 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         void handleRequest(const MsgPtr& msg) override;
 
     protected:
-        std::map<std::string, std::vector<MsgCbPtr>> mmChannels;
+        // This is the preferred change
+        std::map<int, std::vector<MsgCbPtr>> mmChannels;
+        std::map<int, std::vector<MsgCbPtr>> mmPublishers;
+        std::map<int, std::vector<MsgCbPtr>> mmSubscribers;
 
         std::shared_ptr<ParameterServer> mpParamServer;
         std::map<std::string, std::shared_ptr<DataStore>> mmpDataStores;

@@ -21,10 +21,10 @@ public:
 
     DummySystem() : mmChannels() {}
 
-    void publish(const MsgPtr &message) override {
+    void send(const MsgPtr &message) override {
 
         if (!message) {
-            cerr << "WARNING: DummySystem::publish, detected null message\n";
+            cerr << "WARNING: DummySystem::send, detected null message\n";
             return;
         }
 
@@ -36,7 +36,7 @@ public:
             }
         }
         else {
-            cout << "WARNING: DummySystem::publish, unknown topic: " << topic << endl;
+            cout << "WARNING: DummySystem::send, unknown topic: " << topic << endl;
         }
     }
 
@@ -206,15 +206,15 @@ int main([[maybe_unused]] int argc, char** argv) {
     chSystem->unregisterChannel(dummyNode, "OtherTopic");
     chSystem->unregisterChannel(dummyNode, "NewOtherTopic");
 
-    chSystem->publish(msgNull);
-    chSystem->publish(msgEmpty);
-    chSystem->publish(msgEmptyTopic);
-    chSystem->publish(msgTopic);
-    chSystem->publish(msgTargetType);
-    chSystem->publish(msgRequestNull);
-    chSystem->publish(msgRequest);
-    chSystem->publish(msgConfigNull);
-    chSystem->publish(msgConfig);
+    chSystem->send(msgNull);
+    chSystem->send(msgEmpty);
+    chSystem->send(msgEmptyTopic);
+    chSystem->send(msgTopic);
+    chSystem->send(msgTargetType);
+    chSystem->send(msgRequestNull);
+    chSystem->send(msgRequest);
+    chSystem->send(msgConfigNull);
+    chSystem->send(msgConfig);
 
     return 0;
 }

@@ -4,7 +4,9 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 #include <glog/logging.h>
+#include <opencv2/calib3d.hpp>
 
 #include "FE_CalibCamCv.hpp"
 #include "Image.hpp"
@@ -69,7 +71,7 @@ namespace NAV24::FE {
                     this->calibrate();
                 }
             }
-            if (msg->getTopic() == FrontEnd::TOPIC) {
+            if (dynamic_pointer_cast<MsgSensorData>(msg)) {
                 this->handleImageMsg(msg);
             }
         }
@@ -80,13 +82,15 @@ namespace NAV24::FE {
         // Create a calibration map
         // Never store a local map or anything else (leave this to each manager)
         mCalibMap = "calib_world" + to_string(mMapCnt++);
-        auto msgCreateMap = make_shared<Message>(Atlas::TOPIC,mCalibMap,FCN_MAP_CREATE);
-        mpChannel->publish(msgCreateMap);
+        auto msgCreateMap = make_shared<Message>(ID_CH_ATLAS, Atlas::TOPIC,
+                                                 FCN_MAP_CREATE, mCalibMap);
+        mpChannel->send(msgCreateMap);
 
         // Create a point trajectory (fixed camera)
         mTrajectory = "calib_traj" + to_string(mTrajCnt++);
-        auto msgCreateTraj = make_shared<Message>(TrajManager::TOPIC,mTrajectory, FCN_TRJ_CREATE);
-        mpChannel->publish(msgCreateTraj);
+        auto msgCreateTraj = make_shared<Message>(ID_CH_TRAJECTORY, TrajManager::TOPIC,
+                                                  FCN_TRJ_CREATE, mTrajectory);
+        mpChannel->send(msgCreateTraj);
 
         // Initialize the grid map
         for (int y = 0; y < mGridSize.height; y++) {
@@ -96,9 +100,9 @@ namespace NAV24::FE {
             }
         }
         // Always add parameters in bulk (for efficiency)
-        auto msgAddMapPts = make_shared<MsgType<vector<WO::woPtr>>>(Atlas::TOPIC, mCalibMap,
-                                                                    FCN_MAP_ADD_WO, mvpPts3D);
-        mpChannel->publish(msgAddMapPts);
+        auto msgAddMapPts = make_shared<MsgType<vector<WO::woPtr>>>(ID_CH_ATLAS, mvpPts3D,
+                                                                    Atlas::TOPIC, FCN_MAP_ADD_WO, mCalibMap);
+        mpChannel->send(msgAddMapPts);
 
         mbInitialized = true;
     }
@@ -137,14 +141,22 @@ namespace NAV24::FE {
                     PosePtr pPose = make_shared<Pose>();
                     auto pFrame = make_shared<FrameImgMono>(pImage->mTimeStamp, pPose, vpCorners, pImage);
                     mvpFrames.push_back(pFrame);
-
-
                 }
 
                 // Show results
-//                    cv::putText(img, "Successful", cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX,
-//                                1.5, cv::Scalar(0, 255, 0), 2);
-                //cv::drawChessboardCorners(img, mGridSize, vCorners, res);
+                cv::putText(img, "Successful", cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX,
+                            1.5, cv::Scalar(0, 255, 0), 2);
+                vector<cv::Point2f> vCorners;
+                for (const auto& pObs : vpCorners) {
+                    auto point = static_pointer_cast<OB::Point2D>(pObs);
+                    if (point) {
+                        vCorners.emplace_back(point->x, point->y);
+                    }
+                }
+                cv::drawChessboardCorners(img, mGridSize, vCorners, res);
+                auto pImage2Show = make_shared<ImageTs>(img.clone(), pImage->mTimeStamp, pImage->mPath);
+                auto msgImage = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage2Show);
+                mpChannel->publish(msgImage);
             }
         }
     }
@@ -174,19 +186,21 @@ namespace NAV24::FE {
             // Update calibration parameters: K, D
             auto pCalibParam = Calibration::getCalibParams(pProblem->mK, pProblem->mDistCoeffs,
                                                            "radial-tangential", mvpParamHolder);
-            auto msgCalibConf = make_shared<MsgConfig>(ParameterServer::TOPIC, pCalibParam);
+            auto msgCalibConf = make_shared<MsgConfig>(ID_CH_PARAMS, pCalibParam,
+                                                       ParameterServer::TOPIC);
             // todo: you normally get param keys from the system
             msgCalibConf->setMessage(string(PARAM_CAM) + "/0/calib");
             msgCalibConf->setTargetId(FCN_PS_CONF);
-            mpChannel->publish(msgCalibConf);
+            mpChannel->send(msgCalibConf);
 
             // Update camera-world trans from last frame
             auto pTransParam = Transformation::getTransParam("world0", "cam0", 0.0,
                                                              mvpFrames.back()->getPose(), mvpParamHolder);
-            auto msgTransConf = make_shared<MsgConfig>(ParameterServer::TOPIC, pTransParam);
+            auto msgTransConf = make_shared<MsgConfig>(ID_CH_PARAMS, pTransParam,
+                                                       ParameterServer::TOPIC);
             msgTransConf->setMessage(string(PARAM_REL) + "/0");
             msgTransConf->setTargetId(FCN_PS_CONF);
-            mpChannel->publish(msgTransConf);
+            mpChannel->send(msgTransConf);
 
             // TODO: Notify components that parameters have changed
         }

@@ -10,6 +10,7 @@
 #include "ImageViewer.hpp"
 #include "System.hpp"
 
+
 using namespace std;
 
 namespace NAV24 {
@@ -91,8 +92,9 @@ namespace NAV24 {
                 if (keyVal == 'q') {
                     this->requestStop(winName);
                     bStop = true;
-                    auto msgStop = make_shared<Message>(Sensor::TOPIC, "stop_play", FCN_SEN_STOP_PLAY);
-                    mpChannel->publish(msgStop);
+                    auto msgStop = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
+                                                        FCN_SEN_STOP_PLAY, "stop_play");
+                    mpChannel->send(msgStop);
                 }
 
                 if (bStop) {
@@ -113,36 +115,37 @@ namespace NAV24 {
 
         if (msg) {
             string topic = msg->getTopic();
+            int catId = msg->getChId();
 
-            if (topic == Output::TOPIC || topic == TOPIC) {
+//            if (catId == ID_CH_OUTPUT || topic == Output::TOPIC || topic == TOPIC) {
 
-                auto msgImage = dynamic_pointer_cast<MsgSensorData>(msg);
-                if (msgImage) {
-                    auto sensorData = msgImage->getData();
-                    if (sensorData && dynamic_pointer_cast<ImageTs>(sensorData)) {
-                        auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
+            auto msgImage = dynamic_pointer_cast<MsgSensorData>(msg);
+            if (msgImage) {
+                auto sensorData = msgImage->getData();
+                if (sensorData && dynamic_pointer_cast<ImageTs>(sensorData)) {
+                    auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
 
-                        string winName = msg->getMessage();
-                        if (winName.empty()) {
-                            winName = mName;
-                        }
-
-                        if (pImage->mImage.empty()) {
-                            DLOG(WARNING) << "ImageViewer::receive, image is empty\n";
-                            return;
-                        }
-
-                        mMtxImgQueue.lock();
-                        if (mmqpImages.count(winName) <= 0) {
-                            mmqpImages[winName] = make_shared<queue<ImagePtr>>();
-                        }
-                        mMtxImage.lock();
-                        mmqpImages[winName]->push(pImage);
-                        mMtxImage.unlock();
-                        mMtxImgQueue.unlock();
+                    string winName = msg->getMessage();
+                    if (winName.empty()) {
+                        winName = mName;
                     }
+
+                    if (pImage->mImage.empty()) {
+                        DLOG(WARNING) << "ImageViewer::receive, image is empty\n";
+                        return;
+                    }
+
+                    mMtxImgQueue.lock();
+                    if (mmqpImages.count(winName) <= 0) {
+                        mmqpImages[winName] = make_shared<queue<ImagePtr>>();
+                    }
+                    mMtxImage.lock();
+                    mmqpImages[winName]->push(pImage);
+                    mMtxImage.unlock();
+                    mMtxImgQueue.unlock();
                 }
             }
+//            }
         }
     }
 

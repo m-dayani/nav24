@@ -10,9 +10,7 @@ using namespace std;
 
 namespace NAV24 {
 
-    Atlas::Atlas(ChannelPtr pChannel) : mpChannel(std::move(pChannel)), mWorlds() {
-
-    }
+    Atlas::Atlas(const ChannelPtr& pChannel) : MsgCallback(pChannel), mWorlds() {}
 
     void Atlas::receive(const MsgPtr &msg) {
 

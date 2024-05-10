@@ -13,28 +13,69 @@ using namespace std;
 
 namespace NAV24 {
 
-    System::System() : mmChannels{}, mpParamServer(), mmpDataStores(), mmpTrans(),
-                       mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr), mpThreads() {}
+    System::System() : mmChannels(), mmPublishers(), mmSubscribers(), mpParamServer(), mmpDataStores(), mmpSensors(),
+                       mmpTrans(), mmpOutputs(), mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr),
+                       mpThreads() {
+        mName = "System";
+    }
 
     /* -------------------------------------------------------------------------------------------------------------- */
 
+    void System::send(const MsgPtr &message) {
+
+        int catId = message->getChId();
+        if (mmChannels.count(catId) > 0) {
+            for (const auto &channel: mmChannels[catId]) {
+                channel->receive(message);
+            }
+        }
+    }
+
     void System::publish(const MsgPtr &message) {
 
-        for (const auto& channel : mmChannels[message->getTopic()]) {
-            channel->receive(message);
+        int catId = message->getChId();
+        if (mmSubscribers.count(catId) > 0) {
+            for (const auto &channel: mmSubscribers[catId]) {
+                channel->receive(message);
+            }
         }
     }
 
-    void System::registerChannel(const MsgCbPtr &callback, const string &topic) {
+    void System::registerPublisher(const int chId, const MsgCbPtr &callback) {
 
-        if (mmChannels.count(topic) <= 0) {
-            mmChannels[topic] = vector<MsgCbPtr>();
+        if (mmPublishers.count(chId) <= 0) {
+            mmPublishers[chId] = vector<MsgCbPtr>();
         }
-        mmChannels[topic].push_back(callback);
+        mmPublishers[chId].push_back(callback);
     }
 
-    void System::unregisterChannel(const MsgCbPtr &callback, const string &topic) {
+    void System::registerSubscriber(const int chId, const MsgCbPtr &callback) {
 
+        if (mmSubscribers.count(chId) <= 0) {
+            mmSubscribers[chId] = vector<MsgCbPtr>();
+        }
+        mmSubscribers[chId].push_back(callback);
+    }
+
+    void System::registerChannel(const int chId, const MsgCbPtr &callback) {
+
+        if (mmChannels.count(chId) <= 0) {
+            mmChannels[chId] = vector<MsgCbPtr>();
+        }
+        mmChannels[chId].push_back(callback);
+    }
+
+    void System::unregisterChannel(const int chId, const MsgCbPtr &callback) {
+
+        if (mmChannels.contains(chId)) {
+            vector<MsgCbPtr> vNewCbs;
+            for (const auto& cbPtr : mmChannels[chId]) {
+                if (callback != cbPtr) {
+                    vNewCbs.push_back(cbPtr);
+                }
+            }
+            mmChannels[chId] = vNewCbs;
+        }
     }
 
     /* -------------------------------------------------------------------------------------------------------------- */
@@ -62,124 +103,77 @@ namespace NAV24 {
 
     void System::loadParameters(const std::string &settings) {
 
-        MsgPtr msgLoadSettings = make_shared<Message>(ParameterServer::TOPIC, settings, FCN_PS_LOAD);
+        MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_PARAMS, ParameterServer::TOPIC, FCN_PS_LOAD, settings);
         mpParamServer = make_shared<ParameterServer>(shared_from_this());
         mpParamServer->receive(msgLoadSettings);
-        this->registerChannel(mpParamServer, ParameterServer::TOPIC);
+        this->registerChannel(ID_CH_PARAMS, mpParamServer);
     }
 
     void System::loadDatasets() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
-                                                    PARAM_DS, FCN_PS_REQ, shared_from_this());
+        auto pCh = shared_from_this();
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pCh,
+                                                    ParameterServer::TOPIC,FCN_PS_REQ, PARAM_DS);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "DS") {
 
             size_t nDs = mpTempParam->getAllChildKeys().size();
             for (size_t i = 0; i < nDs; i++) {
-                shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(shared_from_this());
-                string msgTarget = string(PARAM_DS) + "/" + to_string(i);
-                msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC, msgTarget,
-                                                       FCN_PS_REQ, pDataProvider);
+                shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(pCh);
+                string currIdxStr = to_string(i);
+                string msgTarget = string(PARAM_DS) + "/" + currIdxStr;
+                msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pDataProvider,
+                                                       ParameterServer::TOPIC, FCN_PS_REQ, msgTarget);
                 mpParamServer->receive(msgGetParams);
-                msgGetParams->setCallback(shared_from_this());
-                mpParamServer->receive(msgGetParams);
-                if (mpTempParam) {
-                    auto dsParam = find_param<ParamType<string>>("name", mpTempParam);
-                    if (dsParam) {
-                        mmpDataStores.insert(make_pair(dsParam->getValue(), pDataProvider));
-                        this->registerChannel(pDataProvider, DataStore::TOPIC);
-                    }
-                }
+
+                mmpDataStores.insert(make_pair(pDataProvider->getName(), pDataProvider));
+                this->registerChannel(ID_CH_DS, pDataProvider);
             }
         }
     }
 
     void System::loadSensors() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
-                                               PARAM_CAM, FCN_PS_REQ, shared_from_this());
+        loadCameras();
+
+        for (const auto& pSensor : mmpSensors) {
+            this->registerChannel(ID_CH_SENSORS, pSensor.second);
+            this->registerPublisher(ID_TP_SDATA, pSensor.second);
+        }
+    }
+
+    void System::loadCameras() {
+
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
+                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_CAM);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Camera") {
+
             map<string, ParamPtrW> mParams = mpTempParam->getAllChildren();
             for (const auto& camParam : mParams) {
                 auto pCamParam = camParam.second.lock();
                 if (pCamParam) {
-                    auto camName = find_param<ParamType<string>>("name", pCamParam);
-                    string camNameStr = (camName) ? camName->getValue() : "cam0";
-                    auto ifType = find_param<ParamType<string>>("interface/type", pCamParam);
-                    if (ifType) {
-                        string interfaceType = ifType->getValue();
-
-                        MsgReqPtr msgGetCamParams{};
-                        shared_ptr<Camera> pCamera{};
-                        if (interfaceType == "offline") {
-                            pCamera = make_shared<CamOffline>(shared_from_this());
-                        }
-                        else if (interfaceType == "stream") {
-                            pCamera = make_shared<CamStream>(shared_from_this());
-                        }
-                        else if (interfaceType == "mixed") {
-                            pCamera = make_shared<CamMixed>(shared_from_this());
-                        }
-                        if (pCamera && (interfaceType == "offline" || interfaceType == "mixed")) {
-                            auto ifTarget = find_param<ParamType<string>>("interface/target", pCamParam);
-                            string ifTargetStr = (ifTarget) ? ifTarget->getValue() : "";
-                            MsgPtr msgImagePaths = make_shared<MsgRequest>(DataStore::TOPIC, TAG_DS_GET_PATH_IMG,
-                                                                           FCN_DS_REQ, pCamera);
-                            if (mmpDataStores.count(ifTargetStr) > 0) {
-                                mmpDataStores[ifTargetStr]->receive(msgImagePaths);
-                            }
-                        }
-                        if (pCamera) {
-                            msgGetCamParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
-                                                                      string(PARAM_CAM) + "/" + camParam.first,
-                                                                      FCN_PS_REQ, pCamera);
-                            mpParamServer->receive(msgGetCamParams);
-                            mmpSensors.insert(make_pair(camNameStr, pCamera));
-                        }
+                    auto pCamera = Camera::getCamera(pCamParam, shared_from_this(), camParam.first);
+                    if (pCamera) {
+                        mmpSensors.insert(make_pair(pCamera->getName(), pCamera));
                     }
                 }
             }
-        }
-
-        for (const auto& pSensor : mmpSensors) {
-            this->registerChannel(pSensor.second, Sensor::TOPIC);
         }
     }
 
     void System::loadRelations() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
-                                               PARAM_REL, FCN_PS_REQ, shared_from_this());
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
+                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_REL);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Relations") {
             for (const auto& relParamPair : mpTempParam->getAllChildren()) {
                 auto pRelParam = relParamPair.second.lock();
                 if (pRelParam) {
-                    auto pRef = find_param<ParamType<string>>("ref", pRelParam);
-                    string ref = (pRef) ? pRef->getValue() : "";
-                    auto pTar = find_param<ParamType<string>>("target", pRelParam);
-                    string target = (pTar) ? pTar->getValue() : "";
-                    auto p_t_rt = find_param<ParamType<double>>("t_rt", pRelParam);
-                    double t_rt = (p_t_rt) ? p_t_rt->getValue() : 0.0;
-                    auto p_T_rt = find_param<ParamType<cv::Mat>>("T_rt", pRelParam);
-                    cv::Mat T_rt = (p_T_rt) ? p_T_rt->getValue() : cv::Mat();
-
-                    if (!ref.empty()) {
-                        // TODO: work more on pose class
-                        PosePtr pT_rt = make_shared<Pose>();
-                        vector<float> q = Converter::toQuaternion(T_rt.rowRange(0, 3).colRange(0, 3));
-                        for (char i = 0; i < 4; i++) pT_rt->q[i] = q[i];
-                        pT_rt->p[0] = T_rt.at<float>(0, 3);
-                        pT_rt->p[1] = T_rt.at<float>(1, 3);
-                        pT_rt->p[2] = T_rt.at<float>(2, 3);
-
-                        TransPtr pTrans = make_shared<Transformation>(ref, target, pT_rt, t_rt);
-
-                        string transKey;
-                        transKey.append(ref).append(":").append(target);
-                        mmpTrans.insert(make_pair(transKey, pTrans));
+                    auto pTrans = Transformation::getTrans(pRelParam);
+                    if (pTrans) {
+                        mmpTrans.insert(make_pair(pTrans->getTransKey(), pTrans));
                     }
                 }
             }
@@ -188,23 +182,28 @@ namespace NAV24 {
 
     void System::loadOutputs() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
-                                               PARAM_OUT, FCN_PS_REQ, shared_from_this());
+        auto pChannel = shared_from_this();
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pChannel,
+                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_OUT);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == PARAM_OUT) {
             for (const auto& outParamPair : mpTempParam->getAllChildren()) {
                 auto pParam = outParamPair.second.lock();
                 if (pParam) {
-                    OutputPtr pOutput = Output::getNewInstance(pParam, shared_from_this());
+                    OutputPtr pOutput = Output::getNewInstance(pParam, pChannel);
                     if (pOutput) {
                         // load output params
-                        msgGetParams = make_shared<MsgRequest>(ParameterServer::TOPIC,
-                                                               string(PARAM_OUT) + "/" + outParamPair.first,
-                                                               FCN_PS_REQ, pOutput);
+                        string paramKey = string(PARAM_OUT) + "/" + outParamPair.first;
+                        msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pOutput, ParameterServer::TOPIC,
+                                                               FCN_PS_REQ, paramKey);
                         mpParamServer->receive(msgGetParams);
+
                         mmpOutputs.insert(make_pair(pOutput->getName(), pOutput));
-                        this->registerChannel(pOutput, Output::TOPIC);
-                        auto msgRunOutput = make_shared<MsgRequest>(Output::TOPIC, "", FCN_SYS_RUN, shared_from_this());
+                        this->registerChannel(ID_CH_OUTPUT, pOutput);
+                        this->registerSubscriber(ID_TP_OUTPUT, pOutput);
+
+                        auto msgRunOutput = make_shared<MsgRequest>(ID_CH_OUTPUT,
+                                                                    pChannel, Output::TOPIC, FCN_SYS_RUN);
                         pOutput->receive(msgRunOutput);
                         //mpThreads.push_back(thread(&Output::run, pOutput));
                     }
@@ -218,12 +217,12 @@ namespace NAV24 {
         // Initialize Atlas (Map/World Manager)
         if (!mpAtlas) {
             mpAtlas = make_shared<Atlas>(shared_from_this());
-            this->registerChannel(mpAtlas, Atlas::TOPIC);
+            this->registerChannel(ID_CH_ATLAS, mpAtlas);
         }
         // Initialize Trajectory Manager
         if (!mpTrajManager) {
             mpTrajManager = make_shared<TrajManager>();
-            this->registerChannel(mpTrajManager, TrajManager::TOPIC);
+            this->registerChannel(ID_CH_TRAJECTORY, mpTrajManager);
         }
     }
 
@@ -291,7 +290,7 @@ namespace NAV24 {
             if (mmpTrans.count(msgStr) > 0) {
 
                 auto pTrans = mmpTrans[msgStr];
-                auto msgTrans = make_shared<MsgType<TransPtr>>(msg->getTopic(), pTrans);
+                auto msgTrans = make_shared<MsgType<TransPtr>>(DEF_CAT, pTrans, msg->getTopic());
                 sender->receive(msgTrans);
             }
         }
@@ -308,7 +307,7 @@ namespace NAV24 {
     void System::stop() {
         MsgCallback::stop();
 
-        auto msgStop = make_shared<Message>(TOPIC, "", FCN_SYS_STOP);
+        auto msgStop = make_shared<Message>(ID_CH_SYS, TOPIC, FCN_SYS_STOP);
 
         for (const auto& pChPair : mmChannels) {
             auto pChannels = pChPair.second;

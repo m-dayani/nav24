@@ -2,9 +2,6 @@
 // Created by masoud on 5/2/24.
 //
 
-#include <opencv2/dnn.hpp>
-#include <opencv2/imgproc.hpp>
-
 #include <memory>
 #include <string>
 #include <utility>
@@ -12,6 +9,8 @@
 #include <iostream>
 #include <thread>
 #include <glog/logging.h>
+#include <opencv2/dnn.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "Image.hpp"
 #include "FrontEnd.hpp"
@@ -353,16 +352,18 @@ namespace NAV24::OP {
             ImagePtr pImage;
             if (!mqpImages.empty()) {
                 pImage = mqpImages.front();
-                mqpImages.pop();
             }
             mMtxImgBuff.unlock();
 
             this->process(pImage);
 
-            mMtxStop.lock();
-            bool bStop = mbStop;
-            mMtxStop.unlock();
-            if (bStop) {
+            mMtxImgBuff.lock();
+            if (!mqpImages.empty()) {
+                mqpImages.pop();
+            }
+            mMtxImgBuff.unlock();
+
+            if (this->isStopped()) {
                 break;
             }
         }
@@ -411,7 +412,7 @@ namespace NAV24::OP {
             //cv::Point2f ptObs = find_center(d, imgSizeCv);
             //auto pMsgPtObs = make_shared<MsgType<cv::Point2f>>(FE::FrontEnd::TOPIC, ptObs);
             cv::Rect2f detRect(d.x * w, d.y * h, d.w * w, d.h * h);
-            auto pMsgPtObs = make_shared<MsgType<cv::Rect2f>>(FE::FrontEnd::TOPIC, detRect);
+            auto pMsgPtObs = make_shared<MsgType<cv::Rect2f>>(ID_TP_FE, detRect, FE::FrontEnd::TOPIC);
 
             mpChannel->publish(pMsgPtObs);
         }
@@ -428,7 +429,8 @@ namespace NAV24::OP {
                 int action = msg->getTargetId();
                 if (action == FCN_OBJ_TR_RUN) {
                     auto pThRun = make_shared<thread>(&ObjTrYoloOnnx::run, this);
-                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(msg->getTopic(), pThRun);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThRun,
+                                                                           msg->getTopic());
                     sender->receive(msgRes);
                 }
             }
