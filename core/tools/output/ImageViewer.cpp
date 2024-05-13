@@ -87,7 +87,7 @@ namespace NAV24 {
                             cv::Scalar(0, 180, 0), 1);
 
                 cv::imshow(winName, imageToShow);
-                int keyVal = cv::waitKey(static_cast<int>(1000.f / mFps));
+                int keyVal = cv::waitKey(1); //static_cast<int>(1000.f / mFps));
 
                 if (keyVal == 'q') {
                     this->requestStop(winName);

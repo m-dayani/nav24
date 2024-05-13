@@ -41,5 +41,9 @@ add_executable(aun_cam_calib roboticArm/aun_cam_calib.cpp)
 target_link_libraries(aun_cam_calib LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_cam_calib)
 
+add_executable(aun_serial_test roboticArm/aun_serial_test.cpp)
+target_link_libraries(aun_serial_test LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE aun_serial_test)
+
 #install(TARGETS ${INSTALLABLE_EXE} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/bin)
 

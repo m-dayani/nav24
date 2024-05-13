@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <glog/logging.h>
+#include <iomanip>
 
 using namespace std;
 
@@ -242,10 +243,14 @@ namespace NAV24 {
             }
             if (dynamic_pointer_cast<ParamType<double>>(param)) {
                 shared_ptr<ParamType<double>> paramReal = dynamic_pointer_cast<ParamType<double>>(param);
+                //ostringstream oss;
+                //oss << fixed << std::setprecision(6) << paramReal->getValue();
                 fs << paramReal->getValue();
             }
             if (dynamic_pointer_cast<ParamType<cv::Mat>>(param)) {
                 shared_ptr<ParamType<cv::Mat>> paramMat = dynamic_pointer_cast<ParamType<cv::Mat>>(param);
+//                cv::Mat mat = paramMat->getValue();
+//                mat.convertTo(mat, CV_32FC1);
                 fs << paramMat->getValue();
             }
         }

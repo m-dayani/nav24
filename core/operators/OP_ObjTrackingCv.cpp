@@ -2,11 +2,14 @@
 // Created by masoud on 5/6/24.
 //
 
+#include <thread>
+#include <glog/logging.h>
 
 #include "Output.hpp"
 #include "Image.hpp"
 #include "OP_ObjTrackingCv.hpp"
 #include "FrontEnd.hpp"
+#include "ParameterBlueprint.h"
 
 using namespace cv;
 using namespace std;
@@ -16,12 +19,12 @@ namespace NAV24::OP {
 // Convert to string
 //#define SSTR( x ) static_cast< std::ostringstream & >( \
 //( std::ostringstream() << std::dec << x ) ).str()
+#define MAX_SIZE_BUFFER 1
 
+    ObjTrackingCv::ObjTrackingCv(const ChannelPtr& pChannel) : ObjTracking(pChannel),
+        mTrIdx(DEF_TR_CV_OPT), mbBboxInit(false), mbTrInit(false) {
 
-    ObjTrackingCv::ObjTrackingCv(const ChannelPtr& pChannel) : ObjTracking(pChannel), mTrIdx(DEF_TR_CV_OPT),
-        bbox(287, 23, 86, 320), mbBboxInit(false), mbTrInit(false) {
-
-        mvTrOptions = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "CSRT"};
+        mvTrOptions = {"BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN", "CSRT"};
         this->initTrackerObj();
     }
 
@@ -31,14 +34,47 @@ namespace NAV24::OP {
         // Initialize tracker object with message
         if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
 
+            auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
+            auto pParams = pMsgConf->getConfig();
+            if (pParams) {
+                auto pParamName = find_param<ParamType<string>>(PKEY_NAME, pParams);
+                mName = (pParamName) ? pParamName->getValue() : "ObjTrackerCV";
+
+                auto pParamOpt = find_param<ParamType<int>>("method", pParams);
+                mTrIdx = (pParamOpt) ? pParamOpt->getValue() : DEF_TR_CV_OPT;
+
+                this->initTrackerObj();
+            }
         }
     }
 
-    void ObjTrackingCv::handleRequest(const MsgPtr &reqMsg) {
-        ObjTracking::handleRequest(reqMsg);
+    void ObjTrackingCv::handleRequest(const MsgPtr &msg) {
+        ObjTracking::handleRequest(msg);
+
+        if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
+
+            auto pReqMsg = dynamic_pointer_cast<MsgRequest>(msg);
+            auto sender = pReqMsg->getCallback();
+            if (sender) {
+                int action = msg->getTargetId();
+                if (action == FCN_OBJ_TR_RUN) {
+                    auto pThRun = make_shared<thread>(&ObjTrackingCv::run, this);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThRun,
+                                                                           msg->getTopic());
+                    sender->receive(msgRes);
+                }
+            }
+        }
     }
 
-    void ObjTrackingCv::process(const Mat &frame) {
+    void ObjTrackingCv::update(const ImagePtr& pImage) {
+
+        if (!pImage || pImage->mImage.empty()) {
+            DVLOG(2) << "ObjTrackingCv::update, empty image received\n";
+            return;
+        }
+
+        cv::Mat frame = pImage->mImage.clone();
 
         // Start timer
         auto timer = (double)getTickCount();
@@ -72,8 +108,8 @@ namespace NAV24::OP {
         mpChannel->publish(msgPt);
 
         // Display frame.
-        auto pImage = make_shared<ImageTs>(frame.clone(), -1, "");
-        auto msgDisp = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage,
+        auto pImage1 = make_shared<ImageTs>(frame.clone(), -1, "");
+        auto msgDisp = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage1,
                                                   Output::TOPIC, DEF_ACTION, "Tracking");
         mpChannel->publish(msgDisp);
     }
@@ -111,9 +147,20 @@ namespace NAV24::OP {
                         mbTrInit = true;
                     }
                     if (action == FCN_TR_CV_TRACK) {
-                        this->process(image);
+                        //this->process(image);
+                        mMtxImgQ.lock();
+                        if (mqpImages.size() <= MAX_SIZE_BUFFER) {
+                            mqpImages.push(pImage);
+                        }
+                        mMtxImgQ.unlock();
                     }
                 }
+            }
+            if (dynamic_pointer_cast<MsgRequest>(msg)) {
+                this->handleRequest(msg);
+            }
+            if (dynamic_pointer_cast<MsgConfig>(msg)) {
+                this->setup(msg);
             }
         }
     }
@@ -147,5 +194,32 @@ namespace NAV24::OP {
                 mpTracker = TrackerCSRT::create();
         }
 #endif
+
+        DLOG(INFO) << "ObjTrackingCv::initTrackerObj, changed tracker to (" << mTrIdx << ", " << mTrName << ")\n";
     }
+
+    /*void ObjTrackingCv::run() {
+        ObjTracking::run();
+
+        while(true) {
+            cv::Mat img;
+            mMtxImgQ.lock();
+            if (!mqpImages.empty()) {
+                auto pImage = mqpImages.front();
+                if (pImage && !pImage->mImage.empty()) {
+                    img = pImage->mImage.clone();
+                }
+                mqpImages.pop();
+            }
+            mMtxImgQ.unlock();
+
+            if (!img.empty()) {
+                this->process(img);
+            }
+
+            if (this->isStopped()) {
+                break;
+            }
+        }
+    }*/
 } // NAV24::OP

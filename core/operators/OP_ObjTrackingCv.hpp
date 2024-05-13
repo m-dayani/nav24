@@ -5,6 +5,7 @@
 #ifndef NAV24_OP_OBJTRACKINGCV_HPP
 #define NAV24_OP_OBJTRACKINGCV_HPP
 
+#include <queue>
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -37,17 +38,15 @@ namespace NAV24::OP {
         void setup(const MsgPtr &configMsg) override;
         void handleRequest(const MsgPtr &reqMsg) override;
 
-        void process(const cv::Mat& image);
+        void update(const ImagePtr& pImage) override;
+        //void run() override;
 
     private:
         std::size_t mTrIdx;
         std::string mTrName;
         std::vector<std::string> mvTrOptions;
         cv::Ptr<cv::Tracker> mpTracker;
-        //cv::Rect2d bbox;
 
-    public:
-        cv::Rect2d bbox;
         bool mbTrInit;
         bool mbBboxInit;
     };

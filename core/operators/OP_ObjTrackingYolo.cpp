@@ -22,6 +22,7 @@ using namespace std;
 namespace NAV24::OP {
 
 #define RET_OK nullptr
+#define MAX_SIZE_BUFFER 1
 
     const char *class_names[] = {
             "person",         "bicycle",    "car",           "motorcycle",    "airplane",     "bus",           "train",
@@ -74,8 +75,7 @@ namespace NAV24::OP {
     }
 
     ObjTrYoloOnnx::ObjTrYoloOnnx(const ChannelPtr& pChannel) :
-        ObjTracking(pChannel), mCudaDevice(-1), imgSize(),
-        modelType(), mqpImages(), mMtxImgBuff(), mLastTs(-1.0) {}
+        ObjTracking(pChannel), mCudaDevice(-1), imgSize(), modelType() {}
 
     int64_t ObjTrYoloOnnx::image_size() const {
 
@@ -172,9 +172,12 @@ namespace NAV24::OP {
 
                 auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
                 if (pImage && !pImage->mImage.empty()) {
-                    mMtxImgBuff.lock();
-                    mqpImages.push(pImage);
-                    mMtxImgBuff.unlock();
+                    mMtxImgQ.lock();
+                    if (mqpImages.size() <= MAX_SIZE_BUFFER) {
+                        mqpImages.push(pImage);
+                    }
+                    mMtxImgQ.unlock();
+//                    DLOG(INFO) << "ObjTrYoloOnnx::receive, added new image: " << pImage->mTimeStamp << "\n";
                 }
             }
         }
@@ -193,7 +196,7 @@ namespace NAV24::OP {
         }
     }
 
-    cv::Point2f ObjTrYoloOnnx::find_center(const Result &d, const cv::Size& imgSize) {
+    /*cv::Point2f ObjTrYoloOnnx::find_center(const Result &d, const cv::Size& imgSize) {
 
         auto w = imgSize.width, h = imgSize.height;
         auto dx = static_cast<float>(d.x * w);
@@ -202,8 +205,27 @@ namespace NAV24::OP {
         auto dh = static_cast<float>(d.h * h);
 
         return {dx + dw / 2.f, dy + dh / 2.f};
-    }
+    }*/
 
+    void ObjTrYoloOnnx::handleRequest(const MsgPtr &msg) {
+        ObjTracking::handleRequest(msg);
+
+        if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
+
+            auto pReqMsg = dynamic_pointer_cast<MsgRequest>(msg);
+            auto sender = pReqMsg->getCallback();
+            if (sender) {
+                int action = msg->getTargetId();
+                if (action == FCN_OBJ_TR_RUN) {
+                    auto pThRun = make_shared<thread>(&ObjTrYoloOnnx::run, this);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThRun,
+                                                                           msg->getTopic());
+                    sender->receive(msgRes);
+                }
+            }
+        }
+    }
+    
     void ObjTrYoloOnnx::setup(const MsgPtr &msg) {
 
         auto configMsg = dynamic_pointer_cast<MsgConfig>(msg);
@@ -345,23 +367,18 @@ namespace NAV24::OP {
 
     }
 
-    void ObjTrYoloOnnx::run() {
+    /*void ObjTrYoloOnnx::run() {
 
         while(true) {
-            mMtxImgBuff.lock();
+            mMtxImgQ.lock();
             ImagePtr pImage;
             if (!mqpImages.empty()) {
                 pImage = mqpImages.front();
-            }
-            mMtxImgBuff.unlock();
-
-            this->process(pImage);
-
-            mMtxImgBuff.lock();
-            if (!mqpImages.empty()) {
                 mqpImages.pop();
             }
-            mMtxImgBuff.unlock();
+            mMtxImgQ.unlock();
+
+            this->process(pImage);
 
             if (this->isStopped()) {
                 break;
@@ -371,12 +388,12 @@ namespace NAV24::OP {
 
     void ObjTrYoloOnnx::stop() {
         MsgCallback::stop();
-    }
+    }*/
 
-    void ObjTrYoloOnnx::process(const ImagePtr &pImage) {
+    void ObjTrYoloOnnx::update(const ImagePtr &pImage) {
 
         if (!pImage || pImage->mImage.empty()) {
-            DLOG(WARNING) << "ObjTrYoloOnnx::process, empty image detected\n";
+            DVLOG(2) << "ObjTrYoloOnnx::process, empty image detected\n";
             return;
         }
 
@@ -415,25 +432,6 @@ namespace NAV24::OP {
             auto pMsgPtObs = make_shared<MsgType<cv::Rect2f>>(ID_TP_FE, detRect, FE::FrontEnd::TOPIC);
 
             mpChannel->publish(pMsgPtObs);
-        }
-    }
-
-    void ObjTrYoloOnnx::handleRequest(const MsgPtr &msg) {
-        ObjTracking::handleRequest(msg);
-
-        if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
-
-            auto pReqMsg = dynamic_pointer_cast<MsgRequest>(msg);
-            auto sender = pReqMsg->getCallback();
-            if (sender) {
-                int action = msg->getTargetId();
-                if (action == FCN_OBJ_TR_RUN) {
-                    auto pThRun = make_shared<thread>(&ObjTrYoloOnnx::run, this);
-                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThRun,
-                                                                           msg->getTopic());
-                    sender->receive(msgRes);
-                }
-            }
         }
     }
 

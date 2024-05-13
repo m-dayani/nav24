@@ -47,7 +47,7 @@ protected:
         std::vector<ParamPtr> mvpParamHolder;
 
         std::shared_ptr<OP::ObjTracking> mpObjTracker;
-        std::shared_ptr<OP::ObjTrYoloOnnx> mpYoloDetector;
+        std::shared_ptr<OP::ObjTracking> mpYoloDetector;
         std::vector<std::shared_ptr<std::thread>> mvpThTrackers;
 
         cv::Rect2f mYoloDet;

@@ -95,7 +95,7 @@ namespace NAV24::FE {
         // Initialize the grid map
         for (int y = 0; y < mGridSize.height; y++) {
             for (int x = 0; x < mGridSize.width; x++) {
-                auto pt3d = make_shared<WO::Point3D>(x, y, 0);
+                auto pt3d = make_shared<WO::Point3D>(x * mGridScale, y * mGridScale, 0);
                 mvpPts3D.push_back(pt3d);
             }
         }

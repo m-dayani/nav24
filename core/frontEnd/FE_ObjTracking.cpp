@@ -123,9 +123,11 @@ namespace NAV24::FE {
 
         // Load YOLOv8 Tracker
         this->initYoloDetector();
+        //mpYoloDetector = OP::ObjTracking::createTracker(NAME_OBJ_TR_YOLO, mpChannel);
 
         // Init main tracker
         this->initMainTracker();
+        //mpObjTracker = OP::ObjTracking::createTracker(NAME_OBJ_TR_CV, mpChannel);
 
         // Load camera's calib parameters
         auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, shared_from_this(),
@@ -133,6 +135,62 @@ namespace NAV24::FE {
         mpChannel->send(msgReqCalib);
 
         mbInitialized = true;
+    }
+
+    void ObjTracking::stop() {
+        MsgCallback::stop();
+        auto msgStop = make_shared<Message>(ID_CH_OP, OP::ObjTracking::TOPIC,
+                                            FCN_OBJ_TR_STOP);
+        if (mpObjTracker) {
+            mpObjTracker->receive(msgStop);
+        }
+        if (mpYoloDetector) {
+            mpYoloDetector->receive(msgStop);
+        }
+        for (const auto& pTh : mvpThTrackers) {
+            if (pTh) {
+                pTh->join();
+            }
+        }
+    }
+
+    void ObjTracking::initYoloDetector() {
+
+        // Retrieve required parameters and configure YOLO detector
+        MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, mpYoloDetector, ParameterServer::TOPIC,
+                                                         FCN_PS_REQ, string(PARAM_OP) + "/0");
+        mpChannel->send(msgYoloOpParams);
+        // todo: you normally want to address a dataset by the name in a component's interface
+        MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, mpYoloDetector, DataStore::TOPIC,
+                                                          FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
+        mpChannel->send(msgYoloModelPath);
+
+        // Register
+        //mpChannel->registerSubscriber(ID_TP_SDATA, mpYoloDetector);
+        mpChannel->registerPublisher(ID_TP_FE, mpYoloDetector);
+
+        // Run ObjTracking operator in background
+        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, shared_from_this(),
+                                                 TOPIC, FCN_OBJ_TR_RUN);
+        mpYoloDetector->receive(msgReqRun);
+    }
+
+    void ObjTracking::initMainTracker() {
+
+        MsgPtr msgTrCvParams = make_shared<MsgRequest>(ID_CH_PARAMS, mpObjTracker, ParameterServer::TOPIC,
+                                                         FCN_PS_REQ, string(PARAM_OP) + "/1");
+        mpChannel->send(msgTrCvParams);
+
+//        auto msgConfig = make_shared<Message>(ID_CH_OP, OP::ObjTracking::TOPIC,
+//                                              FCN_TR_CV_INIT_OPT, "4");
+//        mpObjTracker->receive(msgConfig);
+
+        // Register tracker
+        mpChannel->registerPublisher(ID_TP_OUTPUT, mpObjTracker);
+
+        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, shared_from_this(),
+                                                 TOPIC, FCN_OBJ_TR_RUN);
+        mpObjTracker->receive(msgReqRun);
     }
 
     void ObjTracking::handleImageMsg(const MsgPtr &msg) {
@@ -146,7 +204,7 @@ namespace NAV24::FE {
                 auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
 
                 if (!pImage || pImage->mImage.empty()) {
-                    DLOG(WARNING) << "CalibCamCv::handleImageMsg, empty image detected\n";
+                    DLOG(WARNING) << "ObjTracking::handleImageMsg, empty image detected\n";
                     return;
                 }
 
@@ -157,16 +215,18 @@ namespace NAV24::FE {
                 // Detect and track object in images
                 auto start = chrono::high_resolution_clock::now();
                 // todo: generalize
-                mpYoloDetector->receive(msg);
+                //mpYoloDetector->receive(msg);
                 auto stop = chrono::high_resolution_clock::now();
                 auto duration = duration_cast<chrono::microseconds>(stop - start);
 //                cout << "Time taken by YOLO obj detection: " << duration.count() << " microseconds" << endl;
 
                 // Track with main tracker
-                if (mbYoloUpdated && !mbTrInitBbox) {
-                    auto msgConfig = make_shared<MsgType<cv::Rect2f>>(ID_CH_OP, mYoloDet,
-                            OP::ObjTracking::TOPIC);
-                    mpObjTracker->receive(msgConfig);
+                if (!mbTrInitBbox) {// && mbYoloUpdated) {
+                    auto msgConf = make_shared<MsgType<cv::Rect2f>>(ID_CH_OP, mYoloDet,
+                                                                    OP::ObjTracking::TOPIC);
+                    auto msgManConf = make_shared<MsgSensorData>(ID_CH_OP, pImage,
+                                                                 OP::ObjTracking::TOPIC, FCN_TR_CV_INIT_BB);
+                    mpObjTracker->receive(msgManConf);
                     mbTrInitBbox = true;
                 }
                 if (!mbTrInitFrame && mbTrInitBbox) {
@@ -223,55 +283,6 @@ namespace NAV24::FE {
                 mpChannel->publish(msgImShow);
             }
         }
-    }
-
-    void ObjTracking::stop() {
-        MsgCallback::stop();
-        auto msgStop = make_shared<Message>(ID_CH_OP, OP::ObjTracking::TOPIC,
-                                            FCN_OBJ_TR_STOP);
-        if (mpObjTracker) {
-            mpObjTracker->receive(msgStop);
-        }
-        if (mpYoloDetector) {
-            mpYoloDetector->receive(msgStop);
-        }
-        for (const auto& pTh : mvpThTrackers) {
-            if (pTh) {
-                pTh->join();
-            }
-        }
-    }
-
-    void ObjTracking::initYoloDetector() {
-
-        // Retrieve required parameters and configure YOLO detector
-        MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, mpYoloDetector, ParameterServer::TOPIC,
-                                                         FCN_PS_REQ, string(PARAM_OP) + "/0");
-        mpChannel->send(msgYoloOpParams);
-        // todo: you normally want to address a dataset by the name in a component's interface
-        MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, mpYoloDetector, DataStore::TOPIC,
-                                                          FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
-        mpChannel->send(msgYoloModelPath);
-
-        // Register
-        //mpChannel->registerSubscriber(ID_TP_SDATA, mpYoloDetector);
-        mpChannel->registerPublisher(ID_TP_FE, mpYoloDetector);
-
-        // Run ObjTracking operator in background
-        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, shared_from_this(),
-                                                 TOPIC, FCN_OBJ_TR_RUN);
-        mpYoloDetector->receive(msgReqRun);
-    }
-
-    void ObjTracking::initMainTracker() {
-
-        // todo: get this option from executable
-        auto msgConfig = make_shared<Message>(ID_CH_OP, OP::ObjTracking::TOPIC,
-                                              FCN_TR_CV_INIT_OPT, "2");
-        mpObjTracker->receive(msgConfig);
-
-        // Register tracker
-        mpChannel->registerPublisher(ID_TP_OUTPUT, mpObjTracker);
     }
 
 } // NAV24::FE

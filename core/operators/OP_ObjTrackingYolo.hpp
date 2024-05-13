@@ -98,10 +98,10 @@ namespace NAV24::OP {
     protected:
         void setup(const MsgPtr& msg) override;
         void handleRequest(const MsgPtr &reqMsg) override;
-        void run() override;
-        void stop() override;
+        //void run() override;
+        //void stop() override;
 
-        void process(const ImagePtr& pImage);
+        void update(const ImagePtr& pImage) override;
 
         /// Get input image size to the model
         /// @return input image size of the model
@@ -115,7 +115,7 @@ namespace NAV24::OP {
 
         static std::pair<Array, Shape> convert_image(const cv::Mat &image);
 
-        static cv::Point2f find_center(const Result& d, const cv::Size& imgSize);
+        //static cv::Point2f find_center(const Result& d, const cv::Size& imgSize);
 
         std::string CreateSession(DL_INIT_PARAM& iParams);
 
@@ -142,11 +142,6 @@ namespace NAV24::OP {
         float rectConfidenceThreshold{};
         float iouThreshold{};
         float resizeScales{};//letterbox scale
-
-        std::queue<ImagePtr> mqpImages;
-        std::mutex mMtxImgBuff;
-
-        double mLastTs;
     };
 } // NAV24::OP
 
