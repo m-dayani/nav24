@@ -22,6 +22,7 @@ configure_file(${PROJ_CORE_PATH}/GlobalConfig.h.in ${PROJ_CORE_PATH}/GlobalConfi
 #add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
 #add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
 add_subdirectory(${PROJ_THIRDPARTY_PATH}/serial)
+#add_subdirectory(${PROJ_THIRDPARTY_PATH}/onnxruntime)
 
 add_subdirectory(${PROJ_EXAMPLES_PATH})
 add_subdirectory(${PROJ_CORE_PATH})

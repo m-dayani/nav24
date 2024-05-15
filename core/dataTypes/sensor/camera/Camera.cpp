@@ -139,15 +139,22 @@ namespace NAV24 {
             else if (interfaceType == "mixed") {
                 pCamera = make_shared<CamMixed>(pChannel);
             }
-            if (pCamera && (interfaceType == "offline" || interfaceType == "mixed")) {
-
+            if (pCamera) {
+                // todo: make this target based
                 string keyIfTarget = string(PKEY_INTERFACE) + "/" + string(PKEY_IF_TARGET);
                 auto ifTarget = find_param<ParamType<string>>(keyIfTarget, pCamParams);
-
                 string ifTargetStr = (ifTarget) ? ifTarget->getValue() : "";
-                MsgPtr msgImagePaths = make_shared<MsgRequest>(ID_CH_DS, pCamera, DataStore::TOPIC,
+
+                MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, pCamera, DataStore::TOPIC,
                                                                FCN_DS_REQ, TAG_DS_GET_PATH_IMG);
-                pChannel->send(msgImagePaths);
+
+                if (interfaceType == "offline" || interfaceType == "mixed") {
+                    pChannel->send(msgConfPaths);
+                }
+                if (interfaceType == "stream" || interfaceType == "mixed") {
+                    msgConfPaths->setMessage(TAG_DS_GET_PATH_VIDEO);
+                    pChannel->send(msgConfPaths);
+                }
             }
             if (pCamera) {
                 // todo: I think it is loaded twice -> check again
@@ -251,18 +258,56 @@ namespace NAV24 {
     void CamStream::setup(const MsgPtr &msg) {
         Camera::setup(msg);
 
-        if (mpInterface) {
-            // Initialize OpenCV VideoCapture
-            mpVideoCap = make_shared<cv::VideoCapture>(mpInterface->port);
-            if (mpVideoCap) {
-                mpVideoCap->set(cv::CAP_PROP_FRAME_HEIGHT, mImgSz.height);
-                mpVideoCap->set(cv::CAP_PROP_FRAME_WIDTH, mImgSz.width);
+        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
+            auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
+            auto pParamVideoPath = pMsgConf->getConfig();
+            if (pParamVideoPath && dynamic_pointer_cast<ParamType<string>>(pParamVideoPath)) {
+                mPathVideo = dynamic_pointer_cast<ParamType<string>>(pParamVideoPath)->getValue();
             }
+        }
+
+        if (mpInterface) {
+            int port = mpInterface->port;
+            if (port >= 0) {
+                this->initVideoCap(port);
+            }
+            else if (!mPathVideo.empty() && !mVideoFile.empty()) {
+                this->initVideoCap(port, mPathVideo + "/" + mVideoFile);
+            }
+        }
+    }
+
+    void CamStream::initVideoCap(const int port, const std::string& video) {
+
+        // Initialize OpenCV VideoCapture
+        if (port >= 0) {
+            mpVideoCap = make_shared<cv::VideoCapture>(port);
+        }
+        else if (!video.empty()) {
+            mpVideoCap = make_shared<cv::VideoCapture>(video);
+        }
+        if (mpVideoCap) {
+            // set image size
+            mpVideoCap->set(cv::CAP_PROP_FRAME_HEIGHT, mImgSz.height);
+            mpVideoCap->set(cv::CAP_PROP_FRAME_WIDTH, mImgSz.width);
+            // disable auto-focus
+            mpVideoCap->set(cv::CAP_PROP_AUTOFOCUS, 0);
         }
     }
 
     void CamStream::reset() {
         this->stop();
+    }
+
+    void CamStream::receive(const MsgPtr &msg) {
+        Camera::receive(msg);
+
+        if (msg) {
+            if (msg->getTargetId() == FCN_CAM_LOAD_VIDEO) {
+                mVideoFile = msg->getMessage();
+                this->setup(msg);
+            }
+        }
     }
 
     /* ============================================================================================================== */
@@ -271,9 +316,9 @@ namespace NAV24 {
         DLOG(INFO) << "CamOffline::CamOffline\n";
     }
 
-    void CamOffline::receive(const MsgPtr &msg) {
-        Camera::receive(msg);
-    }
+//    void CamOffline::receive(const MsgPtr &msg) {
+//        Camera::receive(msg);
+//    }
 
     void CamOffline::getNextImageFile(std::string& path, double& ts) {
 
@@ -502,7 +547,7 @@ namespace NAV24 {
 
     void CamMixed::receive(const MsgPtr &msg) {
         CamOffline::receive(msg);
-        //CamStream::receive(msg);
+        CamStream::receive(msg);
 
         if (!msg) {
             DLOG(WARNING) << "CamMixed::receive, Null message detected, abort\n";

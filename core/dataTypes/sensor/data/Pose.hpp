@@ -6,6 +6,7 @@
 #define NAV24_POSE_H
 
 #include <memory>
+#include <eigen3/Eigen/Dense>
 
 #include "SensorData.hpp"
 #include "Parameter.hpp"
@@ -13,57 +14,44 @@
 
 namespace NAV24 {
 
-    struct Pose : public SensorData {
-
-        Pose() : ts(0.0), q{}, p{} {}
-
-        Pose(double ts, float px, float py, float pz, float qw, float qx, float qy, float qz) :
-                ts(ts), q{qw, qx, qy, qz}, p{px, py, pz} {}
-
-        Pose(double ts, const float _p[3], const float _q[4]) : ts(ts), q{}, p{} {
-
-            for (unsigned char i = 0; i < 3; i++) {
-                q[i] = _q[i];
-                p[i] = _p[i];
-            }
-            q[3] = _q[3];
-        }
-
-        /*void print() const {
-            std::cout << "[ts, px, py, pz, qw, qx, qy, qz]: [" << ts;
-            for (unsigned char i; i < 3; i++)
-                std::cout << ", " << p[i];
-            for (unsigned char i; i < 4; i++)
-                std::cout << ", " << q[i];
-            std::cout << "]\n";
-        }*/
-
-        double ts;
-        float q[4];    //q_w, q_x, q_y, q_z
-        float p[3];    //px, py, pz
-    };
-    typedef std::shared_ptr<Pose> PosePtr;
-
-    class Transformation {
+    class PoseSE3 : public SensorData {
     public:
-        Transformation(std::string  ref, std::string  tar, PosePtr  T_rt, double _ts_rt);
+        PoseSE3(std::string  _ref, std::string  _target, double _ts, Eigen::Matrix4d  T_rt_, const double& offset = 0);
+        PoseSE3(std::string  _ref, std::string  _target, double _ts, const Eigen::Matrix3d& R_rt,
+                const Eigen::Vector3d& t_rt, const double& offset = 0);
 
-        const PosePtr& getPose() { return T_rt; }
+        Eigen::Vector4d transform(const Eigen::Vector4d& P_t) { return T_rt * P_t; }
+        Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }
+
+        [[nodiscard]] std::string getKey() const { return key; }
+        [[nodiscard]] Eigen::Matrix4d getPose() const { return T_rt; }
+
+        static Eigen::Vector4d euler2homo(const Eigen::Vector3d& P_t_euler);
+        static Eigen::Vector3d homo2euler(const Eigen::Vector4d& P_t_homo);
 
         static ParamPtr getTransParam(const std::string& ref, const std::string& tar, double t_rt,
-                                      const PosePtr& pPose, std::vector<ParamPtr>& vpParamHolder);
-        static std::shared_ptr<Transformation> getTrans(const ParamPtr& pParam);
-
-        [[nodiscard]] std::string getTransKey() const { return mTransKey; }
+                                      const std::shared_ptr<PoseSE3>& pPose, std::vector<ParamPtr>& vpParamHolder);
+        static std::shared_ptr<PoseSE3> getTrans(const ParamPtr& pParam);
 
     protected:
-        PosePtr T_rt;
-        std::string mRef;
-        std::string mTarget;
-        std::string mTransKey;
-        double ts_rt;
+        std::string ref;
+        std::string target;
+        std::string key;
+
+        double ts;
+        double offset;
+
+        Eigen::Matrix4d T_rt;
+        Eigen::Matrix4d T_tr;
     };
-    typedef std::shared_ptr<Transformation> TransPtr;
+    typedef std::shared_ptr<PoseSE3> PosePtr;
+
+    class PoseSim3 : public PoseSE3 {
+    public:
+
+    protected:
+        double scale{};
+    };
 
 } // NAV24
 

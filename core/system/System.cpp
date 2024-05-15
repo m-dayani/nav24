@@ -5,7 +5,6 @@
 #include "System.hpp"
 #include "ParameterBlueprint.h"
 #include "Camera.hpp"
-#include "DataConversion.hpp"
 #include "FrontEnd.hpp"
 #include "ImageViewer.hpp"
 
@@ -171,9 +170,9 @@ namespace NAV24 {
             for (const auto& relParamPair : mpTempParam->getAllChildren()) {
                 auto pRelParam = relParamPair.second.lock();
                 if (pRelParam) {
-                    auto pTrans = Transformation::getTrans(pRelParam);
+                    auto pTrans = PoseSE3::getTrans(pRelParam);
                     if (pTrans) {
-                        mmpTrans.insert(make_pair(pTrans->getTransKey(), pTrans));
+                        mmpTrans.insert(make_pair(pTrans->getKey(), pTrans));
                     }
                 }
             }
@@ -290,7 +289,7 @@ namespace NAV24 {
             if (mmpTrans.count(msgStr) > 0) {
 
                 auto pTrans = mmpTrans[msgStr];
-                auto msgTrans = make_shared<MsgType<TransPtr>>(DEF_CAT, pTrans, msg->getTopic());
+                auto msgTrans = make_shared<MsgType<PosePtr>>(DEF_CAT, pTrans, msg->getTopic());
                 sender->receive(msgTrans);
             }
         }

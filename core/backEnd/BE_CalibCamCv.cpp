@@ -9,6 +9,7 @@
 
 #include "BE_CalibCamCv.hpp"
 #include "Point3D.hpp"
+#include "DataConversion.hpp"
 
 using namespace std;
 
@@ -60,31 +61,9 @@ namespace NAV24::BE {
             cv::Mat rvec = rvecs[i];
             cv::Mat tvec = tvecs[i];
 
-//            cout << rvec << endl;
-//            cout << tvec << endl;
-
-            // TODO: better handle transformations
-            PosePtr pPose = make_shared<Pose>();
-
-            pPose->p[0] = (float) tvec.at<double>(0, 0);
-            pPose->p[1] = (float) tvec.at<double>(1, 0);
-            pPose->p[2] = (float) tvec.at<double>(2, 0);
-
-            float angle_in_radian = (float) cv::norm(rvec);
-            cv::Mat axis_cv = rvec / angle_in_radian;
-            Eigen::Vector3f axis;
-            axis << (float) axis_cv.at<double>(0, 0),
-                    (float) axis_cv.at<double>(1, 0),
-                    (float) axis_cv.at<double>(2, 0);
-            Eigen::Quaternion<float> q;
-            q = Eigen::AngleAxis<float>(angle_in_radian, axis);
-
-//            cout << q << endl;
-
-            pPose->q[0] = q.w();
-            pPose->q[1] = q.x();
-            pPose->q[2] = q.y();
-            pPose->q[3] = q.z();
+            auto t_wc = Converter::toVector3d(tvec);
+            auto R_wc = Converter::rotVecToRotMat(rvec);
+            auto pPose = make_shared<PoseSE3>("w", "c", -1.0, R_wc, t_wc);
 
             vFrames[i]->setPose(pPose);
         }

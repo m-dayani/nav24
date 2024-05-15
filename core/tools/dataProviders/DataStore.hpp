@@ -27,6 +27,7 @@ namespace NAV24 {
 
 #define TAG_DS_GET_STAT "DataProvider/GetStat"
 #define TAG_DS_GET_PATH_IMG "DataProvider/GetImagePath"
+#define TAG_DS_GET_PATH_VIDEO "DataProvider/GetVideoPath"
 #define TAG_DS_GET_PATH_IMU "DataProvider/GetImuPath"
 #define TAG_DS_GET_PATH_GT "DataProvider/GetGtPath"
 #define TAG_DS_GET_PATH_MODEL "DataProvider/GetModelPath"

@@ -20,6 +20,7 @@ namespace NAV24 {
 #define DEF_CAM_TS 0.33f
 
 #define FCN_CAM_GET_CALIB 23
+#define FCN_CAM_LOAD_VIDEO 31
 
     class Camera : public Sensor {
     public:
@@ -54,8 +55,11 @@ namespace NAV24 {
         explicit CamStream(const ChannelPtr& pChannel);
         ~CamStream();
 
+        void receive(const MsgPtr &msg) override;
+
     protected:
         void setup(const MsgPtr &msg) override;
+        void initVideoCap(int port, const std::string& video = "");
 
         void reset() override;
 
@@ -63,6 +67,8 @@ namespace NAV24 {
         void getNext(MsgPtr pReq) override;
         void run() override;
 
+        std::string mPathVideo;
+        std::string mVideoFile;
         std::shared_ptr<cv::VideoCapture> mpVideoCap;
     };
 
@@ -73,7 +79,7 @@ namespace NAV24 {
         explicit CamOffline(const ChannelPtr& pChannel);
         ~CamOffline();
 
-        void receive(const MsgPtr &msg) override;
+        //void receive(const MsgPtr &msg) override;
 
         static ParamPtr getFoldersParams(const std::string& seqBase, const std::string& imgBase,
                                          const std::string& imgFile, const double& tsFact,

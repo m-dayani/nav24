@@ -264,7 +264,7 @@ cv::Mat Converter::getCurrTcw(const cv::Mat &Tc0w, const cv::Mat &Tcc0) {
 }*/
 
 /* ================================================================================================================== */
-// Pose to string
+// PoseSE3 to string
 
 std::string Converter::toString(const cv::Mat& pose, const std::string& prefix) {
 
@@ -381,6 +381,19 @@ std::string Converter::toStringQuat(const g2o::Sim3& pose, const std::string& pr
         }
         oss << "]";
         return oss.str();
+    }
+
+    Eigen::Matrix3d Converter::rotVecToRotMat(const cv::Mat &rvec) {
+
+        float angle_in_radian = (float) cv::norm(rvec);
+        cv::Mat axis_cv = rvec / angle_in_radian;
+        Eigen::Vector3d axis;
+        axis << (float) axis_cv.at<double>(0, 0),
+                (float) axis_cv.at<double>(1, 0),
+                (float) axis_cv.at<double>(2, 0);
+        Eigen::Quaternion<double> q;
+        q = Eigen::AngleAxis<double>(angle_in_radian, axis);
+        return q.toRotationMatrix();
     }
 
 } //namespace ORB_SLAM

@@ -73,7 +73,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         std::shared_ptr<ParameterServer> mpParamServer;
         std::map<std::string, std::shared_ptr<DataStore>> mmpDataStores;
         std::map<std::string, std::shared_ptr<Sensor>> mmpSensors;
-        std::map<std::string, TransPtr> mmpTrans;
+        std::map<std::string, PosePtr> mmpTrans;
         std::map<std::string, OutputPtr> mmpOutputs;
 
         std::vector<std::shared_ptr<std::thread>> mpThreads;

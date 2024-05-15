@@ -2,12 +2,10 @@
 // Created by root on 5/15/21.
 //
 
-#include "Pose.hpp"
-
 #include <utility>
 #include <iostream>
-#include <Eigen/Eigen>
 
+#include "Pose.hpp"
 #include "DataConversion.hpp"
 
 
@@ -15,16 +13,49 @@ using namespace std;
 
 namespace NAV24 {
 
-    Transformation::Transformation(std::string ref, std::string tar, PosePtr T_rt,
-                                   double _ts_rt) : mRef(std::move(ref)), mTarget(std::move(tar)),
-                                   T_rt(std::move(T_rt)), ts_rt(_ts_rt), mTransKey() {
+#define DEF_SEP ':'
 
-        mTransKey.append(mRef).append(":").append(mTarget);
+    PoseSE3::PoseSE3(string _ref, string _target, double _ts, Eigen::Matrix4d T_rt_, const double& offset_) :
+            ref(std::move(_ref)), target(std::move(_target)), ts(_ts), T_rt(std::move(T_rt_)), offset(offset_) {
+
+        key = ref + DEF_SEP + target;
+
+        T_tr = T_rt.inverse();
+    }
+
+    PoseSE3::PoseSE3(string _ref, string _target, double _ts, const Eigen::Matrix3d &R_rt,
+                     const Eigen::Vector3d &t_rt, const double& offset_)  :
+            ref(std::move(_ref)), target(std::move(_target)), ts(_ts), offset(offset_) {
+
+        key = ref + DEF_SEP + target;
+
+        T_rt = Eigen::Matrix4d::Identity();
+        T_rt.block<3, 3>(0, 0) = R_rt;
+        T_rt.block<3, 1>(0, 3) = t_rt;
+
+        T_tr = T_rt.inverse();
+    }
+
+    //inline Eigen::Vector4d PoseSE3::transform(const Eigen::Vector4d &P_t)
+
+    //inline Eigen::Vector4d PoseSE3::invTransform(const Eigen::Vector4d &P_r)
+
+    Eigen::Vector4d PoseSE3::euler2homo(const Eigen::Vector3d &P_t_euler) {
+
+        Eigen::Vector4d P_t_homo = Eigen::Vector4d::Ones();
+        P_t_homo.block<3, 1>(0, 0) = P_t_euler;
+        return P_t_homo;
+    }
+
+    Eigen::Vector3d PoseSE3::homo2euler(const Eigen::Vector4d &P_t_homo) {
+
+        Eigen::Vector3d P_t_euler = P_t_homo.block<3, 1>(0, 0) / P_t_homo[3];
+        return P_t_euler;
     }
 
     ParamPtr
-    Transformation::getTransParam(const std::string &ref, const std::string &tar, double t_rt,
-                                  const PosePtr &pPose, vector<ParamPtr>& vpParamHolder) {
+    PoseSE3::getTransParam(const std::string &ref, const std::string &tar, double t_rt,
+                           const PosePtr &pPose, vector<ParamPtr>& vpParamHolder) {
 
         ParamPtr pRoot = make_shared<Parameter>("0", nullptr, Parameter::NodeType::MAP_NODE);
 
@@ -35,16 +66,7 @@ namespace NAV24 {
         ParamPtr p_t_rt = make_shared<ParamType<double>>("t_rt", pRoot, t_rt);
         p_t_rt->setType(Parameter::NodeType::REAL);
 
-        // TODO: better handle these transformations
-        cv::Mat T_rt = cv::Mat::eye(4, 4, CV_32FC1);
-        T_rt.at<float>(0, 3) = pPose->p[0];
-        T_rt.at<float>(1, 3) = pPose->p[1];
-        T_rt.at<float>(2, 3) = pPose->p[2];
-        Eigen::Quaterniond q(pPose->q[0], pPose->q[1], pPose->q[2], pPose->q[3]);
-        Eigen::Matrix3d R;
-        R = q.toRotationMatrix();
-        Converter::toCvMat(R).copyTo(T_rt.rowRange(0, 3).colRange(0, 3));
-        //cout << T_rt << endl;
+        cv::Mat T_rt = Converter::toCvMat(pPose->getPose());
         ParamPtr p_T_rt = make_shared<ParamType<cv::Mat>>("T_rt", pRoot, T_rt);
         p_T_rt->setType(Parameter::NodeType::CV_MAT);
 
@@ -62,7 +84,7 @@ namespace NAV24 {
         return pRoot;
     }
 
-    std::shared_ptr<Transformation> Transformation::getTrans(const ParamPtr &pRelParam) {
+    PosePtr PoseSE3::getTrans(const ParamPtr &pRelParam) {
 
         auto pRef = find_param<ParamType<string>>("ref", pRelParam);
         string ref = (pRef) ? pRef->getValue() : "";
@@ -73,18 +95,10 @@ namespace NAV24 {
         auto p_T_rt = find_param<ParamType<cv::Mat>>("T_rt", pRelParam);
         cv::Mat T_rt = (p_T_rt) ? p_T_rt->getValue() : cv::Mat();
 
-        TransPtr pTrans = nullptr;
-
+        PosePtr pTrans = nullptr;
         if (!ref.empty()) {
-            // TODO: work more on pose class
-            PosePtr pT_rt = make_shared<Pose>();
-            vector<float> q = Converter::toQuaternion(T_rt.rowRange(0, 3).colRange(0, 3));
-            for (char i = 0; i < 4; i++) pT_rt->q[i] = q[i];
-            pT_rt->p[0] = T_rt.at<float>(0, 3);
-            pT_rt->p[1] = T_rt.at<float>(1, 3);
-            pT_rt->p[2] = T_rt.at<float>(2, 3);
-
-            pTrans = make_shared<Transformation>(ref, target, pT_rt, t_rt);
+            auto T_rt_eig = Converter::toMatrix4d(T_rt);
+            pTrans = make_shared<PoseSE3>(ref, target, -1, T_rt_eig, t_rt);
         }
 
         return pTrans;

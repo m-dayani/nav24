@@ -127,6 +127,11 @@ namespace NAV24 {
             pParam = make_shared<ParamType<string>>("models_base", nullptr, path);
             mvpParams.push_back(pParam);
         }
+        else if (tag == TAG_DS_GET_PATH_VIDEO) {
+            string path = this->getSequencePath() + "/videos";
+            pParam = make_shared<ParamType<string>>("videoBase", nullptr, path);
+            mvpParams.push_back(pParam);
+        }
         else {
             DLOG(INFO) << "DataStore::handleRequest, requested config is not supported: " << tag << "\n";
         }

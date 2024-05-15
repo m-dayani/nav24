@@ -132,8 +132,9 @@ namespace NAV24::OP {
     private:
         Ort::Env env;
         std::unique_ptr<Ort::Session> session;
-        bool cudaEnable{};
         Ort::RunOptions options;
+
+        bool cudaEnable{};
         std::vector<const char*> inputNodeNames;
         std::vector<const char*> outputNodeNames;
 

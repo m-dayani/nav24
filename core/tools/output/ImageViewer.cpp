@@ -82,7 +82,8 @@ namespace NAV24 {
 
                 //cv::cvtColor(imageToShow, imageToShow, cv::COLOR_GRAY2RGB);
 
-                cv::putText(imageToShow, std::to_string(imTs), cv::Point2f(10, 10),
+                cv::Point2f orig(20, static_cast<float>(imageToShow.rows) - 20);
+                cv::putText(imageToShow, std::to_string(imTs / 1e9), orig,
                             cv::FONT_HERSHEY_COMPLEX_SMALL, ((float) imageToShow.cols * 1.5f) / 720.f,
                             cv::Scalar(0, 180, 0), 1);
 

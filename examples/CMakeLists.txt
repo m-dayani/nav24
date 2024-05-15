@@ -3,7 +3,9 @@ project(nav_examples)
 
 set(LIB_NAV_NAME nav_core)
 
-
+find_package(Python COMPONENTS Interpreter Development)
+include_directories(${Python_INCLUDE_DIRS})
+#list(APPEND LINKLIBS ${Python_LIBRARIES})
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
 
@@ -31,6 +33,9 @@ set(LIB_NAV_NAME nav_core)
 #target_link_libraries(tabular_text_ds LINK_PUBLIC ${LIB_NAV_NAME})
 #list(APPEND INSTALLABLE_EXE tabular_text_ds)
 
+add_executable(python_api tests/python_api.cpp)
+target_link_libraries(python_api LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE python_api)
 
 
 add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)

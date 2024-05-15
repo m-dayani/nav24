@@ -11,6 +11,7 @@
 #include "System.hpp"
 #include "FE_CalibCamCv.hpp"
 #include "FE_ObjTracking.hpp"
+#include "Camera.hpp"
 
 using namespace std;
 using namespace NAV24;
@@ -84,7 +85,7 @@ void exec_calib(const shared_ptr<System>& mpSystem, const string& saveFile, bool
     mpSystem->send(msgSaveSettings);
 }
 
-void exec_tracking(const shared_ptr<System>& mpSystem) {
+void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = "") {
 
     // If camera is calibrated, run the object tracking front-end
     auto pFeObjTracking = make_shared<FE::ObjTracking>(mpSystem);
@@ -92,7 +93,7 @@ void exec_tracking(const shared_ptr<System>& mpSystem) {
     mpSystem->registerSubscriber(ID_TP_SDATA, pFeObjTracking);
     mpSystem->registerSubscriber(ID_TP_FE, pFeObjTracking);
     mpSystem->registerPublisher(ID_TP_OUTPUT, pFeObjTracking);
-    // Change dataset sequence to calib
+    // Change dataset sequence to obj_tr_cap
     MsgPtr msgChSeq = make_shared<Message>(ID_CH_DS, DataStore::TOPIC, FCN_DS_REQ_CH_NS, "obj_tr_cap");
     mpSystem->send(msgChSeq);
     // Initialize Frontend
@@ -102,6 +103,12 @@ void exec_tracking(const shared_ptr<System>& mpSystem) {
     auto msgConfOnline = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
                                               FCN_SEN_CONFIG, TAG_SEN_MX_STREAM);
     mpSystem->send(msgConfOnline);
+    // Load default video
+    if (!defVideo.empty()) {
+        msgConfOnline->setTargetId(FCN_CAM_LOAD_VIDEO);
+        msgConfOnline->setMessage(defVideo);
+        mpSystem->send(msgConfOnline);
+    }
     // Run online camera
     auto msgStartPlay = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
                                              FCN_SEN_START_PLAY, "start_play");
@@ -115,6 +122,7 @@ int main([[maybe_unused]] int argc, char** argv) {
 
     string confFile = "../../config/AUN_ARM1.yaml";
     string saveFile = "../../config/AUN_ARM1.yaml";
+    string defVideo = "robo-arm-cap.avi";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
     // Create the system
@@ -139,7 +147,7 @@ int main([[maybe_unused]] int argc, char** argv) {
         exec_calib(mpSystem, saveFile);
     }
     else {
-        exec_tracking(mpSystem);
+        exec_tracking(mpSystem, defVideo);
     }
 
     return 0;

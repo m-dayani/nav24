@@ -35,3 +35,7 @@ build*
 config/*.yaml
 /examples/tests/data_loaders
 .idea
+lib
+ros/examples/rosbag_loader
+
+

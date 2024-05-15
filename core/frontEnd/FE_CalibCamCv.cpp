@@ -4,7 +4,6 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 #include <glog/logging.h>
 #include <opencv2/calib3d.hpp>
 
@@ -138,7 +137,7 @@ namespace NAV24::FE {
                 if (res) {
                     // Create and add a frame
                     pImage->mImage = cv::Mat();
-                    PosePtr pPose = make_shared<Pose>();
+                    PosePtr pPose = nullptr;//make_shared<PoseSE3>();
                     auto pFrame = make_shared<FrameImgMono>(pImage->mTimeStamp, pPose, vpCorners, pImage);
                     mvpFrames.push_back(pFrame);
                 }
@@ -194,7 +193,7 @@ namespace NAV24::FE {
             mpChannel->send(msgCalibConf);
 
             // Update camera-world trans from last frame
-            auto pTransParam = Transformation::getTransParam("world0", "cam0", 0.0,
+            auto pTransParam = PoseSE3::getTransParam("world0", "cam0", 0.0,
                                                              mvpFrames.back()->getPose(), mvpParamHolder);
             auto msgTransConf = make_shared<MsgConfig>(ID_CH_PARAMS, pTransParam,
                                                        ParameterServer::TOPIC);

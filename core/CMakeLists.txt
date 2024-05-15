@@ -1,60 +1,32 @@
 
 project(nav_core)
 
+#set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# Required Packages
+
 find_package(Eigen3 3.1.0 REQUIRED)
 
 find_package(OpenCV 4.2.0 REQUIRED)
 MESSAGE("-- OpenCV Version: ${OpenCV_VERSION}")
 
-find_package(Ceres REQUIRED)
+find_package(glog REQUIRED)
+
+# Optional Packages
+
+#find_package(Ceres REQUIRED)
 
 # Note: One can add g2o as an external package:
 #find_package(g2o REQUIRED)
 
+# Python Library
+#find_package(PythonLibs)
+find_package(Python COMPONENTS Interpreter Development)
+
 find_package(serial REQUIRED)
 
-# ONNX Runtime and CUDA (for loading dl models like YOLO)
-set(ONNX_RUNTIME_PATH "/opt/onnxruntime" CACHE STRING "ONNX Runtime directory path")
-set(CUDA_LIBRARIES_PATH "/opt/cuda11" CACHE STRING "CUDA libraries path compatible with the ONNX Runtime")
-
-# Create Onnxruntime imported target
-add_library(onnxruntime SHARED IMPORTED)
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(ONNX_IMPORTED_LOCATION "${ONNX_RUNTIME_PATH}/lib/onnxruntime.dll")
-    set(ONNX_IMPORTED_IMPLIB "${ONNX_RUNTIME_PATH}/lib/onnxruntime.lib")
-    set(ONNX_INTERFACE_INCLUDE_DIRECTORIES "${ONNX_RUNTIME_PATH}/include")
-    if(NOT EXISTS ${ONNX_IMPORTED_LOCATION})
-        message(FATAL_ERROR "Excepted Onnxruntime library '${ONNX_IMPORTED_LOCATION}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
-    endif()
-    if(NOT EXISTS ${ONNX_IMPORTED_IMPLIB})
-        message(FATAL_ERROR "Excepted Onnxruntime imported library '${ONNX_IMPORTED_IMPLIB}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
-    endif()
-    if(NOT EXISTS ${ONNX_INTERFACE_INCLUDE_DIRECTORIES})
-        message(FATAL_ERROR "Excepted Onnxruntime include directory '${ONNX_INTERFACE_INCLUDE_DIRECTORIES}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
-    endif()
-
-    set_target_properties(onnxruntime PROPERTIES
-            IMPORTED_LOCATION ${ONNX_IMPORTED_LOCATION}
-            IMPORTED_IMPLIB   ${ONNX_IMPORTED_IMPLIB}
-            INTERFACE_INCLUDE_DIRECTORIES ${ONNX_INTERFACE_INCLUDE_DIRECTORIES}
-    )
-elseif(UNIX)
-    set(ONNX_IMPORTED_LOCATION "${ONNX_RUNTIME_PATH}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}onnxruntime${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    set(ONNX_INTERFACE_INCLUDE_DIRECTORIES "${ONNX_RUNTIME_PATH}/include")
-    if(NOT EXISTS ${ONNX_IMPORTED_LOCATION})
-        message(FATAL_ERROR "Excepted Onnxruntime library '${ONNX_IMPORTED_LOCATION}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
-    endif()
-    if(NOT EXISTS ${ONNX_INTERFACE_INCLUDE_DIRECTORIES})
-        message(FATAL_ERROR "Excepted Onnxruntime include directory '${ONNX_INTERFACE_INCLUDE_DIRECTORIES}' does not exist. Please specify a valid ONNX_RUNTIME_PATH.(current: ${ONNX_RUNTIME_PATH})")
-    endif()
-
-    set_target_properties(onnxruntime PROPERTIES
-            IMPORTED_LOCATION ${ONNX_IMPORTED_LOCATION}
-            INTERFACE_INCLUDE_DIRECTORIES ${ONNX_INTERFACE_INCLUDE_DIRECTORIES}
-    )
-else()
-    message(FATAL_ERROR "Unsupported target platform.")
-endif()
+#find_library(onnxruntime NAMES onnxruntime)
+find_package(onnxruntime)
 
 #list(APPEND LIST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -113,6 +85,7 @@ list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
 set(OUTPUT_DIR ${UTILS_DIR}/output)
 list(APPEND LIST_INCLUDE_DIRS ${OUTPUT_DIR})
 
+list(APPEND LINKLIBS ${Python_LIBRARIES})
 
 set(ALL_H_FILES
         ${SYSTEM_DIR}/System.hpp
@@ -201,9 +174,11 @@ include_directories(
         ${LIST_INCLUDE_DIRS}
         ${EIGEN3_INCLUDE_DIR}
 #        ${Pangolin_INCLUDE_DIRS}
-        ${CERES_INCLUDE_DIRS}
+#        ${CERES_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${serial_INCLUDE_DIRS}
+        ${Python_INCLUDE_DIRS}
+        ${onnxruntime_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME} SHARED
@@ -224,12 +199,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_link_directories(${PROJECT_NAME} PUBLIC
         "${CUDA_LIBRARIES_PATH}/lib64"
+#        ${Python_LIBRARY_DIRS}
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PUBLIC
         ${EIGEN3_LIBS}
-        ${CERES_LIBRARIES}
         ${OpenCV_LIBS}
+        ${Python_LIBRARIES}
+#        ${CERES_LIBRARIES}
 #        ${Pangolin_LIBRARIES}
 #        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
 #        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
@@ -238,7 +215,8 @@ target_link_libraries(${PROJECT_NAME}
         -lboost_filesystem
         -lboost_serialization
 #        -lcrypto
-        onnxruntime
+        ${onnxruntime_LIBRARIES}
+        glog::glog
 )
 
 install(TARGETS ${PROJECT_NAME}

@@ -5,7 +5,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <glog/logging.h>
-#include <Eigen/Eigen>
 #include <chrono>
 
 #include "System.hpp"
@@ -32,6 +31,8 @@ namespace NAV24::FE {
 
         mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
         mpObjTracker = make_shared<OP::ObjTrackingCv>(pChannel);
+
+        mHwc = Eigen::Matrix3d::Identity();
     }
 
     void ObjTracking::receive(const MsgPtr &msg) {
@@ -76,9 +77,16 @@ namespace NAV24::FE {
                 }
             }
             if (msg->getTopic() == System::TOPIC) {
-                auto msgTrans = dynamic_pointer_cast<MsgType<TransPtr>>(msg);
+                auto msgTrans = dynamic_pointer_cast<MsgType<PosePtr>>(msg);
                 if (msgTrans) {
-                    mpTwc = msgTrans->getData()->getPose();
+                    mpTwc = msgTrans->getData();
+                    if (mpTwc) {
+                        Eigen::Matrix4d Tcw = mpTwc->getPose().inverse();
+                        Eigen::Matrix3d Hcw = Eigen::Matrix3d::Identity();
+                        Hcw.block<3, 2>(0, 0) = Tcw.block<3, 2>(0, 0);
+                        Hcw.block<3, 1>(0, 2) = Tcw.block<3, 1>(0, 3);
+                        mHwc = Hcw.inverse();
+                    }
                 }
             }
             if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
@@ -252,19 +260,26 @@ namespace NAV24::FE {
                 if (mpCalib && img_x > 0 && img_x < img_w && img_y > 0 && img_y < img_h) {
 
                     // Get undistorted, normalized point
+//                    cv::Point2f lp(lastPoint.y, lastPoint.x);
+                    // todo: it seems point coords are reverse -> check this
                     cv::Point2f undistPt = mpCalib->undistPoint(lastPoint);
-                    cv::Point3f Pc = mpCalib->unproject(undistPt);
+                    cv::Point3f Pc(undistPt.x, undistPt.y, 1); //mpCalib->unproject(undistPt);//Pc.z = 0;
+                    Eigen::Vector3d Pc_eig = Converter::toVector3d(Pc);
 
-                    Eigen::Vector3d Pc_eig;
-                    Pc_eig << Pc.x, Pc.y, Pc.z;
-                    auto q_float = mpTwc->q;
-                    auto t_float = mpTwc->p;
-                    Eigen::Quaterniond q_eig(q_float[0], q_float[1], q_float[2], q_float[3]);
-                    Eigen::Matrix3d Rwc = q_eig.toRotationMatrix();
-                    Eigen::Vector3d t_wc(t_float[0], t_float[1], t_float[2]);
-
-                    Pw = Rwc.inverse() * (Pc_eig - t_wc);
+                    //auto Pc_homo = PoseSE3::euler2homo(Pc_eig);
+                    //auto Pw_homo = mpTwc->transform(Pc_homo);
+                    //Pw = PoseSE3::homo2euler(Pw_homo);
+                    // To get the correct Pw, you must use Homography (not Twc)
+                    Pw = mHwc * Pc_eig;
                     Pw /= Pw[2];
+
+//                    DLOG(INFO) << "Pt_undist: " << undistPt << "\n";
+//                    DLOG(INFO) << "Pc_homo: " << Pc_homo << "\n";
+//                    DLOG(INFO) << "Pw_homo: " << Pw_homo << "\n";
+//                    DLOG(INFO) << "Pw: " << Pw << "\n";
+//                    DLOG(INFO) << "H_1: " << mHwc << "\n";
+//                    DLOG(INFO) << "Twc: " << mpTwc->getPose() << "\n";
+//                    DLOG(INFO) << "-------------------------\n";
                 }
 
                 // Send a coord message to serial output

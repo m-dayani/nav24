@@ -42,6 +42,7 @@ protected:
 
         std::string mTrajectory;
         PosePtr mpTwc;
+        Eigen::Matrix3d mHwc;
         std::vector<FramePtr> mvpFrames{};
 
         std::vector<ParamPtr> mvpParamHolder;

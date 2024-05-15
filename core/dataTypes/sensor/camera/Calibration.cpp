@@ -109,13 +109,19 @@ namespace NAV24 {
 
     cv::Point2f Calibration::undistPoint(const cv::Point2f &distPt) {
 
-        cv::Mat ptOrig(2, 1, CV_32FC1), ptUndist(2, 1, CV_32FC1);
+        cv::Mat ptOrig(1, 2, CV_32FC1), ptUndist(1, 2, CV_32FC1);
         ptOrig.at<float>(0, 0) = distPt.x;
-        ptOrig.at<float>(1, 0) = distPt.y;
+        ptOrig.at<float>(0, 1) = distPt.y;
         // todo: distortion might be more complex
         cv::undistortPoints(ptOrig, ptUndist, K_cv, D_cv);
 
-        return {ptUndist.at<float>(0, 0), ptUndist.at<float>(1, 0)};
+//        DLOG(INFO) << "K: " << K_cv << "\n";
+//        DLOG(INFO) << "D: " << D_cv << "\n";
+//        DLOG(INFO) << "Pt_dist: " << distPt << "\n";
+//        DLOG(INFO) << "Pt_undist: " << ptUndist << "\n";
+//        DLOG(INFO) << "-------------------------------\n";
+
+        return {ptUndist.at<float>(0, 0), ptUndist.at<float>(0, 1)};
     }
 
     cv::Point3f Calibration::unproject(const cv::Point2f &pt2d) {
@@ -123,6 +129,11 @@ namespace NAV24 {
         Eigen::Vector3f pt3d, Pt3d;
         pt3d << pt2d.x, pt2d.y, 1.f;
         Pt3d = K_ei.inverse() * pt3d;
+
+//        DLOG(INFO) << "pt2d: " << pt2d << "\n";
+//        DLOG(INFO) << "Pt3d: " << Pt3d << "\n";
+//        DLOG(INFO) << "K_ei: " << K_ei << "\n";
+//        DLOG(INFO) << "------------------------\n";
 
         return {Pt3d.x(), Pt3d.y(), Pt3d.z()};
     }

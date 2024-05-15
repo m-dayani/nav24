@@ -40,6 +40,7 @@ public:
     static Eigen::Matrix<double,3,3> toMatrix3d(const cv::Mat &cvMat3);
     static Eigen::Matrix<double,4,4> toMatrix4d(const cv::Mat &cvMat4);
     static std::vector<float> toQuaternion(const cv::Mat &M);
+    static Eigen::Matrix3d rotVecToRotMat(const cv::Mat& rvec);
 
     static bool isRotationMatrix(const cv::Mat &R);
     static std::vector<float> toEuler(const cv::Mat &R);
