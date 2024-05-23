@@ -1,16 +1,20 @@
 //
-// Created by masoud on 4/26/24.
+// Created by masoud on 5/22/24.
 //
 
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+
+#include <sstream>
 #include <iostream>
 
-#include <glog/logging.h>
+//#include <glog/logging.h>
 #include <opencv2/core.hpp>
 
 #include "ParameterBlueprint.h"
 #include "System.hpp"
 #include "FE_CalibCamCv.hpp"
-#include "FE_ObjTracking.hpp"
+#include "FE_ObjTrackingRos.hpp"
 #include "Camera.hpp"
 
 using namespace std;
@@ -34,10 +38,10 @@ public:
     ParamPtr mpParam;
 };
 
-void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = "") {
+void exec_tracking(const shared_ptr<System>& mpSystem, ros::NodeHandle& n, const string& defVideo = "") {
 
     // If camera is calibrated, run the object tracking front-end
-    auto pFeObjTracking = make_shared<FE::ObjTracking>(mpSystem);
+    auto pFeObjTracking = make_shared<FE::ObjTrackingRos>(mpSystem);
     mpSystem->registerChannel(ID_CH_FE, pFeObjTracking);
     mpSystem->registerSubscriber(ID_TP_SDATA, pFeObjTracking);
     mpSystem->registerSubscriber(ID_TP_FE, pFeObjTracking);
@@ -46,10 +50,9 @@ void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = 
     MsgPtr msgChSeq = make_shared<Message>(ID_CH_DS, DataStore::TOPIC, FCN_DS_REQ_CH_NS, "obj_tr_cap");
     mpSystem->send(msgChSeq);
     // Initialize Frontend
-    //ParamPtr pYoloOnnx = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_YOLO_ONNX);
-    //ParamPtr pCvOnly = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_CV_ONLY);
+    MsgPtr pMsgNode = make_shared<MsgType<ros::NodeHandle>>(ID_CH_FE, n, FE::ObjTracking::TOPIC);
     MsgPtr pMsgConfigFeOT = make_shared<MsgConfig>(ID_CH_FE, nullptr, FE::ObjTracking::TOPIC);
-    pFeObjTracking->receive(pMsgConfigFeOT);
+    pFeObjTracking->receive(pMsgNode);
     // Set online camera
     auto msgConfOnline = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
                                               FCN_SEN_CONFIG, TAG_SEN_MX_STREAM);
@@ -66,15 +69,24 @@ void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = 
     // Run camera in detached mode (so main thread is controlled by ROS)
     auto msgRunCamera = make_shared<MsgRequest>(ID_CH_SENSORS,
                                                 mpSystem, Sensor::TOPIC, FCN_SYS_RUN);
-    mpSystem->send(msgStartPlay);
+    // Apparently, it's impossible to capture images in background using the CV interface
+    //mpSystem->send(msgStartPlay);
 }
 
-int main([[maybe_unused]] int argc, char** argv) {
+
+int main(int argc, char **argv) {
+
+    ros::init(argc, argv, "python_cpp_yolo");
+    ros::NodeHandle n;
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/AUN_ARM1.yaml";
+    string projPath = ".";
+    ros::param::get("~path_proj", projPath);
+    string confFile = projPath + "/config/AUN_ARM1.yaml";
+    ROS_INFO("python_cpp_yolo, config path: %s \n", confFile.c_str());
+
     string defVideo = "robo-arm-cap.avi";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
@@ -97,15 +109,25 @@ int main([[maybe_unused]] int argc, char** argv) {
     }
 
     if (isCamCalibrated) {
-        exec_tracking(mpSystem, defVideo);
+        exec_tracking(mpSystem, n, defVideo);
     }
     else {
         LOG(ERROR) << argv[0] << ", camera is not calibrated\n";
         return 1;
     }
 
+    //ros::spin();
+    ros::Rate loop_rate(30);
+    auto msgGetNext = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
+                                           FCN_SEN_GET_NEXT_BR, "get_next");
+    int count = 0;
+    while (ros::ok())
+    {
+        mpSystem->send(msgGetNext);
+        ros::spinOnce();
+        loop_rate.sleep();
+        ++count;
+    }
+
     return 0;
 }
-
-
-

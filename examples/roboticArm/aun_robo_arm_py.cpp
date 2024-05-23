@@ -1,11 +1,14 @@
 //
-// Created by masoud on 4/26/24.
+// Created by masoud on 5/15/24.
 //
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <iostream>
 
 #include <glog/logging.h>
 #include <opencv2/core.hpp>
+#include <Python.h>
 
 #include "ParameterBlueprint.h"
 #include "System.hpp"
@@ -46,8 +49,7 @@ void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = 
     MsgPtr msgChSeq = make_shared<Message>(ID_CH_DS, DataStore::TOPIC, FCN_DS_REQ_CH_NS, "obj_tr_cap");
     mpSystem->send(msgChSeq);
     // Initialize Frontend
-    //ParamPtr pYoloOnnx = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_YOLO_ONNX);
-    //ParamPtr pCvOnly = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_CV_ONLY);
+    //ParamPtr pYoloPy = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_YOLO_PY);
     MsgPtr pMsgConfigFeOT = make_shared<MsgConfig>(ID_CH_FE, nullptr, FE::ObjTracking::TOPIC);
     pFeObjTracking->receive(pMsgConfigFeOT);
     // Set online camera
@@ -63,9 +65,6 @@ void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = 
     // Run online camera
     auto msgStartPlay = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
                                              FCN_SEN_START_PLAY, "start_play");
-    // Run camera in detached mode (so main thread is controlled by ROS)
-    auto msgRunCamera = make_shared<MsgRequest>(ID_CH_SENSORS,
-                                                mpSystem, Sensor::TOPIC, FCN_SYS_RUN);
     mpSystem->send(msgStartPlay);
 }
 
@@ -73,6 +72,14 @@ int main([[maybe_unused]] int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
+
+    Py_SetProgramName(Py_DecodeLocale(argv[0], nullptr)); // optional but strongly recommended
+    Py_Initialize();
+
+    if (!Py_IsInitialized()) {
+        LOG(ERROR) << "Python API is not initialized, abort\n";
+        return 2;
+    }
 
     string confFile = "../../config/AUN_ARM1.yaml";
     string defVideo = "robo-arm-cap.avi";
@@ -104,8 +111,6 @@ int main([[maybe_unused]] int argc, char** argv) {
         return 1;
     }
 
+    Py_Finalize();
     return 0;
 }
-
-
-

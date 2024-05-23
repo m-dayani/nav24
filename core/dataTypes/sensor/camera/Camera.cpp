@@ -170,7 +170,7 @@ namespace NAV24 {
 
     /* ============================================================================================================== */
 
-    CamStream::CamStream(const ChannelPtr& pChannel) : Camera(pChannel) {
+    CamStream::CamStream(const ChannelPtr& pChannel) : Camera(pChannel), mMtxCap() {
         DLOG(INFO) << "CamStream::CamStream\n";
     }
     CamStream::~CamStream() {
@@ -228,7 +228,9 @@ namespace NAV24 {
                 auto t1 = chrono::high_resolution_clock::now();
 
                 cv::Mat image;
+                mMtxCap.lock();
                 bool res = mpVideoCap->read(image);
+                mMtxCap.unlock();
                 auto ts_chrono = chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now());
 
                 if (!res) {
@@ -308,6 +310,28 @@ namespace NAV24 {
                 this->setup(msg);
             }
         }
+    }
+
+    void CamStream::getNextBr(MsgPtr msg) {
+        if (!mpVideoCap || !mpChannel) {
+            DLOG(WARNING) << "CamStream::getNextBr, VideoCapture is not opened or no channel, abort\n";
+            return;
+        }
+
+        if (!msg) {
+            DLOG(WARNING) << "CamStream::getNextBr, Null message detected, abort\n";
+            return;
+        }
+
+        cv::Mat image;
+        mpVideoCap->read(image);
+
+        auto ts_chrono = chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now());
+        auto ts = ts_chrono.time_since_epoch().count();
+
+        ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, "");
+        auto msgSensor = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
+        mpChannel->publish(msgSensor);
     }
 
     /* ============================================================================================================== */
@@ -538,6 +562,31 @@ namespace NAV24 {
         return pParam;
     }
 
+    void CamOffline::getNextBr(MsgPtr msg) {
+        if (!msg || !mpChannel) {
+            DLOG(WARNING) << "CamOffline::getNextBr, Null message detected, abort\n";
+            return;
+        }
+
+        if (!mpImgDS) {
+            DLOG(WARNING) << "CamOffline::getNextBr, ImageDS is not configured, abort\n";
+            return;
+        }
+
+        double ts = -1.0;
+        string nextFile{};
+        this->getNextImageFile(nextFile, ts);
+        while(TabularTextDS::isComment(nextFile)) {
+            nextFile = string{};
+            this->getNextImageFile(nextFile, ts);
+        }
+
+        cv::Mat image = cv::imread(nextFile, cv::IMREAD_UNCHANGED);
+        ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, nextFile);
+        auto msgSensor = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
+        mpChannel->publish(msgSensor);
+    }
+
     /* ============================================================================================================== */
 
     CamMixed::CamMixed(const ChannelPtr &pChannel) : Camera(pChannel), CamOffline(pChannel), CamStream(pChannel),
@@ -629,5 +678,29 @@ namespace NAV24 {
 
     string CamMixed::printStr(const string &prefix) const {
         return CamStream::printStr(prefix) + CamOffline::printStr(prefix);
+    }
+
+    void CamMixed::getNextBr(MsgPtr msg) {
+        if (!msg) {
+            DLOG(WARNING) << "CamMixed::getNextBr, Null message detected, abort\n";
+            return;
+        }
+
+        switch (mCamOp) {
+            case OFFLINE:
+                CamOffline::getNextBr(msg);
+                break;
+            case STREAM:
+                CamStream::getNextBr(msg);
+                break;
+            case BOTH:
+                CamOffline::getNextBr(msg);
+                CamStream::getNextBr(msg);
+                break;
+            case NONE:
+            default:
+                DLOG(WARNING) << "CamMixed::getNextBr, Action not supported.\n";
+                break;
+        }
     }
 }   //NAV24

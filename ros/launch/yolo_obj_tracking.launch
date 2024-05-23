@@ -1,0 +1,14 @@
+<launch>
+    <arg name="path_proj" default="/home/$USER/nav24" />
+    <arg name="path_ds" default="/home/$USER/ds" />
+
+    <node pkg="nav_ros" type="python_cpp_yolo" name="python_cpp_yolo" output="screen">
+        <param name="path_proj" value="$(arg path_proj)" />
+    </node>
+    
+    <node pkg="nav_ros" type="yolo_node.py" name="yolo_obj_tracker" output="screen">
+        <param name="path_proj" value="$(arg path_proj)" />
+        <param name="path_ds" value="$(arg path_ds)" />
+    </node>
+
+</launch>

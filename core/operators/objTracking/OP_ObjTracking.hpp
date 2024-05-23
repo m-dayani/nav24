@@ -20,8 +20,9 @@
 
 namespace NAV24::OP {
 
-#define NAME_OBJ_TR_CV "tracker-cv"
-#define NAME_OBJ_TR_YOLO "tracker-yolo-onnx"
+#define OP_OTR_NAME_YOLO_PY "obj_tr_yolo_py"
+#define OP_OTR_NAME_YOLO_ONNX "obj_tr_yolo_onnx"
+#define OP_OTR_NAME_CV "obj_tr_cv"
 
 #define FCN_OBJ_TR_RUN 4
 #define FCN_OBJ_TR_STOP 6
@@ -33,7 +34,7 @@ namespace NAV24::OP {
         ObjTracking();
         explicit ObjTracking(const ChannelPtr& pChannel);
 
-        static std::shared_ptr<ObjTracking> createTracker(const std::string& name, const ChannelPtr& pChannel);
+        static std::shared_ptr<ObjTracking> createTracker(const ParamPtr& pParam, const ChannelPtr& pChannel);
 
         static cv::Point2f find_center(const cv::Rect2f& rect);
 
@@ -53,6 +54,8 @@ namespace NAV24::OP {
 
         cv::Rect2d bbox;
         double mLastTs;
+
+        bool mbInitialized;
     };
 } // NAV24::OP
 

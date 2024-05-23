@@ -126,10 +126,10 @@ namespace NAV24::OP {
 
         std::shared_ptr<SensorInterface> mpInterface;
 
+    private:
         int mCudaDevice;
         std::shared_ptr<Impl> impl;
 
-    private:
         Ort::Env env;
         std::unique_ptr<Ort::Session> session;
         Ort::RunOptions options;

@@ -15,7 +15,9 @@ using namespace std;
 
 namespace NAV24 {
 
-    Sensor::Sensor(const ChannelPtr &pChannel) : MsgCallback(pChannel), mpInterface() {
+    Sensor::Sensor() : mpInterface(), mbRunningInBg(false) {}
+
+    Sensor::Sensor(const ChannelPtr &pChannel) : MsgCallback(pChannel), mpInterface(), mbRunningInBg(false) {
         DLOG(INFO) << "Sensor::Sensor, Constructor\n";
     }
 
@@ -44,6 +46,9 @@ namespace NAV24 {
                 case FCN_SEN_GET_NEXT:
                     this->getNext(msg);
                     break;
+                case FCN_SEN_GET_NEXT_BR:
+                    this->getNextBr(msg);
+                    break;
                 case FCN_SEN_RESET:
                     this->reset();
                     break;
@@ -61,6 +66,21 @@ namespace NAV24 {
 
         if (action == FCN_SYS_STOP) {
             this->stop();
+        }
+        if (action == FCN_SYS_RUN) {
+            // run in background
+            if (dynamic_pointer_cast<MsgRequest>(msg)) {
+                auto msgReq = dynamic_pointer_cast<MsgRequest>(msg);
+                auto sender = msgReq->getCallback();
+                if (sender && !mbRunningInBg) {
+                    DLOG(INFO) << "Sensor::receive, Running camera in background\n";
+                    mbRunningInBg = true;
+                    auto pThread = make_shared<thread>(&Sensor::run, this);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThread,
+                                                                           System::TOPIC);
+                    sender->receive(msgRes);
+                }
+            }
         }
     }
 

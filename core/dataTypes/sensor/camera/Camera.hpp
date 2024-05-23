@@ -61,6 +61,8 @@ namespace NAV24 {
         void setup(const MsgPtr &msg) override;
         void initVideoCap(int port, const std::string& video = "");
 
+        void getNextBr(MsgPtr msg) override;
+
         void reset() override;
 
     protected:
@@ -70,6 +72,7 @@ namespace NAV24 {
         std::string mPathVideo;
         std::string mVideoFile;
         std::shared_ptr<cv::VideoCapture> mpVideoCap;
+        std::mutex mMtxCap;
     };
 
     /* ============================================================================================================== */
@@ -87,6 +90,8 @@ namespace NAV24 {
 
     protected:
         void setup(const MsgPtr &msg) override;
+
+        void getNextBr(MsgPtr msg) override;
 
         void getNextImageFile(std::string& path, double& ts);
         void getNext(MsgPtr pReq) override;
@@ -126,6 +131,8 @@ namespace NAV24 {
         void getNext(MsgPtr pReq) override;
 
         void run() override;
+
+        void getNextBr(MsgPtr msg) override;
 
         void reset() override;
 

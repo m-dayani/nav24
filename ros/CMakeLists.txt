@@ -128,20 +128,24 @@ catkin_package(
 ###########
 
 set(LOADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/core/loaders)
+set(FRONT_END_DIR ${CMAKE_CURRENT_SOURCE_DIR}/core/frontEnd)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
 # include
         ${catkin_INCLUDE_DIRS}
+        ${NAV_CORE_INCLUDE_DIRS}
         ${LOADERS_DIR}
-        #${OG_SLAM_CORE_INCLUDE_DIRS}
+        ${FRONT_END_DIR}
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME} SHARED
         ${LOADERS_DIR}/MVSEC_Loader.h
         ${LOADERS_DIR}/MVSEC_Loader.cpp
+        ${FRONT_END_DIR}/FE_ObjTrackingRos.hpp
+        ${FRONT_END_DIR}/FE_ObjTrackingRos.cpp
 )
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${NAV_CORE_INCLUDE_DIRS})
@@ -161,6 +165,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/examples)
 
 add_executable(rosbag_loader examples/rosbag_loader.cpp)
 target_link_libraries(rosbag_loader PRIVATE ${PROJECT_NAME})
+
+add_executable(python_cpp_yolo examples/python_cpp_yolo.cpp)
+target_link_libraries(python_cpp_yolo PRIVATE ${PROJECT_NAME})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

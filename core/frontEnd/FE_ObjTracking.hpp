@@ -6,6 +6,7 @@
 #define NAV24_FE_OBJTRACKING_HPP
 
 #include <memory>
+#include <thread>
 
 #include "WorldObject.hpp"
 #include "FrontEnd.hpp"
@@ -17,25 +18,24 @@
 
 namespace NAV24::FE {
 
-class ObjTracking : public FrontEnd, public std::enable_shared_from_this<ObjTracking> {
+    class ObjTracking : public FrontEnd, public std::enable_shared_from_this<ObjTracking> {
     public:
         inline static const std::string TOPIC = "FE::ObjTracking";
 
         explicit ObjTracking(const ChannelPtr& pChannel);
         void receive(const MsgPtr &msg) override;
 
-        //static ParamPtr getDefaultParameters(std::vector<ParamPtr>& vpParamContainer);
+    protected:
+        void initOperators();
+        void setup(const MsgPtr &msg) override;
+        virtual void handleImageMsg(const MsgPtr &msg);
+
+        void stop() override;
 
     protected:
-        void initMainTracker();
-        void initYoloDetector();
-        void setup(const MsgPtr &msg) override;
-        void handleImageMsg(const MsgPtr &msg);
-
-    void stop() override;
-
-protected:
         bool mbInitialized;
+
+        std::string mTrType;
 
         std::string mMapName;
         std::vector<WO::woPtr> mvpPts3D{};
@@ -45,6 +45,7 @@ protected:
         Eigen::Matrix3d mHwc;
         std::vector<FramePtr> mvpFrames{};
 
+        ParamPtr mpTempParam;
         std::vector<ParamPtr> mvpParamHolder;
 
         std::shared_ptr<OP::ObjTracking> mpObjTracker;

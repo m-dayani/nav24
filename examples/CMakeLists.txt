@@ -42,6 +42,10 @@ add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)
 target_link_libraries(aun_robo_arm LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_robo_arm)
 
+add_executable(aun_robo_arm_py roboticArm/aun_robo_arm_py.cpp)
+target_link_libraries(aun_robo_arm_py LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE aun_robo_arm_py)
+
 add_executable(aun_cam_calib roboticArm/aun_cam_calib.cpp)
 target_link_libraries(aun_cam_calib LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_cam_calib)

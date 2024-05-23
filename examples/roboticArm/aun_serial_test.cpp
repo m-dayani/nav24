@@ -10,6 +10,8 @@
 #include "FrontEnd.hpp"
 #include "Serial.hpp"
 
+#define PI 3.14
+
 using namespace std;
 using namespace NAV24;
 
@@ -46,6 +48,22 @@ namespace NAV24::FE {
                 dqdes[1] = 2 * Dam[1] * Freq  * cos(2 * Freq  * (spi) * ST);
                 ddqdes[1] = -4 * Dam[1] * Freq   * Freq  * sin(2 * Freq  * (spi) * ST);
 
+                float x = Dam[0]  * sin(Freq  * (spi) * ST);
+                float y = Dam[1]  * sin(2 * Freq  * (spi) * ST);
+
+                float c2=(x*x+y*y-(0.64*0.64)-(0.4*0.4))/(2*0.4*0.64);
+                float s2=sqrt(1-(c2*c2));
+
+                tetad[1] =atan2(s2,c2);
+                tetad[0] =atan2(y,x)-atan2((0.4*sin(tetad[1])),(0.64+(0.4*cos(tetad[1]))));
+
+                tetad[1]=tetad[1]*180/PI;
+                tetad[0]=tetad[0]*180/PI;
+
+                tetad[0]=-(tetad[0]-90);
+                tetad[1]=-(tetad[1]-162);
+
+
                 // Send a coord message to serial output
                 stringstream locStr;
                 locStr << " " << qdes[0] << " " << qdes[1];
@@ -53,12 +71,12 @@ namespace NAV24::FE {
                                                       FCN_SER_WRITE, locStr.str());
                 mpChannel->publish(msgSerial);
 
-                cout << locStr.str() << endl;
+                //cout << locStr.str() << endl;
 
                 auto t1 = chrono::high_resolution_clock::now();
                 auto duration = duration_cast<chrono::microseconds>(t1 - t0);
                 double loopTime = static_cast<double>(duration.count()) / 1000000.0;
-                cout << "Loop time: " << loopTime << " (s)" << endl;
+                //cout << "Loop time: " << loopTime << " (s)" << endl;
 
                 if (this->isStopped() || loopTime >= runTimeSec) {
                     break;
@@ -74,6 +92,7 @@ namespace NAV24::FE {
         int s = 0;
         float spi = 0.f;
         float qdes[2] = {0, 0}, dqdes[2] = {0, 0}, ddqdes[2] = {0, 0};
+        float tetad[2] = {0, 0};
     };
 }
 

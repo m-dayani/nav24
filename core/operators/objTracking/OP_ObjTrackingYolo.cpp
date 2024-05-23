@@ -8,6 +8,7 @@
 #include <regex>
 #include <iostream>
 #include <thread>
+#include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
@@ -15,6 +16,7 @@
 #include "Image.hpp"
 #include "FrontEnd.hpp"
 #include "OP_ObjTrackingYolo.hpp"
+#include "ParameterBlueprint.h"
 
 using namespace std;
 
@@ -242,7 +244,7 @@ namespace NAV24::OP {
             }
             else {
                 // this is from parameter server
-                auto pNameParam = find_param<ParamType<string>>("name", pParam);
+                auto pNameParam = find_param<ParamType<string>>(PKEY_NAME, pParam);
                 mName = (pNameParam) ? pNameParam->getValue() : "no_name";
 
                 auto pIcParam = pParam->read("interface");
@@ -256,12 +258,17 @@ namespace NAV24::OP {
                     mpInterface = make_shared<SensorInterface>(SensorInterface::InterfaceType::OFFLINE, target, port);
                 }
 
-                auto pModelFile = find_param<ParamType<string>>("onnx_model", pParam);
+                auto pModelFile = find_param<ParamType<string>>("model", pParam);
                 mModelName = (pModelFile) ? pModelFile->getValue() : "";
             }
 
             if (!mModelBase.empty() && !mModelName.empty()) {
                 mModelPath = mModelBase + "/" + mModelName;
+                auto bPath = boost::filesystem::path(mModelPath);
+                string modelExt = bPath.extension().string();
+                if (modelExt != ".onnx") {
+                    return;
+                }
 
                 impl = std::make_shared<Impl>(mModelPath, mCudaDevice);
 

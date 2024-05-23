@@ -110,8 +110,8 @@ namespace NAV24 {
                 if (!result.empty()) {
                     auto msgRes = make_shared<Message>(ID_TP_SDATA, FE::FrontEnd::TOPIC,
                                                        FCN_SER_READ, result);
-//                    auto t0 = chrono::high_resolution_clock::now().time_since_epoch().count();
-//                    cout << "Serial received: " << result << ", at " << t0 << "\n";
+                    auto t0 = chrono::high_resolution_clock::now().time_since_epoch().count();
+                    DLOG(INFO) << "Serial received: " << result << ", at " << t0 << "\n";
                     mpChannel->publish(msgRes);
                 }
 
