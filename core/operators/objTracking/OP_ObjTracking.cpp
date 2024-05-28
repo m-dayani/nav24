@@ -18,10 +18,10 @@ using namespace std;
 namespace NAV24::OP {
 
     ObjTracking::ObjTracking() : MsgCallback(), Operator(),
-        mqpImages(), mMtxImgQ(), mMtxImg(), bbox(), mLastTs(-1.0), mbInitialized(false) {}
+        mqpImages(), mMtxImgQ(), mbInitialized(false) {}
 
     ObjTracking::ObjTracking(const ChannelPtr& pChannel) : MsgCallback(pChannel), Operator(),
-        mqpImages(), mMtxImgQ(), mMtxImg(), bbox(), mLastTs(-1.0), mbInitialized(false) {}
+        mqpImages(), mMtxImgQ(), mbInitialized(false) {}
 
     void ObjTracking::setup(const MsgPtr &configMsg) {
 
@@ -35,7 +35,7 @@ namespace NAV24::OP {
 
         while(true) {
             mMtxImgQ.lock();
-            ImagePtr pImage;
+            FramePtr pImage;
             if (!mqpImages.empty()) {
                 pImage = mqpImages.front();
                 mqpImages.pop();
@@ -50,16 +50,11 @@ namespace NAV24::OP {
         }
     }
 
-    cv::Point2f ObjTracking::find_center(const cv::Rect2f &rect) {
-
-        return {rect.x + rect.width * 0.5f, rect.y + rect.height * 0.5f};
-    }
-
     void ObjTracking::init(const MsgPtr &msg) {
 
     }
 
-    void ObjTracking::update(const ImagePtr &pImage) {
+    void ObjTracking::update(const FramePtr &pImage) {
 
     }
 
@@ -104,5 +99,42 @@ namespace NAV24::OP {
         }
 
         return pTracker;
+    }
+
+    void ObjTracking::fetchFrameInfo(const FramePtr& pFrame, double &ts, cv::Mat &image, OB::ObsPtr &pObs) {
+
+        if (!pFrame || !static_pointer_cast<FrameImgMono>(pFrame)) {
+            return;
+        }
+
+        auto pImgFrame = static_pointer_cast<FrameImgMono>(pFrame);
+        auto pImg = pImgFrame->getImage();
+        image = pImg->mImage;
+        pObs = pImgFrame->getObservations().back();
+
+        if (!pImg || !static_pointer_cast<ImageTs>(pImg)) {
+            return;
+        }
+
+        auto pImgTs = static_pointer_cast<ImageTs>(pImg);
+        ts = pImgTs->mTimeStamp;
+    }
+
+    cv::Rect2f ObjTracking::fetchBbox(const OB::ObsPtr &pObs) const {
+
+        if (pObs && static_pointer_cast<OB::BBox>(pObs)) {
+            return static_pointer_cast<OB::BBox>(pObs)->getBbox();
+        }
+        auto pLastObs = mLastObs.second;
+        if (pLastObs && static_pointer_cast<OB::BBox>(pLastObs)) {
+            return static_pointer_cast<OB::BBox>(pLastObs)->getBbox();
+        }
+        return {};
+    }
+
+    void ObjTracking::updateLastObs(const double& ts, const cv::Rect2f &bbox) {
+        auto pLastObs = make_shared<OB::BBox>();
+        pLastObs->updateBboxAndLastPoint(bbox);
+        mLastObs = make_pair(ts, pLastObs);
     }
 } // NAV24::OP

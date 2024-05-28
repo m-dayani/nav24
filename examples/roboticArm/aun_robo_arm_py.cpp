@@ -2,13 +2,13 @@
 // Created by masoud on 5/15/24.
 //
 
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+//#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <iostream>
 
 #include <glog/logging.h>
 #include <opencv2/core.hpp>
-#include <Python.h>
+//#include <Python.h>
 
 #include "ParameterBlueprint.h"
 #include "System.hpp"
@@ -73,13 +73,13 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    Py_SetProgramName(Py_DecodeLocale(argv[0], nullptr)); // optional but strongly recommended
-    Py_Initialize();
+//    Py_SetProgramName(Py_DecodeLocale(argv[0], nullptr)); // optional but strongly recommended
+//    Py_Initialize();
 
-    if (!Py_IsInitialized()) {
-        LOG(ERROR) << "Python API is not initialized, abort\n";
-        return 2;
-    }
+//    if (!Py_IsInitialized()) {
+//        LOG(ERROR) << "Python API is not initialized, abort\n";
+//        return 2;
+//    }
 
     string confFile = "../../config/AUN_ARM1.yaml";
     string defVideo = "robo-arm-cap.avi";
@@ -111,6 +111,6 @@ int main([[maybe_unused]] int argc, char** argv) {
         return 1;
     }
 
-    Py_Finalize();
+    //Py_Finalize();
     return 0;
 }

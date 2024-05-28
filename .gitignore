@@ -38,5 +38,6 @@ ros/examples/python_cpp_yolo
 .idea
 lib
 ros/examples/rosbag_loader
-**__pycache__/
+*__pycache__/
+*.txt
 

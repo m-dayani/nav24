@@ -38,11 +38,13 @@ namespace NAV24 {
                     }
                         break;
                     case FCN_SER_READ: {
+#ifdef LIB_SERIAL_FOUND
                         if (mpSerial) {
                             string buffer;
                             buffer.resize(128);
                             string result = mpSerial->read(buffer.length() + 1);
                         }
+#endif
                     }
                         break;
                     default:
@@ -60,6 +62,7 @@ namespace NAV24 {
         Output::setup(msg);
 
         if (mpInterface) {
+#ifdef LIB_SERIAL_FOUND
             try {
                 mpSerial = make_shared<serial::Serial>(mpInterface->target, mpInterface->port,
                                                        serial::Timeout::simpleTimeout(100));
@@ -75,16 +78,17 @@ namespace NAV24 {
                 }
                 mpSerial = nullptr;
             }
+#endif
         }
     }
 
     void Serial::run() {
-
+#ifdef LIB_SERIAL_FOUND
         if (!mpSerial) {
             DLOG(ERROR) << "Serial::run, serial interface is null\n";
             return;
         }
-
+#endif
         //int count = 0;
         while (!mbStop) {
             if (!mReadBuffer.empty()) {
@@ -100,7 +104,7 @@ namespace NAV24 {
             mMtxWriteBuff.unlock();
 
             if (!msg2write.empty()) {
-
+#ifdef LIB_SERIAL_FOUND
                 size_t bytes_wrote = mpSerial->write(msg2write);
                 DVLOG(2) << "Serial::run, wrote " << bytes_wrote << " bytes\n";
 
@@ -118,6 +122,7 @@ namespace NAV24 {
 //                cout << "Iteration: " << count << ", Bytes written: ";
 //                cout << bytes_wrote << ", Bytes read: ";
 //                cout << result.length() << ", String read: " << result << endl;
+#endif
             }
             //count++;
         }
@@ -129,7 +134,9 @@ namespace NAV24 {
 
     void Serial::stop() {
         MsgCallback::stop();
+#ifdef LIB_SERIAL_FOUND
         mpSerial->close();
+#endif
     }
 } // NAV24
 

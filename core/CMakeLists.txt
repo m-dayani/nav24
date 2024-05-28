@@ -14,19 +14,31 @@ find_package(glog REQUIRED)
 
 # Optional Packages
 
-#find_package(Ceres REQUIRED)
+if (USE_SERIAL)
+    find_package(serial)
+endif ()
+if (serial_FOUND)
+    add_compile_definitions(LIB_SERIAL_FOUND=1)
+endif ()
 
-# Note: One can add g2o as an external package:
-#find_package(g2o REQUIRED)
+#find_package(Ceres)
+
+#find_package(g2o)
 
 # Python Library
-#find_package(PythonLibs)
-find_package(Python COMPONENTS Interpreter Development)
+if (USE_PYTHON)
+    find_package(Python COMPONENTS Interpreter Development)
+endif ()
+if (Python_FOUND)
+    add_compile_definitions(LIB_PYTHON_FOUND=1)
+endif ()
 
-find_package(serial REQUIRED)
-
-#find_library(onnxruntime NAMES onnxruntime)
-find_package(onnxruntime)
+if (USE_ONNX_RUNTIME)
+    find_package(onnxruntime)
+endif ()
+if (onnxruntime_FOUND)
+    add_compile_definitions(LIB_ONNX_RUNTIME_FOUND=1)
+endif ()
 
 
 include(ProjectFiles.cmake)

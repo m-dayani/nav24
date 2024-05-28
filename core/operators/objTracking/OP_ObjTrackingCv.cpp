@@ -10,6 +10,7 @@
 #include "OP_ObjTrackingCv.hpp"
 #include "FrontEnd.hpp"
 #include "ParameterBlueprint.h"
+//#include "Point2D.hpp"
 
 using namespace cv;
 using namespace std;
@@ -22,7 +23,7 @@ namespace NAV24::OP {
 #define MAX_SIZE_BUFFER 1
 
     ObjTrackingCv::ObjTrackingCv(const ChannelPtr& pChannel) : ObjTracking(pChannel),
-        mTrIdx(DEF_TR_CV_OPT), mbBboxInit(false), mbTrInit(false) {
+        mTrIdx(DEF_TR_CV_OPT), mbTrInit(false), mbManInit(false), mInitTs(-1.0) {
 
         mvTrOptions = {"BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN", "CSRT"};
         this->initTrackerObj();
@@ -39,6 +40,9 @@ namespace NAV24::OP {
             if (pParams) {
                 auto pParamName = find_param<ParamType<string>>(PKEY_NAME, pParams);
                 mName = (pParamName) ? pParamName->getValue() : "ObjTrackerCV";
+
+                auto pParamManInit = find_param<ParamType<int>>("manInit", pParams);
+                mbManInit = (pParamManInit) ? pParamManInit->getValue() != 0 : false;
 
                 auto pParamOpt = find_param<ParamType<int>>("method", pParams);
                 mTrIdx = (pParamOpt) ? pParamOpt->getValue() : DEF_TR_CV_OPT;
@@ -67,48 +71,59 @@ namespace NAV24::OP {
         }
     }
 
-    void ObjTrackingCv::update(const ImagePtr& pImage) {
+    void ObjTrackingCv::update(const FramePtr& pImage) {
 
-        if (!pImage || pImage->mImage.empty()) {
+        double ts = -1.0;
+        cv::Mat image;
+        OB::ObsPtr pObs;
+        fetchFrameInfo(pImage, ts, image, pObs);
+        cv::Rect2d bbox = fetchBbox(pObs);
+
+        if (image.empty()) {
             DVLOG(2) << "ObjTrackingCv::update, empty image received\n";
             return;
         }
 
-        cv::Mat frame = pImage->mImage.clone();
+        // ignore frames before the init point
+        if (ts < mInitTs) {
+            return;
+        }
 
         // Start timer
         auto timer = (double)getTickCount();
 
         // Update the tracking result
-        bool ok = mpTracker->update(frame, bbox);
+        bool ok = mpTracker->update(image, bbox);
 
         // Calculate Frames per second (FPS)
         auto fps = static_cast<float>(getTickFrequency() / ((double)getTickCount() - timer));
 
 
         if (ok) {
-            // Tracking success : Draw the tracked object
-            rectangle(frame, bbox, Scalar( 255, 0, 0 ), 2, 1 );
+            // Tracking success :
+            // Update point track
+            this->updateLastObs(ts, bbox);
+            auto msgPt = make_shared<MsgType<OB::ObsTimed>>(ID_TP_FE, mLastObs,
+                                                            FE::FrontEnd::TOPIC);
+            mpChannel->publish(msgPt);
+
+            // Draw the tracked object
+            rectangle(image, bbox, Scalar( 255, 0, 0 ), 2, 1 );
         }
         else {
             // Tracking failure detected.
-            putText(frame, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0,0,255),2);
+            mbTrInit = false;
+            putText(image, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0,0,255),2);
         }
 
         // Display tracker type on frame
-        putText(frame, mTrName + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
+        putText(image, mTrName + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
 
         // Display FPS on frame
-        putText(frame, "FPS : " + to_string(fps), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
-
-        // Update point track
-        cv::Point2f trPoint = ObjTracking::find_center(bbox);
-        auto msgPt = make_shared<MsgType<cv::Point2f>>(ID_TP_FE, trPoint,
-                                                       FE::FrontEnd::TOPIC);
-        mpChannel->publish(msgPt);
+        putText(image, "FPS : " + to_string(fps), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
 
         // Display frame.
-        auto pImage1 = make_shared<ImageTs>(frame.clone(), -1, "");
+        auto pImage1 = make_shared<ImageTs>(image.clone(), ts, "");
         auto msgDisp = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage1,
                                                   Output::TOPIC, DEF_ACTION, "Tracking");
         mpChannel->publish(msgDisp);
@@ -125,29 +140,17 @@ namespace NAV24::OP {
                 mTrIdx = opt;
                 this->initTrackerObj();
             }
-            if (dynamic_pointer_cast<MsgType<cv::Rect2f>>(msg)) {
-                auto pBboxMsg = dynamic_pointer_cast<MsgType<cv::Rect2f>>(msg);
-                bbox = pBboxMsg->getData();
-                mbBboxInit = true;
-            }
-            if (dynamic_pointer_cast<MsgSensorData>(msg)) {
-
-                auto psData = dynamic_pointer_cast<MsgSensorData>(msg);
-                auto pData = psData->getData();
-                if (pData && dynamic_pointer_cast<ImageTs>(pData)) {
-                    auto pImage = dynamic_pointer_cast<ImageTs>(pData);
-                    cv::Mat image = pImage->mImage.clone();
-
-                    if (action == FCN_TR_CV_INIT_BB) {
-                        bbox = selectROI(image, false);
-                        mbBboxInit = true;
-                    }
-                    if (action == FCN_TR_CV_INIT_OBJ) {
-                        mpTracker->init(image, bbox);
-                        mbTrInit = true;
-                    }
-                    if (action == FCN_TR_CV_TRACK) {
-                        //this->process(image);
+            if (dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
+                auto pImage = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
+                string msgStr = msg->getMessage();
+                bool isInitMsg = !msgStr.empty() && msgStr == "init";
+                if (!mbTrInit) {
+                    // if tracker is not initialized, initialize it
+                    this->init(msg);
+                }
+                else {
+                    // else, add it for tracking
+                    if (!isInitMsg) {
                         mMtxImgQ.lock();
                         if (mqpImages.size() <= MAX_SIZE_BUFFER) {
                             mqpImages.push(pImage);
@@ -196,6 +199,60 @@ namespace NAV24::OP {
 #endif
 
         DLOG(INFO) << "ObjTrackingCv::initTrackerObj, changed tracker to (" << mTrIdx << ", " << mTrName << ")\n";
+    }
+
+    void ObjTrackingCv::init(const MsgPtr &msg) {
+        ObjTracking::init(msg);
+
+        if (mbTrInit) {
+            DLOG(INFO) << "OP::ObjTrackingCv::init, tracker already initialized\n";
+            return;
+        }
+        if (!msg || !dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
+            // wrong message
+            DLOG(INFO) << "OP::ObjTrackingCv::init, wrong message type\n";
+            return;
+        }
+        auto pFrame = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
+        if (!pFrame) {
+            DLOG(INFO) << "OP::ObjTrackingCv::init, frame is null\n";
+            return;
+        }
+
+        double ts = -1.0;
+        cv::Mat image;
+        OB::ObsPtr pObs;
+        cv::Rect2f bbox;
+        fetchFrameInfo(pFrame, ts, image, pObs);
+
+        if (image.empty()) {
+            DLOG(INFO) << "OP::ObjTrackingCv::init, image is empty, abort\n";
+            return;
+        }
+
+        if (mbManInit) {
+            bbox = selectROI(image, false);
+            mpTracker->init(image, bbox);
+            mbTrInit = true;
+        }
+        else {
+            // wait for the master tracker to select a bbox
+            if (pObs) {
+                bbox = fetchBbox(pObs);
+                DLOG(INFO) << "OP::ObjTrackingCv::init, received bbox: " << bbox << "\n";
+                if (!bbox.empty()) {
+                    mpTracker->init(image, bbox);
+                    mbTrInit = true;
+                }
+            }
+        }
+
+        if (mbTrInit) {
+            mInitTs = ts;
+            // add bbox
+            this->updateLastObs(ts, bbox);
+            DLOG(INFO) << "OP::ObjTrackingCv::init, initialized tracker at " << ts << "\n";
+        }
     }
 
     /*void ObjTrackingCv::run() {

@@ -27,6 +27,10 @@ namespace NAV24 {
         Frame::mpPose = pose;
     }
 
+    void Frame::addObservation(const OB::ObsPtr &pObs) {
+        mvpObservations.push_back(pObs);
+    }
+
     FrameImgMono::FrameImgMono(double _ts, const PosePtr &pose, const std::vector<OB::ObsPtr> &vObs) :
         Frame(_ts, pose, vObs) {}
 

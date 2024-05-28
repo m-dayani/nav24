@@ -35,10 +35,12 @@ namespace NAV24::OP {
     protected:
         void initTrackerObj();
 
+        void init(const MsgPtr &msg) override;
+
         void setup(const MsgPtr &configMsg) override;
         void handleRequest(const MsgPtr &reqMsg) override;
 
-        void update(const ImagePtr& pImage) override;
+        void update(const FramePtr& pImage) override;
         //void run() override;
 
     private:
@@ -47,8 +49,11 @@ namespace NAV24::OP {
         std::vector<std::string> mvTrOptions;
         cv::Ptr<cv::Tracker> mpTracker;
 
+        bool mbManInit;
+        double mInitTs;
         bool mbTrInit;
-        bool mbBboxInit;
+
+        //bool mbBboxInit;
     };
 } // NAV24::OP
 

@@ -2,22 +2,21 @@
 // Created by masoud on 5/15/24.
 //
 
-#include <iostream>
 
 #include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/Image.h>
-#include <sensor_msgs/CameraInfo.h>
 
 #include "FE_ObjTrackingRos.hpp"
 #include "System.hpp"
+#include "Point2D.hpp"
 
 using namespace std;
 
-namespace NAV24::FE {
+namespace NAV24 { namespace FE {
 
     ObjTrackingRos::ObjTrackingRos(const NAV24::ChannelPtr &pChannel) : ObjTracking(pChannel) {
 
+        mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
     }
 
     void ObjTrackingRos::receive(const MsgPtr &msg) {
@@ -31,6 +30,10 @@ namespace NAV24::FE {
 
                 image_transport::ImageTransport it(nh);
                 imgPublisher = it.advertise("/camera/image", 1);
+
+                if (!mbInitialized) {
+                    this->setup(msg);
+                }
             }
         }
     }
@@ -44,10 +47,12 @@ namespace NAV24::FE {
                 cv::Mat image = pImg->mImage.clone();
 
                 // make the image message
-                sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
+                sensor_msgs::ImagePtr imgMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
+                imgMsg->header.stamp.fromNSec(static_cast<uint64_t>(pImg->mTimeStamp));
+                imgMsg->header.frame_id = pImg->mPath;
 
                 // publish
-                imgPublisher.publish(msg);
+                imgPublisher.publish(imgMsg);
                 // do this in the main()
                 //ros::spinOnce();
             }
@@ -58,8 +63,28 @@ namespace NAV24::FE {
     }
 
     void ObjTrackingRos::coordsCallback(const std_msgs::String::ConstPtr& msg) {
-        ROS_INFO("I heard: [%s]", msg->data.c_str());
+        //ROS_INFO("I heard: [%s]", msg->data.c_str());
         //std::cout << "I heard: " << msg->data.c_str() << std::endl;
+        long ts_img = -1;
+        string the_rest;
+        istringstream iss{msg->data};
+        iss >> ts_img;
+        getline(iss, the_rest);
+        // todo: do something with ts
+        auto t1 = chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now());
+        double t_diff = static_cast<double>(t1.time_since_epoch().count() - ts_img) * 1e-9;
+        //cout << "time diff: " << t_diff << "\n";
+        //this->updateBboxAndLastPoint(the_rest);
+        shared_ptr<OB::BBox> pBbox = make_shared<OB::BBox>();
+        pBbox->updateBboxAndLastPoint(the_rest);
+
+        // let the top level front-end handle this
+        auto pMsgObs = make_shared<MsgType<OB::ObsTimed>>(ID_CH_FE,
+                make_pair(ts_img, pBbox), ObjTracking::TOPIC);
+        this->receive(pMsgObs);
+        //this->correctObservation(make_pair(t_diff, pBbox));
+        mTsYoloUpdate = ts_img;
+        //ROS_INFO("(%f, %f, %f, %f)", mYoloDet.x, mYoloDet.y, mYoloDet.width, mYoloDet.height);
     }
 
-} // NAV24::FE
+} } // NAV24::FE

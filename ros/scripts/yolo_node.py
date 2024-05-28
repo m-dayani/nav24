@@ -3,7 +3,7 @@
 import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import os
 import numpy as np
@@ -21,9 +21,10 @@ class YoloNode(TrackerYOLO):
         super().__init__(model)
         # Params
         self.image = None
+        self.lastTs = -1.0
         self.br = CvBridge()
         # Node cycle rate (in Hz).
-        self.loop_rate = rospy.Rate(1)
+        # self.loop_rate = rospy.Rate(1)
 
         # Publishers
         self.pub = rospy.Publisher('/obj/coords', String, queue_size=10)
@@ -36,15 +37,18 @@ class YoloNode(TrackerYOLO):
         try:
             # Convert your ROS Image message to OpenCV2
             cv2_img = self.br.imgmsg_to_cv2(msg, "bgr8")
+            ts = msg.header.stamp.to_nsec()
         except CvBridgeError as e:
             print(e)
         else:
             self.image = cv2_img
+            self.lastTs = ts
 
-    def get_string(self, bbox):
-        bbox_str = ""
+    def get_string(self, ts, bbox):
+        bbox_str = f'%ld' % ts
         for coord in bbox:
             bbox_str += f' %.4f' % coord
+        # print(bbox_str)
         return bbox_str
 
     def start(self):
@@ -54,17 +58,19 @@ class YoloNode(TrackerYOLO):
             # br = CvBridge()
             if self.image is not None:
                 # rospy.loginfo('processing image')
+                img = np.copy(self.image)
+                ts = self.lastTs
                 if not self.initialized:
-                    ret, bbox = self.init(self.image, [])
+                    ret, bbox = self.init(img, [])
                 else:
-                    ret, bbox = self.update(self.image)
+                    ret, bbox = self.update(img)
 
                 if ret:
-                    res = self.get_string(self.bbox)
+                    res = self.get_string(ts, self.get_bbox_cv())
                     # print(res)
                     self.pub.publish(res)
 
-            self.loop_rate.sleep()
+            # self.loop_rate.sleep()
 
 
 if __name__ == '__main__':

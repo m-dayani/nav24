@@ -6,7 +6,9 @@
 #define NAV24_SERIAL_HPP
 
 #include <queue>
+#ifdef LIB_SERIAL_FOUND
 #include <serial/serial.h>
+#endif
 
 #include "Output.hpp"
 #include "Interface.hpp"
@@ -38,7 +40,9 @@ namespace NAV24 {
         void stop() override;
 
     protected:
+#ifdef LIB_SERIAL_FOUND
         std::shared_ptr<serial::Serial> mpSerial;
+#endif
 
         std::queue<std::string> mReadBuffer;
         std::mutex mMtxReadBuff;

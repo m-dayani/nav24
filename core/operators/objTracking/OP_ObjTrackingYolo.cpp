@@ -13,7 +13,7 @@
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "Image.hpp"
+//#include "Image.hpp"
 #include "FrontEnd.hpp"
 #include "OP_ObjTrackingYolo.hpp"
 #include "ParameterBlueprint.h"
@@ -23,7 +23,7 @@ using namespace std;
 
 namespace NAV24::OP {
 
-#define RET_OK nullptr
+//#define RET_OK nullptr
 #define MAX_SIZE_BUFFER 1
 
     const char *class_names[] = {
@@ -40,7 +40,7 @@ namespace NAV24::OP {
             "toaster",        "sink",       "refrigerator",  "book",          "clock",        "vase",          "scissors",
             "teddy bear",     "hair drier", "toothbrush"};
 
-    const char *det_class[] = {"cap"};
+    //const char *det_class[] = {"cap"};
 
 #ifdef _WIN32   // ORTCHAR_T is wchar_t when _WIN32 is defined.
 #define TO_ONNX_STR(stdStr) std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(stdStr).c_str()
@@ -48,6 +48,7 @@ namespace NAV24::OP {
 #define TO_ONNX_STR(stdStr) stdStr.c_str()
 #endif
 
+#ifdef LIB_ONNX_RUNTIME_FOUND
     Ort::SessionOptions create_options(int64_t cuda_device) {
 
         Ort::SessionOptions options;
@@ -55,18 +56,21 @@ namespace NAV24::OP {
             Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(options,static_cast<int>(cuda_device)));
         return options;
     }
-
+#endif
     struct Impl {
-
+#ifdef LIB_ONNX_RUNTIME_FOUND
         Ort::Env env;
         Ort::SessionOptions options;
         Ort::Session session;
 
-        Impl(const std::string &model_path, int64_t cuda_device)
-                : env(ORT_LOGGING_LEVEL_WARNING, "YOLOv7_CXX"),
-                  options(create_options(cuda_device)),
-                  session(env, TO_ONNX_STR(model_path), options)
+        Impl(const std::string &model_path, int64_t cuda_device) :
+                env(ORT_LOGGING_LEVEL_WARNING, "YOLOv7_CXX"),
+                options(create_options(cuda_device)),
+                session(env, TO_ONNX_STR(model_path), options)
         {}
+#else
+        Impl(const std::string &model_path, int64_t cuda_device) {}
+#endif
     };
 
     int64_t elements(const std::vector<int64_t> &shape) {
@@ -80,7 +84,7 @@ namespace NAV24::OP {
         ObjTracking(pChannel), mCudaDevice(-1), imgSize(), modelType() {}
 
     int64_t ObjTrYoloOnnx::image_size() const {
-
+#ifdef LIB_ONNX_RUNTIME_FOUND
         if (session) {
             auto info = session->GetInputTypeInfo(0);
             return info.GetTensorTypeAndShapeInfo().GetShape().back();
@@ -88,11 +92,15 @@ namespace NAV24::OP {
         else {
             return 640;
         }
+#else
+        return 640;
+#endif
     }
 
     std::vector<Results> ObjTrYoloOnnx::detect(float *data, Shape shape) {
 
         std::vector<Results> results;
+#ifdef LIB_ONNX_RUNTIME_FOUND
         if (!session) {
             DLOG(WARNING) << "ObjTrYoloOnnx::detect, NULL session, abort\n";
             return results;
@@ -127,6 +135,7 @@ namespace NAV24::OP {
                 ptr += shape[1];
             }
         }
+#endif
         return results;
     }
 
@@ -166,21 +175,14 @@ namespace NAV24::OP {
             return;
         }
 
-        if (dynamic_pointer_cast<MsgSensorData>(msg)) {
-
-            auto msgSensor = dynamic_pointer_cast<MsgSensorData>(msg);
-            auto sensorData = msgSensor->getData();
-            if (sensorData && dynamic_pointer_cast<ImageTs>(sensorData)) {
-
-                auto pImage = dynamic_pointer_cast<ImageTs>(sensorData);
-                if (pImage && !pImage->mImage.empty()) {
-                    mMtxImgQ.lock();
-                    if (mqpImages.size() <= MAX_SIZE_BUFFER) {
-                        mqpImages.push(pImage);
-                    }
-                    mMtxImgQ.unlock();
-//                    DLOG(INFO) << "ObjTrYoloOnnx::receive, added new image: " << pImage->mTimeStamp << "\n";
+        if (dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
+            auto pFrame = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
+            if (pFrame) {
+                mMtxImgQ.lock();
+                if (mqpImages.size() <= MAX_SIZE_BUFFER) {
+                    mqpImages.push(pFrame);
                 }
+                mMtxImgQ.unlock();
             }
         }
 
@@ -311,6 +313,7 @@ namespace NAV24::OP {
         }
         try
         {
+#ifdef LIB_ONNX_RUNTIME_FOUND
             rectConfidenceThreshold = iParams.rectConfidenceThreshold;
             iouThreshold = iParams.iouThreshold;
             imgSize = iParams.imgSize;
@@ -358,6 +361,7 @@ namespace NAV24::OP {
             }
             options = Ort::RunOptions{ nullptr };
             //WarmUpSession();
+#endif
             return Ret;
         }
         catch (const std::exception& e)
@@ -397,23 +401,18 @@ namespace NAV24::OP {
         MsgCallback::stop();
     }*/
 
-    void ObjTrYoloOnnx::update(const ImagePtr &pImage) {
+    void ObjTrYoloOnnx::update(const FramePtr &pImage) {
 
-        if (!pImage || pImage->mImage.empty()) {
+        double ts = -1.0;
+        cv::Mat image;
+        OB::ObsPtr pObs;
+        fetchFrameInfo(pImage, ts, image, pObs);
+
+        if (image.empty()) {
             DVLOG(2) << "ObjTrYoloOnnx::process, empty image detected\n";
             return;
         }
 
-        if (dynamic_pointer_cast<ImageTs>(pImage)) {
-            double currTs = dynamic_pointer_cast<ImageTs>(pImage)->mTimeStamp;
-            if (mLastTs >= 0) {
-                if (mLastTs >= currTs) {
-                    DLOG(WARNING) << "ObjTrYoloOnnx::process, timestamp error: " << mLastTs << " >= " << currTs << "\n";
-                }
-            }
-            mLastTs = currTs;
-        }
-        auto image = pImage->mImage.clone();
         assert(!image.empty() && image.channels() == 3);
         int image_size = static_cast<int>(this->image_size());
         //if (image_size < 0) image_size = 640;
@@ -430,14 +429,14 @@ namespace NAV24::OP {
         display_image(image, detections[0]);
 
         auto w = image.cols, h = image.rows;
-        cv::Size imgSizeCv(w, h);
         for (const auto &d : detections[0]) {
 
-            //cv::Point2f ptObs = find_center(d, imgSizeCv);
-            //auto pMsgPtObs = make_shared<MsgType<cv::Point2f>>(FE::FrontEnd::TOPIC, ptObs);
-            cv::Rect2f detRect(d.x * w, d.y * h, d.w * w, d.h * h);
-            auto pMsgPtObs = make_shared<MsgType<cv::Rect2f>>(ID_TP_FE, detRect, FE::FrontEnd::TOPIC);
-
+            cv::Rect2d detRect(d.x * w, d.y * h, d.w * w, d.h * h);
+            auto pBbox = make_shared<OB::BBox>();
+            pBbox->updateBboxAndLastPoint(detRect);
+            auto pObsTimed = make_pair(ts, pBbox);
+            auto pMsgPtObs = make_shared<MsgType<OB::ObsTimed>>(ID_TP_FE, pObsTimed,
+                                                                FE::FrontEnd::TOPIC);
             mpChannel->publish(pMsgPtObs);
         }
     }

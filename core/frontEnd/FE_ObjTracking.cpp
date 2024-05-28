@@ -5,7 +5,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <glog/logging.h>
-#include <chrono>
 
 #include "System.hpp"
 #include "FE_ObjTracking.hpp"
@@ -19,19 +18,21 @@
 #include "Camera.hpp"
 #include "OP_ObjTrackingCv.hpp"
 #include "OP_ObjTrackingYolo.hpp"
-#include "OP_ObjTrackingYoloPy.hpp"
+#include "Point3D.hpp"
 
 using namespace std;
 
 
 namespace NAV24::FE {
 
-    ObjTracking::ObjTracking(const ChannelPtr &pChannel) : FrontEnd(pChannel), mbInitialized(false),
-        mvpParamHolder(), mMapName(), mTrajectory(), mLastImPoint(0, 0), mMtxLastPt(), mvpThTrackers(),
-        mbYoloUpdated(false), mMtxYoloDet(), mbTrInitBbox(false), mbTrInitFrame(false), mpTempParam() {
+#define FRAME_BUFF_MAX_SIZE 100
 
-        mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
-        mpObjTracker = make_shared<OP::ObjTrackingCv>(pChannel);
+    ObjTracking::ObjTracking(const ChannelPtr &pChannel) : FrontEnd(pChannel), mbInitialized(false),
+        mvpParamHolder(), mMapName(), mTrajectory(), mvpThTrackers(), mbTrInit(false),
+        mTsYoloUpdate(-1), mpTempParam(), mmpFrameBuffer() {
+
+        //mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
+        //mpObjTracker = make_shared<OP::ObjTrackingCv>(pChannel);
 
         mHwc = Eigen::Matrix3d::Identity();
     }
@@ -39,6 +40,26 @@ namespace NAV24::FE {
     void ObjTracking::receive(const MsgPtr &msg) {
 
         if (msg) {
+
+            if (dynamic_pointer_cast<MsgSensorData>(msg)) {
+                this->handleImageMsg(msg);
+            }
+            if (dynamic_pointer_cast<MsgType<OB::ObsTimed>>(msg)) {
+                //DLOG(INFO) << "FE::ObjTracking::receive, received correction message\n";
+                auto msgPtObs = dynamic_pointer_cast<MsgType<OB::ObsTimed>>(msg);
+                // correct observations
+                this->correctObservation(msgPtObs->getData());
+            }
+            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
+                mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+            }
+            if (dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg)) {
+                auto pThMsg = dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg);
+                mvpThTrackers.push_back(pThMsg->getData());
+            }
+            if (dynamic_pointer_cast<MsgConfig>(msg)) {
+                mpTempParam = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
+            }
             if (msg->getTopic() == ObjTracking::TOPIC) {
 
                 if (dynamic_pointer_cast<MsgConfig>(msg)) {
@@ -55,30 +76,6 @@ namespace NAV24::FE {
                     }
                 }
             }
-            if (dynamic_pointer_cast<MsgSensorData>(msg)) {
-                this->handleImageMsg(msg);
-            }
-            if (msg->getTopic() == FrontEnd::TOPIC) {
-
-                //this->handleImageMsg(msg);
-
-                if (dynamic_pointer_cast<MsgType<cv::Point2f>>(msg)) {
-                    auto msgPtObs = dynamic_pointer_cast<MsgType<cv::Point2f>>(msg);
-                    mMtxLastPt.lock();
-                    mLastImPoint = msgPtObs->getData();
-                    mMtxLastPt.unlock();
-                }
-                if (dynamic_pointer_cast<MsgType<cv::Rect2f>>(msg)) {
-                    auto msgRect = dynamic_pointer_cast<MsgType<cv::Rect2f>>(msg);
-                    mMtxYoloDet.lock();
-                    mYoloDet = msgRect->getData();
-                    mMtxYoloDet.unlock();
-                    mMtxLastPt.lock();
-                    mLastImPoint = OP::ObjTracking::find_center(mYoloDet);
-                    mMtxLastPt.unlock();
-                    mbYoloUpdated = true;
-                }
-            }
             if (msg->getTopic() == System::TOPIC) {
                 auto msgTrans = dynamic_pointer_cast<MsgType<PosePtr>>(msg);
                 if (msgTrans) {
@@ -92,18 +89,8 @@ namespace NAV24::FE {
                     }
                 }
             }
-            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
-                mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
-            }
-            if (dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg)) {
-                auto pThMsg = dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg);
-                mvpThTrackers.push_back(pThMsg->getData());
-            }
             if (msg->getTargetId() == FCN_SYS_STOP) {
                 this->stop();
-            }
-            if (dynamic_pointer_cast<MsgConfig>(msg)) {
-                mpTempParam = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
             }
         }
     }
@@ -216,58 +203,60 @@ namespace NAV24::FE {
                 cv::Mat gray;
                 cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
 
+                if (mImgSize.empty()) {
+                    mImgSize = cv::Size(gray.cols, gray.rows);
+                }
+
+                // Frame Creation
+                this->createAndInsertFrame(pImage);
+
+                // Initialize tracking
+                this->initialize();
+
                 // Detect and track object in images
-                auto start = chrono::high_resolution_clock::now();
-                // todo: generalize
-                mpYoloDetector->receive(msg);
-                auto stop = chrono::high_resolution_clock::now();
-                auto duration = duration_cast<chrono::microseconds>(stop - start);
-//                cout << "Time taken by YOLO obj detection: " << duration.count() << " microseconds" << endl;
+                this->track(this->getLastFrame());
+            }
+        }
+    }
 
-                // Track with main tracker
-                if (!mbTrInitBbox) {// && mbYoloUpdated) {
-                    auto msgConf = make_shared<MsgType<cv::Rect2f>>(ID_CH_OP, mYoloDet,
-                                                                    OP::ObjTracking::TOPIC);
-                    auto msgManConf = make_shared<MsgSensorData>(ID_CH_OP, pImage,
-                                                                 OP::ObjTracking::TOPIC, FCN_TR_CV_INIT_BB);
-                    mpObjTracker->receive(msgManConf);
-                    mbTrInitBbox = true;
-                }
-                if (!mbTrInitFrame && mbTrInitBbox) {
-                    msg->setTargetId(FCN_TR_CV_INIT_OBJ);
-                    mpObjTracker->receive(msg);
-                    mbTrInitFrame = true;
-                }
-                if (mbTrInitBbox) {
-                    msg->setTargetId(FCN_TR_CV_TRACK);
-                    mpObjTracker->receive(msg);
-                }
-                if (mbYoloUpdated) {
-                    mbYoloUpdated = false;
-                }
+    void ObjTracking::track(const FramePtr& pFrame) {
 
-                // Back-project image coords to find world loc
-                mMtxLastPt.lock();
-                cv::Point2f lastPoint = mLastImPoint;
-                mMtxLastPt.unlock();
-                Eigen::Vector3d Pw;
-                auto img_x = lastPoint.x, img_y = lastPoint.y;
-                auto img_w = static_cast<float>(gray.cols), img_h = static_cast<float>(gray.rows);
-                if (mpCalib && img_x > 0 && img_x < img_w && img_y > 0 && img_y < img_h) {
+        auto msg = make_shared<MsgType<FramePtr>>(ID_CH_OP, pFrame, OP::ObjTracking::TOPIC);
 
-                    // Get undistorted, normalized point
+        // Track with yolo detector
+        if (mpYoloDetector) {
+            mpYoloDetector->receive(msg);
+        }
+        // Track with main tracker
+        if (mpObjTracker) {
+            //msg->setTargetId(FCN_TR_CV_INIT_OBJ);
+            //mpObjTracker->receive(msg);
+            //mbTrInitFrame = true;
+            msg->setTargetId(FCN_TR_CV_TRACK);
+            mpObjTracker->receive(msg);
+        }
+    }
+
+    Eigen::Vector3d ObjTracking::unproject(const cv::Point2f& lastPoint) {
+
+        Eigen::Vector3d Pw;
+        auto img_x = lastPoint.x, img_y = lastPoint.y;
+        auto img_w = static_cast<float>(mImgSize.width), img_h = static_cast<float>(mImgSize.height);
+        if (mpCalib && img_x > 0 && img_x < img_w && img_y > 0 && img_y < img_h) {
+
+            // Get undistorted, normalized point
 //                    cv::Point2f lp(lastPoint.y, lastPoint.x);
-                    // todo: it seems point coords are reverse -> check this
-                    cv::Point2f undistPt = mpCalib->undistPoint(lastPoint);
-                    cv::Point3f Pc(undistPt.x, undistPt.y, 1); //mpCalib->unproject(undistPt);//Pc.z = 0;
-                    Eigen::Vector3d Pc_eig = Converter::toVector3d(Pc);
+            // todo: it seems point coords are reverse -> check this
+            cv::Point2f undistPt = mpCalib->undistPoint(lastPoint);
+            cv::Point3f Pc(undistPt.x, undistPt.y, 1); //mpCalib->unproject(undistPt);//Pc.z = 0;
+            Eigen::Vector3d Pc_eig = Converter::toVector3d(Pc);
 
-                    //auto Pc_homo = PoseSE3::euler2homo(Pc_eig);
-                    //auto Pw_homo = mpTwc->transform(Pc_homo);
-                    //Pw = PoseSE3::homo2euler(Pw_homo);
-                    // To get the correct Pw, you must use Homography (not Twc)
-                    Pw = mHwc * Pc_eig;
-                    Pw /= Pw[2];
+            //auto Pc_homo = PoseSE3::euler2homo(Pc_eig);
+            //auto Pw_homo = mpTwc->transform(Pc_homo);
+            //Pw = PoseSE3::homo2euler(Pw_homo);
+            // To get the correct Pw, you must use Homography (not Twc)
+            Pw = mHwc * Pc_eig;
+            Pw /= Pw[2];
 
 //                    DLOG(INFO) << "Pt_undist: " << undistPt << "\n";
 //                    DLOG(INFO) << "Pc_homo: " << Pc_homo << "\n";
@@ -276,23 +265,173 @@ namespace NAV24::FE {
 //                    DLOG(INFO) << "H_1: " << mHwc << "\n";
 //                    DLOG(INFO) << "Twc: " << mpTwc->getPose() << "\n";
 //                    DLOG(INFO) << "-------------------------\n";
+        }
+        return Pw;
+    }
+
+    void ObjTracking::sendCoords(const Eigen::Vector3d& Pw) {
+
+        stringstream locStr;
+        locStr << " " << Pw.x() << " " << Pw.y();
+        auto msgSerial = make_shared<Message>(ID_TP_OUTPUT, Output::TOPIC,
+                                              FCN_SER_WRITE, locStr.str());
+        mpChannel->publish(msgSerial);
+    }
+
+    void ObjTracking::showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const Eigen::Vector3d& Pw) {
+
+        if (pImg && dynamic_pointer_cast<ImageTs>(pImg)) {
+
+            auto pImage = dynamic_pointer_cast<ImageTs>(pImg);
+
+            cv::Mat img = pImage->mImage.clone();
+
+            ostringstream locStr;
+            locStr << "(" << Pw.x() << ", " << Pw.y() << ")";
+
+            cv::putText(img, locStr.str(), lastPoint, cv::FONT_HERSHEY_SIMPLEX, 0.8,
+                        cv::Scalar(0, 255, 0), 2);
+            cv::drawMarker(img, lastPoint, cv::Scalar(0, 0, 255));
+
+            pImage = make_shared<ImageTs>(img, pImage->mTimeStamp, pImage->mPath);
+            auto msgImShow = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage,
+                                                        Output::TOPIC);
+            mpChannel->publish(msgImShow);
+        }
+    }
+
+    FramePtr ObjTracking::getLastFrame() {
+        if (!mmpFrameBuffer.empty()) {
+            return mmpFrameBuffer.rbegin()->second;
+        }
+        return nullptr;
+    }
+
+    std::shared_ptr<OB::BBox> ObjTracking::getLastObservation() {
+
+        shared_ptr<OB::BBox> pBbox = nullptr;
+        auto pFrame = this->getLastFrame();
+        if (pFrame) {
+            auto pObsBbox = pFrame->getObservations().back();
+            if (static_pointer_cast<OB::BBox>(pObsBbox)) {
+                pBbox = static_pointer_cast<OB::BBox>(pObsBbox);
+            }
+        }
+        return pBbox;
+    }
+
+    OB::ObsPtr ObjTracking::updateObservation() {
+        // in the simplest form, current observation is equal to the last observation
+        return this->getLastObservation();
+    }
+
+    void ObjTracking::correctObservation(const OB::ObsTimed& obsTimed) {
+
+        auto ts = obsTimed.first;
+        auto pObs = obsTimed.second;
+
+        if (mmpFrameBuffer.count(ts) > 0) {
+            //DLOG(INFO) << "FE::ObjTracking::correctObservation, retrieved frame\n";
+            // find the frame
+            auto pFrame = mmpFrameBuffer[ts];
+            if (pFrame) {
+                // correct
+                vector<OB::ObsPtr> vpObs{pObs};
+                pFrame->setObservations(vpObs);
+                //DLOG(INFO) << "FE::ObjTracking::correctObservation, corrected frame observation at " << ts << "\n";
+
+                ImagePtr pImage = nullptr;
+                if (static_pointer_cast<FrameImgMono>(pFrame)) {
+                    pImage = static_pointer_cast<FrameImgMono>(pFrame)->getImage();
                 }
 
-                // Send a coord message to serial output
-                stringstream locStr;
-                locStr << " " << Pw.x() << " " << Pw.y();
-                auto msgSerial = make_shared<Message>(ID_TP_OUTPUT, Output::TOPIC,
-                                                      FCN_SER_WRITE, locStr.str());
-                mpChannel->publish(msgSerial);
-
-                // Show results
-                cv::putText(img, locStr.str(), lastPoint, cv::FONT_HERSHEY_SIMPLEX, 0.8,
-                            cv::Scalar(0, 255, 0), 2);
-                pImage = make_shared<ImageTs>(img, pImage->mTimeStamp, pImage->mPath);
-                auto msgImShow = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage,
-                                                            Output::TOPIC);
-                mpChannel->publish(msgImShow);
+                this->processObservation(obsTimed, pImage);
             }
+        }
+    }
+
+    void ObjTracking::createAndInsertFrame(const ImagePtr &pImg) {
+
+        // observations are updated either from operators or EKF updates
+        auto pObsCurr = updateObservation();
+        mpLastFrame = this->creatNewFrame(pImg, pObsCurr);
+        this->insertFrame(mpLastFrame);
+    }
+
+    std::shared_ptr<FrameImgMono> ObjTracking::creatNewFrame(const ImagePtr &pImg, const OB::ObsPtr &pObs) {
+
+        std::shared_ptr<FrameImgMono> pFrame = nullptr;
+        if (pImg && dynamic_pointer_cast<ImageTs>(pImg)) {
+            auto ts = dynamic_pointer_cast<ImageTs>(pImg)->mTimeStamp;
+            vector<OB::ObsPtr> vpObs{pObs};
+            pFrame = make_shared<FrameImgMono>(ts, mpTwc, vpObs, pImg);
+        }
+        return pFrame;
+    }
+
+    void ObjTracking::insertFrame(const FramePtr &frame) {
+        if (mmpFrameBuffer.count(static_cast<long>(frame->getTs())) <= 0) {
+            mmpFrameBuffer.insert(make_pair(frame->getTs(), frame));
+        }
+        if (mmpFrameBuffer.size() > FRAME_BUFF_MAX_SIZE) {
+            mmpFrameBuffer.erase(mmpFrameBuffer.begin()->first);
+        }
+    }
+
+    void ObjTracking::initialize() {
+
+        if (mbTrInit) {
+            return;
+        }
+
+        if (mpYoloDetector) {
+            // if YOLO detector is defined, detect automatically
+            if (mTsYoloUpdate >= 0) {
+                // update dependent trackers
+                if (mmpFrameBuffer.count(mTsYoloUpdate)) {
+                    auto msgConf = make_shared<MsgType<FramePtr>>(ID_CH_OP,
+                            mmpFrameBuffer[mTsYoloUpdate],OP::ObjTracking::TOPIC);
+                    msgConf->setMessage("init");
+                    mpObjTracker->receive(msgConf);
+                    //mbTrInit = true;
+                    //DLOG(INFO) << "FE::ObjTracking::initialize, Initialized dependent tracker at " << mTsYoloUpdate << "\n";
+                    //mTsYoloUpdate = -1;
+                }
+            }
+        }
+    }
+
+    void ObjTracking::processObservation(const OB::ObsTimed &pObsPair, const ImagePtr& pImage) {
+
+        auto pObs = pObsPair.second;
+        //long ts = pObsPair.first;
+
+        if (!pObs || !static_pointer_cast<OB::BBox>(pObs)) {
+            return;
+        }
+
+        cv::Point2f lastPoint = static_pointer_cast<OB::BBox>(pObs)->getCenter();
+
+        // Back-project image coords to find world loc
+        Eigen::Vector3d Pw = unproject(lastPoint);
+
+        // create and insert a map point
+        auto pWo = make_shared<WO::Point3D>(Pw.x(), Pw.y(), 0.0);
+        vector<WO::woPtr> vpPts3D = {pWo};
+
+        pWo->setObservation(pObs);
+        pObs->setWorldObject(pWo);
+
+        auto msgAddMapPts = make_shared<MsgType<vector<WO::woPtr>>>(ID_CH_ATLAS, vpPts3D,
+                                                                    Atlas::TOPIC, FCN_MAP_ADD_WO, mMapName);
+        mpChannel->send(msgAddMapPts);
+
+        // Send a coord message to serial output
+        this->sendCoords(Pw);
+
+        if (pImage) {
+            // Show results
+            this->showResults(pImage, lastPoint, Pw);
         }
     }
 

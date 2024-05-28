@@ -6,7 +6,10 @@
 #define NAV24_OP_OBJTRACKINGYOLO_HPP
 
 #include <queue>
+//#undef LIB_ONNX_RUNTIME_FOUND
+#ifdef LIB_ONNX_RUNTIME_FOUND
 #include <onnxruntime_cxx_api.h>
+#endif
 
 #include "Image.hpp"
 #include "OP_ObjTracking.hpp"
@@ -101,7 +104,7 @@ namespace NAV24::OP {
         //void run() override;
         //void stop() override;
 
-        void update(const ImagePtr& pImage) override;
+        void update(const FramePtr& pImage) override;
 
         /// Get input image size to the model
         /// @return input image size of the model
@@ -129,11 +132,11 @@ namespace NAV24::OP {
     private:
         int mCudaDevice;
         std::shared_ptr<Impl> impl;
-
+#ifdef LIB_ONNX_RUNTIME_FOUND
         Ort::Env env;
         std::unique_ptr<Ort::Session> session;
         Ort::RunOptions options;
-
+#endif
         bool cudaEnable{};
         std::vector<const char*> inputNodeNames;
         std::vector<const char*> outputNodeNames;

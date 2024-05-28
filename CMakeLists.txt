@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.5)
+cmake_minimum_required(VERSION 3.22.1)
 project(NAV24 VERSION 1.0)
 
 include(GNUInstallDirs)
@@ -18,10 +18,16 @@ set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/lib)
 
 configure_file(${PROJ_CORE_PATH}/GlobalConfig.h.in ${PROJ_CORE_PATH}/GlobalConfig.h)
 
+option(USE_SERIAL "You need this for RS232 serial communication (Arduino)" ON)
+option(USE_PYTHON "Use python library to embed python in C++" OFF)
+option(USE_ONNX_RUNTIME "Use ONNX Runtime to enable deep learning in C++" OFF)
+
 # External dependencies
 #add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
 #add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
+if (USE_SERIAL)
 add_subdirectory(${PROJ_THIRDPARTY_PATH}/serial)
+endif()
 #add_subdirectory(${PROJ_THIRDPARTY_PATH}/onnxruntime)
 
 add_subdirectory(${PROJ_EXAMPLES_PATH})

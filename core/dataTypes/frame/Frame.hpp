@@ -18,9 +18,12 @@ namespace NAV24 {
 
         [[nodiscard]] const std::vector<OB::ObsPtr> &getObservations() const;
         void setObservations(const std::vector<OB::ObsPtr> &mvpObservations);
+        void addObservation(const OB::ObsPtr& pObs);
 
         [[nodiscard]] const PosePtr &getPose() const;
         void setPose(const PosePtr &pose);
+
+        double getTs() const { return ts; }
 
     protected:
         std::vector<OB::ObsPtr> mvpObservations;
@@ -34,6 +37,8 @@ namespace NAV24 {
         FrameImgMono(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs);
         FrameImgMono(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs, const ImagePtr& pImage);
 
+        ImagePtr getImage() { return mpImage; }
+        void setImage(const ImagePtr& pImg) { mpImage = pImg; }
     protected:
         ImagePtr mpImage;
     };

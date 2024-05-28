@@ -32,10 +32,27 @@ namespace NAV24::FE {
 
         void stop() override;
 
+        void initialize();
+        void track(const FramePtr& pFrame);
+        Eigen::Vector3d unproject(const cv::Point2f& lastPoint);
+        void sendCoords(const Eigen::Vector3d& Pw);
+        void showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const Eigen::Vector3d& Pw);
+
+        void createAndInsertFrame(const ImagePtr& pImg);
+        std::shared_ptr<FrameImgMono> creatNewFrame(const ImagePtr& pImg, const OB::ObsPtr& pObs);
+        void insertFrame(const FramePtr& frame);
+        FramePtr getLastFrame();
+        std::shared_ptr<OB::BBox> getLastObservation();
+
+        OB::ObsPtr updateObservation();
+        void correctObservation(const OB::ObsTimed& pObs);
+
+        void processObservation(const OB::ObsTimed& pObs, const ImagePtr& pImage);
+
     protected:
         bool mbInitialized;
 
-        std::string mTrType;
+        //std::string mTrType;
 
         std::string mMapName;
         std::vector<WO::woPtr> mvpPts3D{};
@@ -43,7 +60,8 @@ namespace NAV24::FE {
         std::string mTrajectory;
         PosePtr mpTwc;
         Eigen::Matrix3d mHwc;
-        std::vector<FramePtr> mvpFrames{};
+        //std::vector<FramePtr> mvpFrames{};
+        cv::Size mImgSize;
 
         ParamPtr mpTempParam;
         std::vector<ParamPtr> mvpParamHolder;
@@ -52,14 +70,18 @@ namespace NAV24::FE {
         std::shared_ptr<OP::ObjTracking> mpYoloDetector;
         std::vector<std::shared_ptr<std::thread>> mvpThTrackers;
 
-        cv::Rect2f mYoloDet;
-        std::mutex mMtxYoloDet;
-        cv::Point2f mLastImPoint;
-        std::mutex mMtxLastPt;
+        //cv::Rect2f mYoloDet;
+        //std::mutex mMtxYoloDet;
+        //cv::Point2f mLastImPoint;
+        //std::mutex mMtxLastPt;
 
-        bool mbYoloUpdated;
-        bool mbTrInitBbox;
-        bool mbTrInitFrame;
+        std::shared_ptr<FrameImgMono> mpLastFrame;
+        std::map<long, FramePtr> mmpFrameBuffer;
+
+        //bool mbYoloUpdated;
+        bool mbTrInit;
+        //bool mbTrInitFrame;
+        long mTsYoloUpdate;
 
         CalibPtr mpCalib;
     };

@@ -57,12 +57,13 @@ class TrackerYOLO(Tracker):
         list_bbox = self.get_bboxes(res)
         self.initialized = True
         px_loc = self.get_last_point(list_bbox)
-        return (len(px_loc) > 0 and px_loc[0] >= 0), px_loc
+        return (len(px_loc) > 0 and px_loc[0] >= 0), self.get_bbox_cv()
 
     def update(self, frame):
         res = self.model.predict(source=frame, show=False, save=False, conf=self.conf, verbose=False)
         list_bbox = self.get_bboxes(res)
-        return True, self.get_last_point(list_bbox)
+        px_loc = self.get_last_point(list_bbox)
+        return True, self.get_bbox_cv()
 
 
 if __name__ == "__main__":

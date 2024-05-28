@@ -3,12 +3,7 @@
 //
 
 #include <ros/ros.h>
-#include <std_msgs/String.h>
-
-#include <sstream>
 #include <iostream>
-
-//#include <glog/logging.h>
 #include <opencv2/core.hpp>
 
 #include "ParameterBlueprint.h"

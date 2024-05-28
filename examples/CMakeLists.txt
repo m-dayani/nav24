@@ -3,7 +3,12 @@ project(nav_examples)
 
 set(LIB_NAV_NAME nav_core)
 
-find_package(Python COMPONENTS Interpreter Development)
+if (USE_PYTHON)
+    find_package(Python COMPONENTS Interpreter Development)
+endif ()
+if (Python_FOUND)
+    add_compile_definitions(LIB_PYTHON_FOUND=1)
+endif ()
 include_directories(${Python_INCLUDE_DIRS})
 #list(APPEND LINKLIBS ${Python_LIBRARIES})
 
@@ -33,26 +38,32 @@ include_directories(${Python_INCLUDE_DIRS})
 #target_link_libraries(tabular_text_ds LINK_PUBLIC ${LIB_NAV_NAME})
 #list(APPEND INSTALLABLE_EXE tabular_text_ds)
 
+if (Python_FOUND)
 add_executable(python_api tests/python_api.cpp)
 target_link_libraries(python_api LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE python_api)
+endif()
 
 
 add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)
 target_link_libraries(aun_robo_arm LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_robo_arm)
 
+if (Python_FOUND)
 add_executable(aun_robo_arm_py roboticArm/aun_robo_arm_py.cpp)
 target_link_libraries(aun_robo_arm_py LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_robo_arm_py)
+endif()
 
 add_executable(aun_cam_calib roboticArm/aun_cam_calib.cpp)
 target_link_libraries(aun_cam_calib LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_cam_calib)
 
+if (USE_SERIAL)
 add_executable(aun_serial_test roboticArm/aun_serial_test.cpp)
 target_link_libraries(aun_serial_test LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_serial_test)
+endif ()
 
 #install(TARGETS ${INSTALLABLE_EXE} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/bin)
 

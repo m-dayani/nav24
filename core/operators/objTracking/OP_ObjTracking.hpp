@@ -16,6 +16,7 @@
 #include "Operator.hpp"
 #include "Sensor.hpp"
 #include "Image.hpp"
+#include "Frame.hpp"
 
 
 namespace NAV24::OP {
@@ -36,24 +37,25 @@ namespace NAV24::OP {
 
         static std::shared_ptr<ObjTracking> createTracker(const ParamPtr& pParam, const ChannelPtr& pChannel);
 
-        static cv::Point2f find_center(const cv::Rect2f& rect);
-
     protected:
         void setup(const MsgPtr &configMsg) override;
         void handleRequest(const MsgPtr &reqMsg) override;
         void run() override;
 
+        static void fetchFrameInfo(const FramePtr& pFrame, double& ts, cv::Mat& image, OB::ObsPtr& pObs);
+        cv::Rect2f fetchBbox(const OB::ObsPtr& pObs) const;
+
         // Initialize internal tracker objects
         virtual void init(const MsgPtr& msg);
-        virtual void update(const ImagePtr& pImage);
+        virtual void update(const FramePtr& pImage);
+
+        void updateLastObs(const double& ts, const cv::Rect2f& bbox);
 
     protected:
-        std::queue<ImagePtr> mqpImages;
+        std::queue<FramePtr> mqpImages;
         std::mutex mMtxImgQ;
-        std::mutex mMtxImg;
 
-        cv::Rect2d bbox;
-        double mLastTs;
+        OB::ObsTimed mLastObs;
 
         bool mbInitialized;
     };

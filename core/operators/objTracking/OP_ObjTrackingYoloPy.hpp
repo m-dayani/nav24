@@ -5,9 +5,11 @@
 #ifndef NAV24_OP_OBJTRACKINGYOLOPY_HPP
 #define NAV24_OP_OBJTRACKINGYOLOPY_HPP
 
-//#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
+#ifdef LIB_PYTHON_FOUND
 #include <Python.h>
+#endif
 
 #include "OP_ObjTrackingYolo.hpp"
 
@@ -27,19 +29,25 @@ namespace NAV24::OP {
 
         void setup(const MsgPtr &msg) override;
 
-        void update(const ImagePtr &pImage) override;
+        void update(const FramePtr &pImage) override;
 
+#ifdef LIB_PYTHON_FOUND
         static PyObject* convertImage(const cv::Mat& image);
-
-    protected:
-        // this tracker requires:
-        // model weights, python tracking class, other init params (like confidence)
-        std::string mPyFile;
 
         // Python Module Object
         PyObject* mpObjMod{};
         // Python Class Object
         PyObject* mpObjClass{};
+#endif
+    private:
+#ifdef LIB_PYTHON_FOUND
+        static void parseRetValue(PyObject* pObj, bool& ret, cv::Rect2d& bbox);
+#endif
+
+        // this tracker requires:
+        // model weights, python tracking class, other init params (like confidence)
+        std::string mPyFile;
+        bool mbFlagRun;
     };
 } // NAV24::OP
 

@@ -20,7 +20,7 @@ def get_loc_from_bbox(bbox):
     return np.array([bbox[0] + bbox[2] * 0.5, bbox[1] + bbox[3] * 0.5])
 
 
-class Tracker:
+class Tracker(object):
     def __init__(self):
         # print('base tracker')
         self.last_point = [-1, -1]
