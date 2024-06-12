@@ -19,7 +19,7 @@ namespace NAV24 {
 #define FCN_SEN_PRINT 3
 #define FCN_SEN_STOP_PLAY 5
 #define FCN_SEN_START_PLAY 6
-#define FCN_SEN_GET_NEXT 8
+#define FCN_SEN_GET_NEXT 80
 #define FCN_SEN_GET_NEXT_BR 88
 #define FCN_SEN_RESET 10
 #define FCN_SEN_CONFIG 12

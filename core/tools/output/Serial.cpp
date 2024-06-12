@@ -90,7 +90,7 @@ namespace NAV24 {
         }
 #endif
         //int count = 0;
-        while (!mbStop) {
+        while (true) {
             if (!mReadBuffer.empty()) {
 
             }
@@ -108,10 +108,11 @@ namespace NAV24 {
                 size_t bytes_wrote = mpSerial->write(msg2write);
                 DVLOG(2) << "Serial::run, wrote " << bytes_wrote << " bytes\n";
 
-                string result = mpSerial->read(msg2write.length()+1);
+                string result;
+                size_t bytes_read = mpSerial->readline(result);
 
                 // send the message
-                if (!result.empty()) {
+                if (bytes_read > 0) {
                     auto msgRes = make_shared<Message>(ID_TP_SDATA, FE::FrontEnd::TOPIC,
                                                        FCN_SER_READ, result);
                     auto t0 = chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -125,6 +126,11 @@ namespace NAV24 {
 #endif
             }
             //count++;
+
+            if (this->isStopped()) {
+                DLOG(INFO) << "Serial stopped, break\n";
+                break;
+            }
         }
     }
 

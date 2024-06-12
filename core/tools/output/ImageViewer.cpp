@@ -116,7 +116,7 @@ namespace NAV24 {
 
         if (msg) {
             string topic = msg->getTopic();
-            int catId = msg->getChId();
+            //int catId = msg->getChId();
 
 //            if (catId == ID_CH_OUTPUT || topic == Output::TOPIC || topic == TOPIC) {
 
@@ -152,6 +152,19 @@ namespace NAV24 {
 
     void ImageViewer::setup(const MsgPtr &msg) {
         Output::setup(msg);
+    }
+
+    static void onMouse(int event, int x, int y, int flags, void* param) {
+        //cv::Mat &xyz = *((cv::Mat*)param); //cast and deref the param
+
+        if (event == cv::EVENT_LBUTTONDOWN) {
+            short val = 10;//xyz.at< short >(y,x); // opencv is row-major !
+            cout << "x= " << x << " y= " << y << "val= "<<val<< endl;
+        }
+    }
+
+    void setMouseCallback(const string& winName) {
+        cv::setMouseCallback(winName, onMouse);//, &cvMatImage);
     }
 
 } // NAV24

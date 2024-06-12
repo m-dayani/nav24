@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(NAV24 VERSION 1.0)
 
-include(GNUInstallDirs)
+#include(GNUInstallDirs)
 
 
 set(CMAKE_CXX_STANDARD 20)
@@ -48,7 +48,7 @@ install(EXPORT NAV_CORE
 
 include(CMakePackageConfigHelpers)
 # generate the config file that is includes the exports
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/NAV_COREConfig.cmake"
         INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
         NO_SET_AND_CHECK_MACRO

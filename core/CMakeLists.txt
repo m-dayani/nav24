@@ -10,6 +10,11 @@ find_package(Eigen3 3.1.0 REQUIRED)
 find_package(OpenCV 4.2.0 REQUIRED)
 MESSAGE("-- OpenCV Version: ${OpenCV_VERSION}")
 
+#set(Boost_USE_STATIC_LIBS OFF)
+#set(Boost_USE_MULTITHREADED ON)
+#set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+
 find_package(glog REQUIRED)
 
 # Optional Packages
@@ -47,12 +52,13 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${LIST_INCLUDE_DIRS}
         ${EIGEN3_INCLUDE_DIR}
-#        ${Pangolin_INCLUDE_DIRS}
-#        ${CERES_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${serial_INCLUDE_DIRS}
         ${Python_INCLUDE_DIRS}
         ${onnxruntime_INCLUDE_DIRS}
+#        ${Pangolin_INCLUDE_DIRS}
+#        ${CERES_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME} SHARED
@@ -77,20 +83,20 @@ target_link_directories(${PROJECT_NAME} PUBLIC
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-        ${EIGEN3_LIBS}
         ${OpenCV_LIBS}
         ${Python_LIBRARIES}
+        ${serial_LIBRARIES}
+        ${onnxruntime_LIBRARIES}
+        glog::glog
+        -lboost_system
+        -lboost_filesystem
+#        ${EIGEN3_LIBS}
+#        -lboost_serialization
+#        -lcrypto
 #        ${CERES_LIBRARIES}
 #        ${Pangolin_LIBRARIES}
 #        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
 #        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
-        ${serial_LIBRARIES}
-        -lboost_system
-        -lboost_filesystem
-        -lboost_serialization
-#        -lcrypto
-        ${onnxruntime_LIBRARIES}
-        glog::glog
 )
 
 install(TARGETS ${PROJECT_NAME}

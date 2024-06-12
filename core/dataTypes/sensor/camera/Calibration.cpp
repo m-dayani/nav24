@@ -113,6 +113,7 @@ namespace NAV24 {
         ptOrig.at<float>(0, 0) = distPt.x;
         ptOrig.at<float>(0, 1) = distPt.y;
         // todo: distortion might be more complex
+        // todo: this won't work for older versions of opencv
         cv::undistortPoints(ptOrig, ptUndist, K_cv, D_cv);
 
 //        DLOG(INFO) << "K: " << K_cv << "\n";

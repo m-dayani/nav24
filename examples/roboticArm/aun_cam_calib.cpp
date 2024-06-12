@@ -78,10 +78,15 @@ void exec_calib(const shared_ptr<System>& mpSystem, const string& saveFile, bool
     // Calibrate
     auto msgCalib = make_shared<Message>(ID_CH_FE, FE::CalibCamCv::TOPIC, FCN_FE_CAM_CALIB);
     pFeCamCalib->receive(msgCalib);
+
     // Save the results
     cout << "Saving parameters to: " << saveFile << endl;
     MsgPtr msgSaveSettings = make_shared<Message>(ID_CH_PARAMS, ParameterServer::TOPIC, FCN_PS_SAVE, saveFile);
     mpSystem->send(msgSaveSettings);
+
+    // Show the last frame
+    auto msgShowLastFrame = make_shared<Message>(ID_CH_FE, FE::FrontEnd::TOPIC, FCN_SHOW_LAST_FRAME);
+    pFeCamCalib->receive(msgShowLastFrame);
 }
 
 int main([[maybe_unused]] int argc, char** argv) {
@@ -89,8 +94,8 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/AUN_ARM1.yaml";
-    string saveFile = "../../config/AUN_ARM1.yaml";
+    string confFile = "../../config/BluePrint.yaml";
+    string saveFile = "../../config/AUN_ARM2.yaml";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
     // Create the system

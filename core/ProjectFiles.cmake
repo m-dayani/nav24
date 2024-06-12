@@ -101,6 +101,7 @@ set(ALL_H_FILES
         ${OUTPUT_DIR}/Output.hpp
         ${OUTPUT_DIR}/Serial.hpp
         ${OUTPUT_DIR}/ImageViewer.hpp
+        ${OUTPUT_DIR}/Visualization.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
@@ -142,4 +143,5 @@ set(ALL_SRC_FILES
         ${OUTPUT_DIR}/Output.cpp
         ${OUTPUT_DIR}/Serial.cpp
         ${OUTPUT_DIR}/ImageViewer.cpp
+        ${OUTPUT_DIR}/Visualization.cpp
 )

@@ -23,7 +23,11 @@ namespace NAV24 {
         Eigen::Vector4d transform(const Eigen::Vector4d& P_t) { return T_rt * P_t; }
         Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }
 
+        std::shared_ptr<PoseSE3> inverse();
+
         [[nodiscard]] std::string getKey() const { return key; }
+        [[nodiscard]] std::string getRef() const { return ref; }
+        [[nodiscard]] std::string getTarget() const { return target; }
         [[nodiscard]] Eigen::Matrix4d getPose() const { return T_rt; }
 
         static Eigen::Vector4d euler2homo(const Eigen::Vector3d& P_t_euler);

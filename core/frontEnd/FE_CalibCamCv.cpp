@@ -6,6 +6,7 @@
 #include <opencv2/imgproc.hpp>
 #include <glog/logging.h>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/highgui.hpp>
 
 #include "FE_CalibCamCv.hpp"
 #include "Image.hpp"
@@ -17,6 +18,7 @@
 #include "ParameterServer.hpp"
 #include "ParameterBlueprint.h"
 #include "Calibration.hpp"
+#include "Visualization.hpp"
 
 using namespace std;
 
@@ -72,6 +74,9 @@ namespace NAV24::FE {
             }
             if (dynamic_pointer_cast<MsgSensorData>(msg)) {
                 this->handleImageMsg(msg);
+            }
+            if (msg->getTargetId() == FCN_SHOW_LAST_FRAME) {
+                this->drawFrame(mvpFrames.back());
             }
         }
     }
@@ -136,7 +141,7 @@ namespace NAV24::FE {
 
                 if (res) {
                     // Create and add a frame
-                    pImage->mImage = cv::Mat();
+                    //pImage->mImage = cv::Mat();
                     PosePtr pPose = nullptr;//make_shared<PoseSE3>();
                     auto pFrame = make_shared<FrameImgMono>(pImage->mTimeStamp, pPose, vpCorners, pImage);
                     mvpFrames.push_back(pFrame);
@@ -183,8 +188,9 @@ namespace NAV24::FE {
         if (pProblem->solved) {
 
             // Update calibration parameters: K, D
-            auto pCalibParam = Calibration::getCalibParams(pProblem->mK, pProblem->mDistCoeffs,
-                                                           "radial-tangential", mvpParamHolder);
+            mK = pProblem->mK.clone();
+            mD = pProblem->mDistCoeffs.clone();
+            auto pCalibParam = Calibration::getCalibParams(mK, mD,"radial-tangential", mvpParamHolder);
             auto msgCalibConf = make_shared<MsgConfig>(ID_CH_PARAMS, pCalibParam,
                                                        ParameterServer::TOPIC);
             // todo: you normally get param keys from the system
@@ -221,6 +227,21 @@ namespace NAV24::FE {
         vpParamContainer.push_back(pGridSc);
 
         return pParam;
+    }
+
+    void CalibCamCv::drawFrame(const FramePtr &pFrame) {
+
+        shared_ptr<FrameImgMono> pImgFr = static_pointer_cast<FrameImgMono>(pFrame);
+        if (!pImgFr) {
+            return;
+        }
+
+        cv::Mat imgShow = pImgFr->getImage()->mImage.clone();
+        Visualization::drawGrid(imgShow, mK, mD, pImgFr->getPose()->inverse(),
+                                mGridSize.width, mGridSize.height, mGridScale);
+
+        cv::imshow("Image Grid", imgShow);
+        cv::waitKey(0);
     }
 
 } // NAV24::FE

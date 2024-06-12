@@ -4,6 +4,7 @@
 
 #include <string>
 #include <glog/logging.h>
+#include <iomanip>
 
 #include "System.hpp"
 #include "FrontEnd.hpp"
@@ -23,19 +24,30 @@ namespace NAV24::FE {
         enum TrajType {
             DEF,
             QDES,
-            CIRC
+            CIRC,
+            TIME
         } mTrajType;
 
-        explicit FE_SerialTraj(const ChannelPtr& pChannel) : FrontEnd(pChannel), mTrajType(QDES) {}
+        explicit FE_SerialTraj(const ChannelPtr& pChannel) : FrontEnd(pChannel), mTrajType(DEF) {}
 
         void receive(const MsgPtr &msg) override {
 
             if (msg) {
-                if (msg->getTargetId() == FCN_SYS_RUN) {
+                int action = msg->getTargetId();
+                if (action == FCN_SYS_RUN) {
                     this->run();
+                }
+                if (action == FCN_SER_READ) {
+                    if (mTrajType == TIME) {
+                        this->updateTimeStat(msg->getMessage());
+                    }
                 }
             }
         }
+
+        [[nodiscard]] double getTsAvg() const { return tsAvg; }
+
+        void setTrajType(TrajType trajType) { mTrajType = trajType; }
 
     protected:
 
@@ -77,40 +89,75 @@ namespace NAV24::FE {
             // todo: limit the spi for this
         }
 
+        void updateTimeStat(const string& tstr) {
+
+            auto tt = chrono::time_point_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now());
+            long t1 = tt.time_since_epoch().count();
+            int t0_idx = -1;
+            istringstream iss{tstr};
+            iss >> t0_idx;
+            if (t0_idx >= 0 && mmTsMap.count(t0_idx) > 0) {
+
+                long t0 = mmTsMap[t0_idx];
+                if (mLastTs < 0) {
+                    mLastTs = t1;
+                    return;
+                }
+                else {
+                    t0 = mLastTs;
+                    mLastTs = t1;
+                }
+                long t_diff = t1 - t0;
+                tsAvg = (static_cast<double>(t_diff) + static_cast<double>(cntTs) * tsAvg) / (static_cast<double>(cntTs) + 1);
+                DLOG(INFO) << t0_idx << ": " << t1 << " (ns) - " << t0 << " (ns) = " << std::fixed << t_diff / 1e9 << " (s)\n";
+                cntTs++;
+                mmTsMap.erase(t0_idx);
+            }
+        }
+
         void run() override {
             FrontEnd::run();
 
             double runTimeSec = 40.0;
             auto t0 = chrono::high_resolution_clock::now();
             vector<float> vPoints(2);
+            idxTs = 0;
 
             while (true) {
 
-                if (mTrajType == QDES) {
-                    this->getNextTrajQDes(vPoints);
+                stringstream locStr;
+
+                if (mTrajType == QDES || mTrajType == CIRC) {
+                    if (mTrajType == QDES) {
+                        this->getNextTrajQDes(vPoints);
+                    }
+                    else if (mTrajType == CIRC) {
+                        this->getNextTrajCircle(vPoints);
+                    }
+                    locStr << " " << vPoints[0] << " " << vPoints[1];
                 }
-                else if (mTrajType == CIRC) {
-                    this->getNextTrajCircle(vPoints);
+                else if (mTrajType == TIME) {
+                    auto tt = chrono::time_point_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now());
+                    long t0_send = tt.time_since_epoch().count();
+                    mmTsMap.insert(make_pair(idxTs++, t0_send));
+                    // can't just send long to Arduino
+                    // so map these
+                    locStr << " " << (idxTs - 1);
                 }
 
                 // Send a coord message to serial output
-                stringstream locStr;
-                locStr << " " << vPoints[0] << " " << vPoints[1];
                 auto msgSerial = make_shared<Message>(ID_TP_OUTPUT, Output::TOPIC,
                                                       FCN_SER_WRITE, locStr.str());
                 mpChannel->publish(msgSerial);
 
-                //cout << locStr.str() << endl;
-
+                // Calculate loop time
                 auto t1 = chrono::high_resolution_clock::now();
                 auto duration = duration_cast<chrono::microseconds>(t1 - t0);
                 double loopTime = static_cast<double>(duration.count()) / 1000000.0;
                 //cout << "Loop time: " << loopTime << " (s)" << endl;
 
                 if (loopTime >= runTimeSec) {
-                    mMtxStop.lock();
-                    mbStop = true;
-                    mMtxStop.unlock();
+                    this->stop();
                 }
 
                 if (this->isStopped()) {
@@ -127,8 +174,11 @@ namespace NAV24::FE {
         float ts[1048]{}, ST = 0.02;
         int s = 0;
         int spi = 0;
-        //float qdes[2] = {0, 0}, dqdes[2] = {0, 0}, ddqdes[2] = {0, 0};
-        //float tetad[2] = {0, 0};
+        long mLastTs = -1;
+        long cntTs = 0;
+        double tsAvg = 0.0;
+        map<int, long> mmTsMap;
+        int idxTs = 0;
     };
 }
 
@@ -152,10 +202,15 @@ int main([[maybe_unused]] int argc, char** argv) {
     // Create trajectory broadcaster
     auto mpFrontend = make_shared<FE::FE_SerialTraj>(mpSystem);
     mpSystem->registerChannel(ID_CH_FE, mpFrontend);
+    mpSystem->registerSubscriber(ID_TP_SDATA, mpFrontend);
 
     // Run broadcaster
     auto msgReqRun = make_shared<Message>(ID_CH_FE,FE::FE_SerialTraj::TOPIC, FCN_SYS_RUN);
+
+    mpFrontend->setTrajType(NAV24::FE::FE_SerialTraj::TIME);
     mpFrontend->receive(msgReqRun);
+
+    cout << "Average TR time: " << std::fixed << std::setprecision(9) << mpFrontend->getTsAvg() / 1e9 << " (s)\n";
 
     return 0;
 }

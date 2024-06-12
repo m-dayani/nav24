@@ -51,6 +51,19 @@ namespace NAV24 {
 
         fs.release();
     }
+    
+    vector<string> getFileNodeKeys(const cv::FileNode &node) {
+    
+        vector<string> vKeys;
+        // for new versions
+        vKeys = node.keys();
+        // todo: for old versions ( < 3.4.4)
+//        for(cv::FileNodeIterator fit = node.begin(); fit != node.end(); ++fit) {
+//            vKeys.push_back((*fit).name());
+//        }
+        
+        return vKeys;
+    }
 
     void YamlParserCV::readParam(const cv::FileNode &node, ParamPtr& pParentParam, vector<ParamPtr>& vAllParams) {
 
@@ -60,7 +73,7 @@ namespace NAV24 {
         switch (nodeType) {
             case Parameter::NodeType::MAP_NODE: {
                 pParentParam->setType(nodeType);
-                vector<string> keys = node.keys();
+                vector<string> keys = getFileNodeKeys(node);
                 for (const auto& key : keys) {
                     cv::FileNode newNode = node[key];
                     Parameter::NodeType nodeType1 = getNodeType(newNode);
@@ -296,7 +309,7 @@ namespace NAV24 {
 
         bool bcols = false, brows = false;
         if (node.isMap()) {
-            vector<string> keys = node.keys();
+            vector<string> keys = getFileNodeKeys(node);
             for (const auto& key : keys) {
                 if (key == "rows") brows = true;
                 if (key == "cols") bcols = true;

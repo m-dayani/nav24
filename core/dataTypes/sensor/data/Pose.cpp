@@ -103,4 +103,9 @@ namespace NAV24 {
 
         return pTrans;
     }
+
+    std::shared_ptr<PoseSE3> PoseSE3::inverse() {
+        return make_shared<PoseSE3>(this->getTarget(), this->getRef(), ts, T_tr);
+
+    }
 } // NAV24

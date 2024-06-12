@@ -16,6 +16,7 @@
 namespace NAV24::FE {
 
 #define FCN_FE_CAM_CALIB 23
+#define FCN_SHOW_LAST_FRAME 201
 
     class CalibCamCv : public FrontEnd {
     public:
@@ -30,6 +31,8 @@ namespace NAV24::FE {
         void setup(const MsgPtr &msg) override;
         void handleImageMsg(const MsgPtr &msg);
         void calibrate();
+
+        void drawFrame(const FramePtr& pFrame);
 
     protected:
         bool mbInitialized;
@@ -46,6 +49,8 @@ namespace NAV24::FE {
         std::shared_ptr<OP::OP_ChBoardDetCv> mpOpChBoardDetCv;
 
         std::vector<ParamPtr> mvpParamHolder;
+
+        cv::Mat mK, mD;
     };
 
 } // NAV24::FE

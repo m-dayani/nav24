@@ -8,6 +8,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <mutex>
 
 #include "Parameter.hpp"
 #include "SensorData.hpp"
