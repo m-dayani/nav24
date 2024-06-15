@@ -34,7 +34,7 @@ namespace NAV24::FE {
         //mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
         //mpObjTracker = make_shared<OP::ObjTrackingCv>(pChannel);
 
-        mHwc = Eigen::Matrix3d::Identity();
+        //mHwc = Eigen::Matrix3d::Identity();
     }
 
     void ObjTracking::receive(const MsgPtr &msg) {
@@ -79,14 +79,8 @@ namespace NAV24::FE {
             if (msg->getTopic() == System::TOPIC) {
                 auto msgTrans = dynamic_pointer_cast<MsgType<PosePtr>>(msg);
                 if (msgTrans) {
-                    mpTwc = msgTrans->getData();
-                    if (mpTwc) {
-                        Eigen::Matrix4d Tcw = mpTwc->getPose().inverse();
-                        Eigen::Matrix3d Hcw = Eigen::Matrix3d::Identity();
-                        Hcw.block<3, 2>(0, 0) = Tcw.block<3, 2>(0, 0);
-                        Hcw.block<3, 1>(0, 2) = Tcw.block<3, 1>(0, 3);
-                        mHwc = Hcw.inverse();
-                    }
+                    mpTwc = msgTrans->getData()->inverse();
+                    this->loadHomoFromPose(msgTrans->getData());
                 }
             }
             if (msg->getTargetId() == FCN_SYS_STOP) {
@@ -237,7 +231,7 @@ namespace NAV24::FE {
         }
     }
 
-    Eigen::Vector3d ObjTracking::unproject(const cv::Point2f& lastPoint) {
+    /*Eigen::Vector3d ObjTracking::unproject(const cv::Point2f& lastPoint) {
 
         Eigen::Vector3d Pw;
         auto img_x = lastPoint.x, img_y = lastPoint.y;
@@ -267,18 +261,19 @@ namespace NAV24::FE {
 //                    DLOG(INFO) << "-------------------------\n";
         }
         return Pw;
-    }
+    }*/
 
-    void ObjTracking::sendCoords(const Eigen::Vector3d& Pw) {
+    void ObjTracking::sendCoords(const WO::woPtr &Pw) {
 
+        auto pt3d = static_pointer_cast<WO::Point3D>(Pw);
         stringstream locStr;
-        locStr << " " << Pw.x() << " " << Pw.y();
+        locStr << " " << pt3d->getPoint().x << " " << pt3d->getPoint().y;
         auto msgSerial = make_shared<Message>(ID_TP_OUTPUT, Output::TOPIC,
                                               FCN_SER_WRITE, locStr.str());
         mpChannel->publish(msgSerial);
     }
 
-    void ObjTracking::showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const Eigen::Vector3d& Pw) {
+    void ObjTracking::showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const WO::woPtr &Pw) {
 
         if (pImg && dynamic_pointer_cast<ImageTs>(pImg)) {
 
@@ -286,8 +281,9 @@ namespace NAV24::FE {
 
             cv::Mat img = pImage->mImage.clone();
 
+            auto pt3d = static_pointer_cast<WO::Point3D>(Pw);
             ostringstream locStr;
-            locStr << "(" << Pw.x() << ", " << Pw.y() << ")";
+            locStr << "(" << pt3d->getPoint().x << ", " << pt3d->getPoint().y << ")";
 
             cv::putText(img, locStr.str(), lastPoint, cv::FONT_HERSHEY_SIMPLEX, 0.8,
                         cv::Scalar(0, 255, 0), 2);
@@ -413,10 +409,12 @@ namespace NAV24::FE {
         cv::Point2f lastPoint = static_pointer_cast<OB::BBox>(pObs)->getCenter();
 
         // Back-project image coords to find world loc
-        Eigen::Vector3d Pw = unproject(lastPoint);
-
         // create and insert a map point
-        auto pWo = make_shared<WO::Point3D>(Pw.x(), Pw.y(), 0.0);
+        auto pPtObs = make_shared<OB::Point2D>(lastPoint.x, lastPoint.y);
+        auto pWo = Camera::unproject(pPtObs, mHwc, mpCalib);
+        auto pt3d = static_pointer_cast<WO::Point3D>(pWo);
+        auto ptcv = pt3d->getPoint();
+        pWo = make_shared<WO::Point3D>(ptcv.x/ptcv.z, ptcv.y/ptcv.z, 1);
         vector<WO::woPtr> vpPts3D = {pWo};
 
         pWo->setObservation(pObs);
@@ -427,11 +425,27 @@ namespace NAV24::FE {
         mpChannel->send(msgAddMapPts);
 
         // Send a coord message to serial output
-        this->sendCoords(Pw);
+        this->sendCoords(pWo);
 
         if (pImage) {
             // Show results
-            this->showResults(pImage, lastPoint, Pw);
+            this->showResults(pImage, lastPoint, pWo);
+        }
+    }
+
+    void ObjTracking::loadHomoFromPose(const PosePtr &pPose_cw) {
+
+        if (pPose_cw) {
+            Eigen::Matrix4d Tcw = pPose_cw->getPose();
+            Eigen::Matrix3d Hcw = Eigen::Matrix3d::Identity();
+            Hcw.block<3, 2>(0, 0) = Tcw.block<3, 2>(0, 0);
+            Hcw.block<3, 1>(0, 2) = Tcw.block<3, 1>(0, 3);
+            Eigen::Matrix4d Hwc = Eigen::Matrix4d::Identity();
+            Hwc.block<3, 3>(0, 0) = Hcw.inverse();
+            mHwc = make_shared<PoseSE3>(pPose_cw->getRef(), pPose_cw->getTarget(), pPose_cw->getTimestamp(), Hwc);
+        }
+        else {
+            mHwc = make_shared<PoseSE3>("c", "w", -1, Eigen::Matrix4d::Identity());
         }
     }
 

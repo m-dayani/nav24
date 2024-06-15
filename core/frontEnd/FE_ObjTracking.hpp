@@ -34,9 +34,9 @@ namespace NAV24::FE {
 
         void initialize();
         void track(const FramePtr& pFrame);
-        Eigen::Vector3d unproject(const cv::Point2f& lastPoint);
-        void sendCoords(const Eigen::Vector3d& Pw);
-        void showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const Eigen::Vector3d& Pw);
+        //Eigen::Vector3d unproject(const cv::Point2f& lastPoint);
+        void sendCoords(const WO::woPtr &Pw);
+        void showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const WO::woPtr &Pw);
 
         void createAndInsertFrame(const ImagePtr& pImg);
         std::shared_ptr<FrameImgMono> creatNewFrame(const ImagePtr& pImg, const OB::ObsPtr& pObs);
@@ -49,6 +49,8 @@ namespace NAV24::FE {
 
         void processObservation(const OB::ObsTimed& pObs, const ImagePtr& pImage);
 
+        void loadHomoFromPose(const PosePtr& pPose_cw);
+
     protected:
         bool mbInitialized;
 
@@ -59,7 +61,7 @@ namespace NAV24::FE {
 
         std::string mTrajectory;
         PosePtr mpTwc;
-        Eigen::Matrix3d mHwc;
+        PosePtr mHwc;
         //std::vector<FramePtr> mvpFrames{};
         cv::Size mImgSize;
 

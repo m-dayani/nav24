@@ -21,7 +21,7 @@ namespace NAV24 {
                 const Eigen::Vector3d& t_rt, const double& offset = 0);
 
         Eigen::Vector4d transform(const Eigen::Vector4d& P_t) { return T_rt * P_t; }
-        Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }
+        //Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }
 
         std::shared_ptr<PoseSE3> inverse();
 
@@ -29,6 +29,8 @@ namespace NAV24 {
         [[nodiscard]] std::string getRef() const { return ref; }
         [[nodiscard]] std::string getTarget() const { return target; }
         [[nodiscard]] Eigen::Matrix4d getPose() const { return T_rt; }
+        [[nodiscard]] double getTimestamp() const { return ts; }
+        [[nodiscard]] double getOffset() const { return offset; }
 
         static Eigen::Vector4d euler2homo(const Eigen::Vector3d& P_t_euler);
         static Eigen::Vector3d homo2euler(const Eigen::Vector4d& P_t_homo);

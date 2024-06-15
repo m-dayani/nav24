@@ -14,6 +14,8 @@
 #include "FrontEnd.hpp"
 #include "ParameterBlueprint.h"
 #include "ParameterServer.hpp"
+#include "Point2D.hpp"
+#include "Point3D.hpp"
 
 
 using namespace std;
@@ -166,6 +168,30 @@ namespace NAV24 {
         }
 
         return pCamera;
+    }
+
+    WO::woPtr Camera::unproject(const OB::obsPtr &pObs, const PosePtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float scale) {
+
+        auto pt2d = static_pointer_cast<OB::Point2D>(pObs);
+        auto pc = pCalib->undistPoint(cv::Point2f(pt2d->x, pt2d->y));
+        float pz = scale;
+        pc *= scale;
+        Eigen::Vector4d Pc;
+        Pc << pc.x, pc.y, pz, 1.0;
+        auto Pw = pPose_wc->transform(Pc);
+        Pw /= Pw[3];
+        return make_shared<WO::Point3D>(Pw[0], Pw[1], Pw[2]);
+    }
+
+    OB::obsPtr Camera::project(const WO::woPtr &pWo, const PosePtr &pPose_cw, const NAV24::CalibPtr &pCalib, const float scale) {
+
+        auto pt3d = static_pointer_cast<WO::Point3D>(pWo)->getPoint();
+        Eigen::Vector4d Pw;
+        Pw << pt3d.x, pt3d.y, pt3d.z, 1.0;
+        auto Pc = pPose_cw->transform(Pw);
+        cv::Point3d pc(Pc[0]/Pc[2], Pc[1]/Pc[2], 1.0);
+        auto xy = pCalib->project(pc);
+        return make_shared<OB::Point2D>(xy.x, xy.y);
     }
 
     /* ============================================================================================================== */

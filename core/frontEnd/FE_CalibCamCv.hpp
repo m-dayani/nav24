@@ -11,6 +11,7 @@
 #include "Point3D.hpp"
 #include "Frame.hpp"
 #include "OP_ChBoardDetCv.hpp"
+#include "Calibration.hpp"
 
 
 namespace NAV24::FE {
@@ -33,6 +34,7 @@ namespace NAV24::FE {
         void calibrate();
 
         void drawFrame(const FramePtr& pFrame);
+        void drawChessBoard(const ImagePtr& pImage, const std::vector<OB::ObsPtr>& vpCorners, bool res);
 
     protected:
         bool mbInitialized;
@@ -50,7 +52,7 @@ namespace NAV24::FE {
 
         std::vector<ParamPtr> mvpParamHolder;
 
-        cv::Mat mK, mD;
+        CalibPtr mpCalib;
     };
 
 } // NAV24::FE

@@ -51,7 +51,8 @@ namespace NAV24::BE {
             }
         }
 
-        cv::calibrateCamera(objPoints, imgPoints, imSize, K, distCoeffs, rvecs, tvecs);
+        double res = cv::calibrateCamera(objPoints, imgPoints, imSize, K, distCoeffs, rvecs, tvecs);
+        DLOG(INFO) << "CalibCamCv::solve, calib res: " << res << "\n";
 
         prob->mK = K.clone();
         prob->mDistCoeffs = distCoeffs.clone();
@@ -61,9 +62,10 @@ namespace NAV24::BE {
             cv::Mat rvec = rvecs[i];
             cv::Mat tvec = tvecs[i];
 
-            auto t_wc = Converter::toVector3d(tvec);
-            auto R_wc = Converter::rotVecToRotMat(rvec);
-            auto pPose = make_shared<PoseSE3>("w", "c", -1.0, R_wc, t_wc);
+            // what we get from OpenCV Calib is T_cw (camera wrt world)
+            auto t_cw = Converter::toVector3d(tvec);
+            auto R_cw = Converter::rotVecToRotMat(rvec);
+            auto pPose = make_shared<PoseSE3>("w", "c", -1.0, R_cw, t_cw);
 
             vFrames[i]->setPose(pPose);
         }

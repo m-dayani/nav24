@@ -10,6 +10,8 @@
 #include "Sensor.hpp"
 #include "Calibration.hpp"
 #include "TabularTextDS.hpp"
+#include "WorldObject.hpp"
+#include "Pose.hpp"
 
 
 namespace NAV24 {
@@ -31,6 +33,9 @@ namespace NAV24 {
         void receive(const MsgPtr &msg) override;
 
         static std::shared_ptr<Sensor> getCamera(const ParamPtr& pCamParams, const ChannelPtr& pChannel, const std::string& stdIdx);
+
+        static WO::woPtr unproject(const OB::obsPtr& pObs, const PosePtr& pPose_wc, const CalibPtr& pCalib, float scale=1.f);
+        static OB::obsPtr project(const WO::woPtr& pWo, const PosePtr& pPose_cw, const CalibPtr& pCalib, float scale=1.f);
 
     protected:
         void setup(const MsgPtr &msg) override;

@@ -109,8 +109,13 @@ cv::Mat Converter::toCvSE3(const Eigen::Matrix<double,3,3> &R, const Eigen::Matr
 Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
 {
     Eigen::Matrix<double,3,1> v;
-    v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2);
 
+    if (cvVector.type() == CV_32F) {
+        v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2);
+    }
+    else {
+        v << cvVector.at<double>(0), cvVector.at<double>(1), cvVector.at<double>(2);
+    }
     return v;
 }
 

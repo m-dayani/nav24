@@ -22,12 +22,15 @@ namespace NAV24::OP {
 
     }
 
-    bool OP_ChBoardDetCv::process(const cv::Mat &gray, std::vector<OB::ObsPtr> &vpCorners) {
+    bool OP_ChBoardDetCv::process(const cv::Mat &img, std::vector<OB::ObsPtr> &vpCorners) {
 
         vector<cv::Point2f> vCorners;
-        bool res = cv::findChessboardCorners(gray, mGridSize, vCorners);
+        bool res = cv::findChessboardCorners(img, mGridSize, vCorners,
+                                             cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE); /*+ cv::CALIB_CB_FAST_CHECK*/
 
         if (res) {
+            cv::Mat gray;
+            cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
             cv::cornerSubPix(gray, vCorners, mWinSize,mZeroZone, mCriteria);
             //cv::drawChessboardCorners(img, mGridSize, vCorners, res);
         }

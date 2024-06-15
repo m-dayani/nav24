@@ -36,7 +36,7 @@ namespace NAV24::FE {
             mGridSize(DEF_CALIB_GRID_X, DEF_CALIB_GRID_Y), mGridScale(DEF_CALIB_GRID_S),
             mbInitialized(false), mImageSize(), mvpParamHolder() {
 
-        cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.001);
+        cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.0001);
         mpOpChBoardDetCv = make_shared<OP::OP_ChBoardDetCv>(mGridSize, criteria);
     }
 
@@ -99,7 +99,7 @@ namespace NAV24::FE {
         // Initialize the grid map
         for (int y = 0; y < mGridSize.height; y++) {
             for (int x = 0; x < mGridSize.width; x++) {
-                auto pt3d = make_shared<WO::Point3D>(x * mGridScale, y * mGridScale, 0);
+                auto pt3d = make_shared<WO::Point3D>((float)x * mGridScale, (float)y * mGridScale, 0);
                 mvpPts3D.push_back(pt3d);
             }
         }
@@ -137,7 +137,7 @@ namespace NAV24::FE {
                 // Detect and associate image observations
                 // In this case the order of detected points determines the association
                 vector<OB::ObsPtr> vpCorners{};
-                bool res = mpOpChBoardDetCv->process(gray, vpCorners);
+                bool res = mpOpChBoardDetCv->process(img, vpCorners);
 
                 if (res) {
                     // Create and add a frame
@@ -148,21 +148,34 @@ namespace NAV24::FE {
                 }
 
                 // Show results
-                cv::putText(img, "Successful", cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX,
-                            1.5, cv::Scalar(0, 255, 0), 2);
-                vector<cv::Point2f> vCorners;
-                for (const auto& pObs : vpCorners) {
-                    auto point = static_pointer_cast<OB::Point2D>(pObs);
-                    if (point) {
-                        vCorners.emplace_back(point->x, point->y);
-                    }
-                }
-                cv::drawChessboardCorners(img, mGridSize, vCorners, res);
-                auto pImage2Show = make_shared<ImageTs>(img.clone(), pImage->mTimeStamp, pImage->mPath);
-                auto msgImage = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage2Show);
-                mpChannel->publish(msgImage);
+                this->drawChessBoard(pImage, vpCorners, res);
             }
         }
+    }
+
+    void CalibCamCv::drawChessBoard(const ImagePtr& pImage, const vector<OB::ObsPtr>& vpCorners, bool res) {
+
+
+        cv::Mat img = pImage->mImage.clone();
+
+        string resStr = (res) ? "Success" : "Failure";
+        cv::Scalar resColor = (res) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 255);
+        cv::putText(img, resStr, cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX,
+                    1.5, resColor, 2);
+        vector<cv::Point2f> vCorners;
+        for (const auto& pObs : vpCorners) {
+            auto point = static_pointer_cast<OB::Point2D>(pObs);
+            if (point) {
+                vCorners.emplace_back(point->x, point->y);
+            }
+        }
+        cv::drawChessboardCorners(img, mGridSize, vCorners, res);
+        auto pImage2Show = make_shared<ImageTs>(img.clone(), -1, pImage->mPath);
+        auto msgImage = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage2Show);
+
+        //cv::imshow("ChessBoard", img);
+        //cv::waitKey(0);
+        mpChannel->publish(msgImage);
     }
 
     void CalibCamCv::calibrate() {
@@ -188,9 +201,9 @@ namespace NAV24::FE {
         if (pProblem->solved) {
 
             // Update calibration parameters: K, D
-            mK = pProblem->mK.clone();
-            mD = pProblem->mDistCoeffs.clone();
-            auto pCalibParam = Calibration::getCalibParams(mK, mD,"radial-tangential", mvpParamHolder);
+            auto pCalibParam = Calibration::getCalibParams(pProblem->mK, pProblem->mDistCoeffs,
+                                                           "radial-tangential", mvpParamHolder);
+            mpCalib = make_shared<Calibration>(pCalibParam);
             auto msgCalibConf = make_shared<MsgConfig>(ID_CH_PARAMS, pCalibParam,
                                                        ParameterServer::TOPIC);
             // todo: you normally get param keys from the system
@@ -237,8 +250,7 @@ namespace NAV24::FE {
         }
 
         cv::Mat imgShow = pImgFr->getImage()->mImage.clone();
-        Visualization::drawGrid(imgShow, mK, mD, pImgFr->getPose()->inverse(),
-                                mGridSize.width, mGridSize.height, mGridScale);
+        Visualization::projectMap(imgShow, pImgFr->getPose(), mpCalib, mvpPts3D);
 
         cv::imshow("Image Grid", imgShow);
         cv::waitKey(0);
