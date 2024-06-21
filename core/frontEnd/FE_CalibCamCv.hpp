@@ -35,6 +35,7 @@ namespace NAV24::FE {
 
         void drawFrame(const FramePtr& pFrame);
         void drawChessBoard(const ImagePtr& pImage, const std::vector<OB::ObsPtr>& vpCorners, bool res);
+        void drawPoseMap();
 
     protected:
         bool mbInitialized;

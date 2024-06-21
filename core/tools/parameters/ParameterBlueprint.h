@@ -8,7 +8,6 @@
 namespace NAV24 {
 
 #define PARAM_DS "Process/DS"
-#define PARAM_DS0 "Process/DS/0"
 #define PARAM_CAM "Input/Camera"
 #define PARAM_REL "Input/Relations"
 #define PARAM_OP "Process/OP"
@@ -29,7 +28,10 @@ namespace NAV24 {
 #define PKEY_SEQ_BASE "seqBase"
 #define PKEY_IMG_BASE "imageBase"
 #define PKEY_IMG_FILE "imageFile"
+#define PKEY_POSE_FILE "gt"
 #define PKEY_TS_FACT "tsFactor"
+#define PKEY_POS_FIRST "gtPosFirst"
+#define PKEY_QW_FIRST "gtQwFirst"
 
 }
 

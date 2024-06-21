@@ -5,6 +5,7 @@
 #include "Output.hpp"
 #include "Serial.hpp"
 #include "ImageViewer.hpp"
+#include "MapViewer.hpp"
 #include "System.hpp"
 
 
@@ -47,18 +48,21 @@ namespace NAV24 {
         // todo: optimize parameter retrieval
         auto pOutName = find_param<ParamType<string>>("name", pParam);
         string outName = (pOutName) ? pOutName->getValue() : "Output0";
-        auto pIcType = find_param<ParamType<string>>("interface/type", pParam);
-        string icType = (pIcType) ? pIcType->getValue() : "";
-        auto pIcTarget = find_param<ParamType<string>>("interface/target", pParam);
-        string icTarget = (pIcTarget) ? pIcTarget->getValue() : "";
+        auto pIfType = find_param<ParamType<string>>("interface/type", pParam);
+        string ifType = (pIfType) ? pIfType->getValue() : "";
+        auto pIfTarget = find_param<ParamType<string>>("interface/target", pParam);
+        string ifTarget = (pIfTarget) ? pIfTarget->getValue() : "";
 
         OutputPtr pOutput;
-        if (icType == "screen") {
-            if (icTarget == "image") {
+        if (ifType == "screen") {
+            if (ifTarget == "image") {
                 pOutput = make_shared<ImageViewer>(pChannel);
             }
+            else if (ifTarget == "3d-graphics") {
+                pOutput = make_shared<MapViewer>(pChannel);
+            }
         }
-        else if (icType == "serial") {
+        else if (ifType == "serial") {
             pOutput = make_shared<Serial>(pChannel);
         }
 

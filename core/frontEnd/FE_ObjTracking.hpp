@@ -61,7 +61,7 @@ namespace NAV24::FE {
 
         std::string mTrajectory;
         PosePtr mpTwc;
-        PosePtr mHwc;
+        Tf2dPtr mHwc;
         //std::vector<FramePtr> mvpFrames{};
         cv::Size mImgSize;
 

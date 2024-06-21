@@ -18,7 +18,8 @@ set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/lib)
 
 configure_file(${PROJ_CORE_PATH}/GlobalConfig.h.in ${PROJ_CORE_PATH}/GlobalConfig.h)
 
-option(USE_SERIAL "You need this for RS232 serial communication (Arduino)" ON)
+option(USE_PANGOLIN "Required for 3D data visualization" ON)
+option(USE_SERIAL "Required for RS232 serial communication (Arduino)" ON)
 option(USE_PYTHON "Use python library to embed python in C++" OFF)
 option(USE_ONNX_RUNTIME "Use ONNX Runtime to enable deep learning in C++" OFF)
 

@@ -99,6 +99,8 @@ namespace NAV24::FE {
             if (t0_idx >= 0 && mmTsMap.count(t0_idx) > 0) {
 
                 long t0 = mmTsMap[t0_idx];
+                // because of the diff in thread execution times,
+                // compare current received t1 with the last one
                 if (mLastTs < 0) {
                     mLastTs = t1;
                     return;
@@ -109,7 +111,7 @@ namespace NAV24::FE {
                 }
                 long t_diff = t1 - t0;
                 tsAvg = (static_cast<double>(t_diff) + static_cast<double>(cntTs) * tsAvg) / (static_cast<double>(cntTs) + 1);
-                DLOG(INFO) << t0_idx << ": " << t1 << " (ns) - " << t0 << " (ns) = " << std::fixed << t_diff / 1e9 << " (s)\n";
+                DLOG(INFO) << t0_idx << ": " << t1 << " (ns) - " << t0 << " (ns) = " << std::fixed << t_diff / 1e-6 << " (ms)\n";
                 cntTs++;
                 mmTsMap.erase(t0_idx);
             }
@@ -210,7 +212,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     mpFrontend->setTrajType(NAV24::FE::FE_SerialTraj::TIME);
     mpFrontend->receive(msgReqRun);
 
-    cout << "Average TR time: " << std::fixed << std::setprecision(9) << mpFrontend->getTsAvg() / 1e9 << " (s)\n";
+    cout << "Average TR time: " << std::fixed << std::setprecision(9) << mpFrontend->getTsAvg() * 1e-6 << " (ms)\n";
 
     return 0;
 }

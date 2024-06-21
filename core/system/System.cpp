@@ -170,7 +170,7 @@ namespace NAV24 {
             for (const auto& relParamPair : mpTempParam->getAllChildren()) {
                 auto pRelParam = relParamPair.second.lock();
                 if (pRelParam) {
-                    auto pTrans = PoseSE3::getTrans(pRelParam);
+                    auto pTrans = TF::PoseSE3::getTrans(pRelParam);
                     if (pTrans) {
                         mmpTrans.insert(make_pair(pTrans->getKey(), pTrans));
                     }
@@ -311,6 +311,9 @@ namespace NAV24 {
         for (const auto& pChPair : mmChannels) {
             auto pChannels = pChPair.second;
             for (const auto& pCh : pChannels) {
+                if (pCh == shared_from_this()) {
+                    continue;
+                }
                 if (pCh) {
                     pCh->receive(msgStop);
                 }

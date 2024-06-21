@@ -19,6 +19,7 @@
 #include "ParameterBlueprint.h"
 #include "Calibration.hpp"
 #include "Visualization.hpp"
+#include "Output.hpp"
 
 using namespace std;
 
@@ -155,7 +156,6 @@ namespace NAV24::FE {
 
     void CalibCamCv::drawChessBoard(const ImagePtr& pImage, const vector<OB::ObsPtr>& vpCorners, bool res) {
 
-
         cv::Mat img = pImage->mImage.clone();
 
         string resStr = (res) ? "Success" : "Failure";
@@ -212,7 +212,7 @@ namespace NAV24::FE {
             mpChannel->send(msgCalibConf);
 
             // Update camera-world trans from last frame
-            auto pTransParam = PoseSE3::getTransParam("world0", "cam0", 0.0,
+            auto pTransParam = TF::PoseSE3::getTransParam("world0", "cam0", 0.0,
                                                              mvpFrames.back()->getPose(), mvpParamHolder);
             auto msgTransConf = make_shared<MsgConfig>(ID_CH_PARAMS, pTransParam,
                                                        ParameterServer::TOPIC);
@@ -220,6 +220,7 @@ namespace NAV24::FE {
             msgTransConf->setTargetId(FCN_PS_CONF);
             mpChannel->send(msgTransConf);
 
+            this->drawPoseMap();
             // TODO: Notify components that parameters have changed
         }
     }
@@ -254,6 +255,15 @@ namespace NAV24::FE {
 
         cv::imshow("Image Grid", imgShow);
         cv::waitKey(0);
+    }
+
+    void CalibCamCv::drawPoseMap() {
+
+        auto msgSendMap = make_shared<MsgType<vector<WO::woPtr>>>(ID_TP_OUTPUT, mvpPts3D, Output::TOPIC);
+        auto msgSendPose = make_shared<MsgType<vector<FramePtr>>>(ID_TP_OUTPUT, mvpFrames, Output::TOPIC);
+
+        mpChannel->publish(msgSendMap);
+        mpChannel->publish(msgSendPose);
     }
 
 } // NAV24::FE

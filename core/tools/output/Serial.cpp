@@ -141,7 +141,9 @@ namespace NAV24 {
     void Serial::stop() {
         MsgCallback::stop();
 #ifdef LIB_SERIAL_FOUND
-        mpSerial->close();
+        if (mpSerial && mpSerial->isOpen()) {
+            mpSerial->close();
+        }
 #endif
     }
 } // NAV24

@@ -77,6 +77,7 @@ set(ALL_H_FILES
         ${SENSOR_DATA_DIR}/Image.hpp
         ${SENSOR_DATA_DIR}/Pose.hpp
         ${SENSORS_DIR}/Sensor.hpp
+        ${SENSORS_DIR}/pose/PoseProvider.hpp
         ${ATLAS_DIR}/Atlas.hpp
         ${ATLAS_DIR}/Map.hpp
         ${BACKEND_DIR}/BackEnd.hpp
@@ -102,6 +103,7 @@ set(ALL_H_FILES
         ${OUTPUT_DIR}/Serial.hpp
         ${OUTPUT_DIR}/ImageViewer.hpp
         ${OUTPUT_DIR}/Visualization.hpp
+        ${OUTPUT_DIR}/MapViewer.hpp
 )
 set(ALL_SRC_FILES
         ${SYSTEM_DIR}/System.cpp
@@ -116,6 +118,7 @@ set(ALL_SRC_FILES
         ${SENSOR_CAM_DIR}/Calibration.cpp
         ${SENSOR_CAM_DIR}/Camera.cpp
         ${SENSORS_DIR}/Sensor.cpp
+        ${SENSORS_DIR}/pose/PoseProvider.cpp
         ${SENSOR_DATA_DIR}/SensorData.cpp
         ${SENSOR_DATA_DIR}/Image.cpp
         ${SENSOR_DATA_DIR}/Pose.cpp
@@ -144,4 +147,5 @@ set(ALL_SRC_FILES
         ${OUTPUT_DIR}/Serial.cpp
         ${OUTPUT_DIR}/ImageViewer.cpp
         ${OUTPUT_DIR}/Visualization.cpp
+        ${OUTPUT_DIR}/MapViewer.cpp
 )

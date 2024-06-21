@@ -7,50 +7,67 @@
 
 #include "Pose.hpp"
 #include "DataConversion.hpp"
+#include "Point3D.hpp"
 
 
 using namespace std;
 
-namespace NAV24 {
+namespace NAV24::TF {
 
 #define DEF_SEP ':'
 
-    PoseSE3::PoseSE3(string _ref, string _target, double _ts, Eigen::Matrix4d T_rt_, const double& offset_) :
-            ref(std::move(_ref)), target(std::move(_target)), ts(_ts), T_rt(std::move(T_rt_)), offset(offset_) {
+    Transformation::Transformation(std::string _ref, std::string _target, double _ts, const double &offset) :
+        ref(std::move(_ref)), target(std::move(_target)), ts(_ts), offset(offset) {
 
         key = ref + DEF_SEP + target;
+    }
+
+    /* ============================================================================================================== */
+
+    Trans2D::Trans2D(const string &ref_, const string &target_, double ts_, Eigen::Matrix3d T_rt_,
+                     const double &offset) : Transformation(ref_, target_, ts_, offset), T_rt(std::move(T_rt_)) {
 
         T_tr = T_rt.inverse();
     }
 
-    PoseSE3::PoseSE3(string _ref, string _target, double _ts, const Eigen::Matrix3d &R_rt,
-                     const Eigen::Vector3d &t_rt, const double& offset_)  :
-            ref(std::move(_ref)), target(std::move(_target)), ts(_ts), offset(offset_) {
+    WO::woPtr Trans2D::transform(const WO::woPtr &pWo) {
 
-        key = ref + DEF_SEP + target;
+        WO::woPtr pWoOut = nullptr;
+        if (static_pointer_cast<WO::Point3D>(pWo)) {
+            auto pt3d = static_pointer_cast<WO::Point3D>(pWo);
+            auto Pc = Converter::toVector3d(pt3d->getPoint());
+            auto Pw = this->transform(Pc);
+            Pw /= Pw[2];
+            pWoOut = make_shared<WO::Point3D>(Pw.x(), Pw.y(), Pw.z());
+        }
+        return pWoOut;
+    }
+
+    WO::woPtr Trans2D::transform(const OB::obsPtr &pObs) {
+        return NAV24::WO::woPtr();
+    }
+
+    OB::obsPtr Trans2D::transformObs(const OB::obsPtr &pObs) {
+        return NAV24::OB::obsPtr();
+    }
+
+    /* ============================================================================================================== */
+
+    PoseSE3::PoseSE3(const string& _ref, const string& _target, double _ts, Eigen::Matrix4d T_rt_, const double& offset_) :
+            Transformation(_ref, _target, _ts, offset_), T_rt(std::move(T_rt_)) {
+
+        T_tr = T_rt.inverse();
+    }
+
+    PoseSE3::PoseSE3(const string& _ref, const string& _target, double _ts, const Eigen::Matrix3d &R_rt,
+                     const Eigen::Vector3d &t_rt, const double& offset_)  :
+            Transformation(_ref, _target, _ts, offset_) {
 
         T_rt = Eigen::Matrix4d::Identity();
         T_rt.block<3, 3>(0, 0) = R_rt;
         T_rt.block<3, 1>(0, 3) = t_rt;
 
         T_tr = T_rt.inverse();
-    }
-
-    //inline Eigen::Vector4d PoseSE3::transform(const Eigen::Vector4d &P_t)
-
-    //inline Eigen::Vector4d PoseSE3::invTransform(const Eigen::Vector4d &P_r)
-
-    Eigen::Vector4d PoseSE3::euler2homo(const Eigen::Vector3d &P_t_euler) {
-
-        Eigen::Vector4d P_t_homo = Eigen::Vector4d::Ones();
-        P_t_homo.block<3, 1>(0, 0) = P_t_euler;
-        return P_t_homo;
-    }
-
-    Eigen::Vector3d PoseSE3::homo2euler(const Eigen::Vector4d &P_t_homo) {
-
-        Eigen::Vector3d P_t_euler = P_t_homo.block<3, 1>(0, 0) / P_t_homo[3];
-        return P_t_euler;
     }
 
     ParamPtr
@@ -108,4 +125,28 @@ namespace NAV24 {
         return make_shared<PoseSE3>(this->getTarget(), this->getRef(), ts, T_tr);
 
     }
-} // NAV24
+
+    WO::woPtr PoseSE3::transform(const WO::woPtr &worldObject) {
+
+        WO::woPtr pWo = nullptr;
+        if (static_pointer_cast<WO::Point3D>(worldObject)) {
+            auto pt3d = static_pointer_cast<WO::Point3D>(worldObject);
+            auto Pc = Converter::toVector3d(pt3d->getPoint());
+            Eigen::Vector4d Pcc(Pc.x(), Pc.y(), Pc.z(), 1.0);
+            auto Pw = this->transform(Pcc);
+            Pw /= Pw[3];
+            pWo = make_shared<WO::Point3D>(Pw.x(), Pw.y(), Pw.z());
+        }
+        return pWo;
+    }
+
+    WO::woPtr PoseSE3::transform(const OB::obsPtr &pObs) {
+        return NAV24::WO::woPtr();
+    }
+
+    OB::obsPtr PoseSE3::transformObs(const OB::obsPtr &pObs) {
+        return NAV24::OB::obsPtr();
+    }
+
+
+} // NAV24::TF

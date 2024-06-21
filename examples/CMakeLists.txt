@@ -38,6 +38,12 @@ include_directories(${Python_INCLUDE_DIRS})
 #target_link_libraries(tabular_text_ds LINK_PUBLIC ${LIB_NAV_NAME})
 #list(APPEND INSTALLABLE_EXE tabular_text_ds)
 
+if (USE_PANGOLIN)
+add_executable(world_viewer tests/world_viewer.cpp)
+target_link_libraries(world_viewer LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE world_viewer)
+endif (USE_PANGOLIN)
+
 if (USE_SERIAL)
 add_executable(serial_test tests/serial_test.cpp)
 target_link_libraries(serial_test LINK_PUBLIC ${LIB_NAV_NAME})

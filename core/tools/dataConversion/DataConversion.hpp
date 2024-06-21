@@ -53,6 +53,9 @@ public:
 
     //static g2o::SE3Quat interpTcw(const g2o::SE3Quat& Tcw0, const g2o::SE3Quat& Tcw1, double dTs0, double dTs);
 
+    static Eigen::Vector4d euler2homo(const Eigen::Vector3d& P_t_euler);
+    static Eigen::Vector3d homo2euler(const Eigen::Vector4d& P_t_homo);
+
     /* -------------------------------------------------------------------------------------------------------------- */
 
     static std::string toString(const std::vector<double>& vData, const std::string& prefix = std::string());

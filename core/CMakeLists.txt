@@ -19,31 +19,38 @@ find_package(glog REQUIRED)
 
 # Optional Packages
 
+#find_package(Ceres)
+#find_package(g2o)
+
+if (USE_PANGOLIN)
+    find_package(Pangolin)
+endif (USE_PANGOLIN)
+if (Pangolin_FOUND)
+    add_compile_definitions(LIB_PANGOLIN_FOUND=1)
+#    message("-- ${Pangolin_LIBRARIES}")
+endif (Pangolin_FOUND)
+
 if (USE_SERIAL)
     find_package(serial)
-endif ()
+endif (USE_SERIAL)
 if (serial_FOUND)
     add_compile_definitions(LIB_SERIAL_FOUND=1)
-endif ()
-
-#find_package(Ceres)
-
-#find_package(g2o)
+endif (serial_FOUND)
 
 # Python Library
 if (USE_PYTHON)
     find_package(Python COMPONENTS Interpreter Development)
-endif ()
+endif (USE_PYTHON)
 if (Python_FOUND)
     add_compile_definitions(LIB_PYTHON_FOUND=1)
-endif ()
+endif (Python_FOUND)
 
 if (USE_ONNX_RUNTIME)
     find_package(onnxruntime)
-endif ()
+endif (USE_ONNX_RUNTIME)
 if (onnxruntime_FOUND)
     add_compile_definitions(LIB_ONNX_RUNTIME_FOUND=1)
-endif ()
+endif (onnxruntime_FOUND)
 
 
 include(ProjectFiles.cmake)
@@ -57,7 +64,7 @@ include_directories(
         ${serial_INCLUDE_DIRS}
         ${Python_INCLUDE_DIRS}
         ${onnxruntime_INCLUDE_DIRS}
-#        ${Pangolin_INCLUDE_DIRS}
+        ${Pangolin_INCLUDE_DIRS}
 #        ${CERES_INCLUDE_DIRS}
 )
 
@@ -84,8 +91,9 @@ target_link_directories(${PROJECT_NAME} PUBLIC
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
         ${OpenCV_LIBS}
-        ${Python_LIBRARIES}
+        ${Pangolin_LIBRARIES}
         ${serial_LIBRARIES}
+        ${Python_LIBRARIES}
         ${onnxruntime_LIBRARIES}
         glog::glog
         -lboost_system
@@ -94,7 +102,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 #        -lboost_serialization
 #        -lcrypto
 #        ${CERES_LIBRARIES}
-#        ${Pangolin_LIBRARIES}
 #        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
 #        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
 )

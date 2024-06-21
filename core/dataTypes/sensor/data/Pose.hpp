@@ -10,55 +10,102 @@
 
 #include "SensorData.hpp"
 #include "Parameter.hpp"
+#include "WorldObject.hpp"
 
 
 namespace NAV24 {
+    namespace TF {
 
-    class PoseSE3 : public SensorData {
-    public:
-        PoseSE3(std::string  _ref, std::string  _target, double _ts, Eigen::Matrix4d  T_rt_, const double& offset = 0);
-        PoseSE3(std::string  _ref, std::string  _target, double _ts, const Eigen::Matrix3d& R_rt,
-                const Eigen::Vector3d& t_rt, const double& offset = 0);
+        class Transformation : public SensorData {
+        public:
+            Transformation(std::string _ref, std::string _target, double _ts, const double &offset = 0);
 
-        Eigen::Vector4d transform(const Eigen::Vector4d& P_t) { return T_rt * P_t; }
-        //Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }
+            virtual WO::woPtr transform(const WO::woPtr &pWo) = 0;
 
-        std::shared_ptr<PoseSE3> inverse();
+            virtual WO::woPtr transform(const OB::obsPtr &pObs) = 0;
 
-        [[nodiscard]] std::string getKey() const { return key; }
-        [[nodiscard]] std::string getRef() const { return ref; }
-        [[nodiscard]] std::string getTarget() const { return target; }
-        [[nodiscard]] Eigen::Matrix4d getPose() const { return T_rt; }
-        [[nodiscard]] double getTimestamp() const { return ts; }
-        [[nodiscard]] double getOffset() const { return offset; }
+            virtual OB::obsPtr transformObs(const OB::obsPtr &pObs) = 0;
 
-        static Eigen::Vector4d euler2homo(const Eigen::Vector3d& P_t_euler);
-        static Eigen::Vector3d homo2euler(const Eigen::Vector4d& P_t_homo);
+            [[nodiscard]] std::string getKey() const { return key; }
 
-        static ParamPtr getTransParam(const std::string& ref, const std::string& tar, double t_rt,
-                                      const std::shared_ptr<PoseSE3>& pPose, std::vector<ParamPtr>& vpParamHolder);
-        static std::shared_ptr<PoseSE3> getTrans(const ParamPtr& pParam);
+            [[nodiscard]] std::string getRef() const { return ref; }
 
-    protected:
-        std::string ref;
-        std::string target;
-        std::string key;
+            [[nodiscard]] std::string getTarget() const { return target; }
 
-        double ts;
-        double offset;
+            [[nodiscard]] double getTimestamp() const { return ts; }
 
-        Eigen::Matrix4d T_rt;
-        Eigen::Matrix4d T_tr;
-    };
-    typedef std::shared_ptr<PoseSE3> PosePtr;
+            [[nodiscard]] double getOffset() const { return offset; }
 
-    class PoseSim3 : public PoseSE3 {
-    public:
+        protected:
+            std::string ref;
+            std::string target;
+            std::string key;
 
-    protected:
-        double scale{};
-    };
+            double ts;
+            double offset;
+        };
 
+        class Trans2D : public Transformation {
+        public:
+            Trans2D(const std::string &ref_, const std::string &target_, double ts_, Eigen::Matrix3d T_rt_,
+                    const double &offset = 0);
+
+            WO::woPtr transform(const WO::woPtr &pWo) override;
+
+            WO::woPtr transform(const OB::obsPtr &pObs) override;
+
+            OB::obsPtr transformObs(const OB::obsPtr &pObs) override;
+
+            Eigen::Vector3d transform(const Eigen::Vector3d &P_t) { return T_rt * P_t; }
+
+        private:
+            Eigen::Matrix3d T_rt;
+            Eigen::Matrix3d T_tr;
+        };
+
+        class PoseSE3 : public Transformation {
+        public:
+            PoseSE3(const std::string &ref_, const std::string &target_, double ts_, Eigen::Matrix4d T_rt_,
+                    const double &offset = 0);
+
+            PoseSE3(const std::string &ref_, const std::string &target_, double ts_, const Eigen::Matrix3d &R_rt,
+                    const Eigen::Vector3d &t_rt, const double &offset = 0);
+
+            WO::woPtr transform(const WO::woPtr &worldObject) override;
+
+            WO::woPtr transform(const OB::obsPtr &pObs) override;
+
+            OB::obsPtr transformObs(const OB::obsPtr &pObs) override;
+
+            Eigen::Vector4d transform(const Eigen::Vector4d &P_t) { return T_rt * P_t; }
+            //Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }
+
+            std::shared_ptr<PoseSE3> inverse();
+
+            [[nodiscard]] Eigen::Matrix4d getPose() const { return T_rt; }
+
+
+            static ParamPtr getTransParam(const std::string &ref, const std::string &tar, double t_rt,
+                                          const std::shared_ptr<PoseSE3> &pPose, std::vector<ParamPtr> &vpParamHolder);
+
+            static std::shared_ptr<PoseSE3> getTrans(const ParamPtr &pParam);
+
+        protected:
+            Eigen::Matrix4d T_rt;
+            Eigen::Matrix4d T_tr;
+        };
+
+        class PoseSim3 : public PoseSE3 {
+        public:
+
+        protected:
+            double scale{};
+        };
+    } // TF
+
+    typedef std::shared_ptr<TF::Transformation> TransPtr;
+    typedef std::shared_ptr<TF::PoseSE3> PosePtr;
+    typedef std::shared_ptr<TF::Trans2D> Tf2dPtr;
 } // NAV24
 
 

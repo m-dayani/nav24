@@ -401,4 +401,18 @@ std::string Converter::toStringQuat(const g2o::Sim3& pose, const std::string& pr
         return q.toRotationMatrix();
     }
 
+
+    Eigen::Vector4d Converter::euler2homo(const Eigen::Vector3d &P_t_euler) {
+
+        Eigen::Vector4d P_t_homo = Eigen::Vector4d::Ones();
+        P_t_homo.block<3, 1>(0, 0) = P_t_euler;
+        return P_t_homo;
+    }
+
+    Eigen::Vector3d Converter::homo2euler(const Eigen::Vector4d &P_t_homo) {
+
+        Eigen::Vector3d P_t_euler = P_t_homo.block<3, 1>(0, 0) / P_t_homo[3];
+        return P_t_euler;
+    }
+
 } //namespace ORB_SLAM

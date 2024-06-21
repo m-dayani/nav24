@@ -34,8 +34,8 @@ namespace NAV24 {
 
         static std::shared_ptr<Sensor> getCamera(const ParamPtr& pCamParams, const ChannelPtr& pChannel, const std::string& stdIdx);
 
-        static WO::woPtr unproject(const OB::obsPtr& pObs, const PosePtr& pPose_wc, const CalibPtr& pCalib, float scale=1.f);
-        static OB::obsPtr project(const WO::woPtr& pWo, const PosePtr& pPose_cw, const CalibPtr& pCalib, float scale=1.f);
+        static WO::woPtr unproject(const OB::obsPtr& pObs, const TransPtr& pPose_wc, const CalibPtr& pCalib, float scale=1.f);
+        static OB::obsPtr project(const WO::woPtr& pWo, const TransPtr& pPose_cw, const CalibPtr& pCalib, float scale=1.f);
 
     protected:
         void setup(const MsgPtr &msg) override;

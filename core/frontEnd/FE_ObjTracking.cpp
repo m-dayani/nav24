@@ -81,6 +81,10 @@ namespace NAV24::FE {
                 if (msgTrans) {
                     mpTwc = msgTrans->getData()->inverse();
                     this->loadHomoFromPose(msgTrans->getData());
+
+                    // show the transform
+                    auto msgShowTrans = make_shared<MsgType<PosePtr>>(ID_TP_OUTPUT, mpTwc, Output::TOPIC);
+                    mpChannel->publish(msgShowTrans);
                 }
             }
             if (msg->getTargetId() == FCN_SYS_STOP) {
@@ -293,6 +297,9 @@ namespace NAV24::FE {
             auto msgImShow = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage,
                                                         Output::TOPIC);
             mpChannel->publish(msgImShow);
+
+            auto msgShowPw = make_shared<MsgType<WO::woPtr>>(ID_TP_OUTPUT, Pw, Output::TOPIC);
+            mpChannel->publish(msgShowPw);
         }
     }
 
@@ -440,12 +447,11 @@ namespace NAV24::FE {
             Eigen::Matrix3d Hcw = Eigen::Matrix3d::Identity();
             Hcw.block<3, 2>(0, 0) = Tcw.block<3, 2>(0, 0);
             Hcw.block<3, 1>(0, 2) = Tcw.block<3, 1>(0, 3);
-            Eigen::Matrix4d Hwc = Eigen::Matrix4d::Identity();
-            Hwc.block<3, 3>(0, 0) = Hcw.inverse();
-            mHwc = make_shared<PoseSE3>(pPose_cw->getRef(), pPose_cw->getTarget(), pPose_cw->getTimestamp(), Hwc);
+            mHwc = make_shared<TF::Trans2D>(pPose_cw->getRef(), pPose_cw->getTarget(),
+                                            pPose_cw->getTimestamp(), Hcw.inverse());
         }
         else {
-            mHwc = make_shared<PoseSE3>("c", "w", -1, Eigen::Matrix4d::Identity());
+            mHwc = make_shared<TF::Trans2D>("c", "w", -1, Eigen::Matrix3d::Identity());
         }
     }
 

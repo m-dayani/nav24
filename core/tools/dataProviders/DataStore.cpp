@@ -7,6 +7,8 @@
 #include "DataStore.hpp"
 #include "ParameterServer.hpp"
 #include "Camera.hpp"
+#include "pose/PoseProvider.hpp"
+#include "ParameterBlueprint.h"
 
 
 using namespace std;
@@ -118,8 +120,9 @@ namespace NAV24 {
             DLOG(INFO) << "DataStore::handleRequest, return imu paths \n";
         }
         else if (tag == TAG_DS_GET_PATH_GT) {
-            // todo: do the same for gt paths
-            DLOG(INFO) << "DataStore::handleRequest, return gt paths \n";
+            DLOG(INFO) << "DataStore::handleRequest, return gt paths\n";
+            pParam = PoseProvider::getPoseParams(this->getSequencePath(), mPathGT, mTsFactor,
+                                                 mbGtPosFirst, mbGtQwFirst, mvpParams);
         }
         else if (tag == TAG_DS_GET_PATH_MODEL) {
             // todo: generalize this
@@ -202,7 +205,7 @@ namespace NAV24 {
 
     void DataStore::loadOtherInfo(const ParamPtr &pParam) {
 
-        auto pTsFactor = find_param<ParamType<double>>("tsFactor", pParam);
+        auto pTsFactor = find_param<ParamType<double>>(PKEY_TS_FACT, pParam);
         if (pTsFactor) {
             mTsFactor = pTsFactor->getValue();
         }
@@ -210,7 +213,7 @@ namespace NAV24 {
         if (pParamNew) {
             mnMaxIter = pParamNew->getValue();
         }
-        pParamNew = find_param<ParamType<int>>("gtQwFirst", pParam);
+        pParamNew = find_param<ParamType<int>>(PKEY_QW_FIRST, pParam);
         if (pParamNew) {
             mbGtQwFirst = pParamNew->getValue() > 0;
         }
@@ -218,7 +221,7 @@ namespace NAV24 {
         if (pParamNew) {
             mbImuGyroFirst = pParamNew->getValue() > 0;
         }
-        pParamNew = find_param<ParamType<int>>("gtPosFirst", pParam);
+        pParamNew = find_param<ParamType<int>>(PKEY_POS_FIRST, pParam);
         if (pParamNew) {
             mbGtPosFirst = pParamNew->getValue() > 0;
         }

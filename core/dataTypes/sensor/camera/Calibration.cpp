@@ -9,6 +9,8 @@
 #include <Eigen/Eigen>
 
 #include "DataConversion.hpp"
+#include "Point2D.hpp"
+#include "Point3D.hpp"
 
 
 using namespace std;
@@ -107,46 +109,72 @@ namespace NAV24 {
         return pRoot;
     }
 
-    cv::Point2f Calibration::undistPoint(const cv::Point2f &distPt) {
 
-        cv::Mat ptOrig(1, 2, CV_32FC1), ptUndist(1, 2, CV_32FC1);
-        ptOrig.at<float>(0, 0) = distPt.x;
-        ptOrig.at<float>(0, 1) = distPt.y;
-        // todo: distortion might be more complex
-        // todo: this won't work for older versions of opencv
-        cv::undistortPoints(ptOrig, ptUndist, K_cv, D_cv);
+    OB::obsPtr Calibration::undistort(const OB::obsPtr &pObs) {
 
-//        DLOG(INFO) << "K: " << K_cv << "\n";
-//        DLOG(INFO) << "D: " << D_cv << "\n";
-//        DLOG(INFO) << "Pt_dist: " << distPt << "\n";
-//        DLOG(INFO) << "Pt_undist: " << ptUndist << "\n";
-//        DLOG(INFO) << "-------------------------------\n";
+        OB::obsPtr pObsOut = nullptr;
 
-        return {ptUndist.at<float>(0, 0), ptUndist.at<float>(0, 1)};
+        if (static_pointer_cast<OB::Point2D>(pObs)) {
+            auto pObsIn = static_pointer_cast<OB::Point2D>(pObs);
+            cv::Mat ptOrig(1, 2, CV_32FC1), ptUndist(1, 2, CV_32FC1);
+            ptOrig.at<float>(0, 0) = pObsIn->x;
+            ptOrig.at<float>(0, 1) = pObsIn->y;
+            // todo: distortion might be more complex
+            // todo: this won't work for older versions of opencv
+            cv::undistortPoints(ptOrig, ptUndist, K_cv, D_cv);
+
+            pObsOut = make_shared<OB::Point2D>(ptUndist.at<float>(0, 0), ptUndist.at<float>(0, 1));
+        }
+
+        return pObsOut;
     }
 
-    cv::Point3f Calibration::unproject(const cv::Point2f &pt2d) {
+    OB::obsPtr Calibration::distort(const OB::obsPtr &pObs) {
 
-        Eigen::Vector3f pt3d, Pt3d;
-        pt3d << pt2d.x, pt2d.y, 1.f;
-        Pt3d = K_ei.inverse() * pt3d;
-
-//        DLOG(INFO) << "pt2d: " << pt2d << "\n";
-//        DLOG(INFO) << "Pt3d: " << Pt3d << "\n";
-//        DLOG(INFO) << "K_ei: " << K_ei << "\n";
-//        DLOG(INFO) << "------------------------\n";
-
-        return {Pt3d.x(), Pt3d.y(), Pt3d.z()};
+        // todo: implement distort
+        return pObs;
     }
 
-    cv::Point2f Calibration::project(const cv::Point3f &pt3d) {
+    WO::woPtr Calibration::unproject(const OB::obsPtr& pt2d) {
 
-        Eigen::Vector3f Pt3d;
-        Pt3d << pt3d.x, pt3d.y, pt3d.z;
-        Pt3d /= Pt3d[2];
-        Eigen::Vector3f projPt = K_ei * Pt3d;
+        WO::woPtr pWobj = nullptr;
 
-        return {projPt.x(), projPt.y()};
+        if (static_pointer_cast<OB::Point2D>(pt2d)) {
+            auto pObs = static_pointer_cast<OB::Point2D>(pt2d);
+            Eigen::Vector3f pt3d, Pt3d;
+            pt3d << pObs->x, pObs->y, 1.f;
+            Pt3d = K_ei.inverse() * pt3d;
+            pWobj = make_shared<WO::Point3D>(Pt3d.x(), Pt3d.y(), Pt3d.z());
+        }
+
+        return pWobj;
+    }
+
+    OB::obsPtr Calibration::project(const WO::woPtr& pt3d) {
+
+        OB::obsPtr pObs = nullptr;
+
+        vector<cv::Point2d> ptsOut;
+        vector<cv::Point3d> ptsTemp;
+        cv::Mat rtemp, ttemp;
+        rtemp.create( 3, 1, CV_32F );
+        rtemp.setTo( 0 );
+        rtemp.copyTo( ttemp );
+
+        if (static_pointer_cast<WO::Point3D>(pt3d)) {
+            auto pWo = static_pointer_cast<WO::Point3D>(pt3d);
+
+            ptsTemp = {pWo->getPoint()};
+            projectPoints(ptsTemp, rtemp, ttemp, K_cv, D_cv, ptsOut);
+            pObs = make_shared<OB::Point2D>(ptsOut[0].x, ptsOut[0].y);
+
+//            Eigen::Vector3f Pt3d;
+//            Pt3d << pt3d.x, pt3d.y, pt3d.z;
+//            Pt3d /= Pt3d[2];
+//            Eigen::Vector3f projPt = K_ei * Pt3d;
+        }
+
+        return pObs;
     }
 
 

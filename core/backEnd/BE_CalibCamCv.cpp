@@ -65,7 +65,7 @@ namespace NAV24::BE {
             // what we get from OpenCV Calib is T_cw (camera wrt world)
             auto t_cw = Converter::toVector3d(tvec);
             auto R_cw = Converter::rotVecToRotMat(rvec);
-            auto pPose = make_shared<PoseSE3>("w", "c", -1.0, R_cw, t_cw);
+            auto pPose = make_shared<TF::PoseSE3>("w", "c", -1.0, R_cw, t_cw);
 
             vFrames[i]->setPose(pPose);
         }
