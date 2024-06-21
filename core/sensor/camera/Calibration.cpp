@@ -114,8 +114,8 @@ namespace NAV24 {
 
         OB::obsPtr pObsOut = nullptr;
 
-        if (static_pointer_cast<OB::Point2D>(pObs)) {
-            auto pObsIn = static_pointer_cast<OB::Point2D>(pObs);
+        if (dynamic_pointer_cast<OB::Point2D>(pObs)) {
+            auto pObsIn = dynamic_pointer_cast<OB::Point2D>(pObs);
             cv::Mat ptOrig(1, 2, CV_32FC1), ptUndist(1, 2, CV_32FC1);
             ptOrig.at<float>(0, 0) = pObsIn->x;
             ptOrig.at<float>(0, 1) = pObsIn->y;
@@ -139,8 +139,8 @@ namespace NAV24 {
 
         WO::woPtr pWobj = nullptr;
 
-        if (static_pointer_cast<OB::Point2D>(pt2d)) {
-            auto pObs = static_pointer_cast<OB::Point2D>(pt2d);
+        if (dynamic_pointer_cast<OB::Point2D>(pt2d)) {
+            auto pObs = dynamic_pointer_cast<OB::Point2D>(pt2d);
             Eigen::Vector3f pt3d, Pt3d;
             pt3d << pObs->x, pObs->y, 1.f;
             Pt3d = K_ei.inverse() * pt3d;
@@ -161,8 +161,8 @@ namespace NAV24 {
         rtemp.setTo( 0 );
         rtemp.copyTo( ttemp );
 
-        if (static_pointer_cast<WO::Point3D>(pt3d)) {
-            auto pWo = static_pointer_cast<WO::Point3D>(pt3d);
+        if (dynamic_pointer_cast<WO::Point3D>(pt3d)) {
+            auto pWo = dynamic_pointer_cast<WO::Point3D>(pt3d);
 
             ptsTemp = {pWo->getPoint()};
             projectPoints(ptsTemp, rtemp, ttemp, K_cv, D_cv, ptsOut);

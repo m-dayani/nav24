@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "SmartObject.hpp"
+
 namespace NAV24::OB {
     class Observation;
     typedef std::shared_ptr<Observation> obsPtr;
@@ -15,11 +17,13 @@ namespace NAV24::OB {
 
 namespace NAV24::WO {
 
-    class WorldObject {
+    class WorldObject : public SmartObject {
     public:
 
         void setObservation(const OB::obsPtr& pObs) { mpObs = pObs; }
         OB::obsPtr getObservation() { return mpObs.lock(); }
+
+        virtual std::string toString() { return "World Object, Base Class\n"; }
     protected:
         OB::obsPtrW mpObs{};
     };

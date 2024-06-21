@@ -3,13 +3,12 @@
 //
 
 #include <thread>
-#include <chrono>
 #include <utility>
 #include <glog/logging.h>
 
 #include "MapViewer.hpp"
 #include "System.hpp"
-#include "pose/PoseProvider.hpp"
+#include "PoseProvider.hpp"
 
 using namespace std;
 using namespace NAV24;
@@ -87,7 +86,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     for (int i = 0; i < 11000; i++) {
         mpSystem->send(msgGetNextPose);
     }
-    int c = getchar();
+    getchar();
 
     auto msgStop = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_SYS_STOP);
     mpSystem->receive(msgStop);

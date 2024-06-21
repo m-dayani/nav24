@@ -164,7 +164,7 @@ namespace NAV24::FE {
                     1.5, resColor, 2);
         vector<cv::Point2f> vCorners;
         for (const auto& pObs : vpCorners) {
-            auto point = static_pointer_cast<OB::Point2D>(pObs);
+            auto point = dynamic_pointer_cast<OB::Point2D>(pObs);
             if (point) {
                 vCorners.emplace_back(point->x, point->y);
             }

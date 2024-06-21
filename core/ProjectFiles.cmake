@@ -4,8 +4,10 @@
 set(SYSTEM_DIR system)
 list(APPEND LIST_INCLUDE_DIRS ${SYSTEM_DIR})
 
-set(ATLAS_DIR atlas)
+set(ATLAS_DIR scene)
 list(APPEND LIST_INCLUDE_DIRS ${ATLAS_DIR})
+set(WORLD_OBJ_DIR ${ATLAS_DIR}/worldObject)
+list(APPEND LIST_INCLUDE_DIRS ${WORLD_OBJ_DIR})
 
 set(BACKEND_DIR backEnd)
 list(APPEND LIST_INCLUDE_DIRS ${BACKEND_DIR})
@@ -20,6 +22,23 @@ list(APPEND LIST_INCLUDE_DIRS ${OBJ_TRACK_DIR})
 
 set(TRAJECTORY_DIR trajectory)
 list(APPEND LIST_INCLUDE_DIRS ${TRAJECTORY_DIR})
+set(POSE_DIR ${TRAJECTORY_DIR}/pose)
+list(APPEND LIST_INCLUDE_DIRS ${POSE_DIR})
+
+set(SENSOR_DATA_DIR sensorData)
+list(APPEND LIST_INCLUDE_DIRS ${SENSOR_DATA_DIR})
+set(OBSERVATIONS_DIR ${SENSOR_DATA_DIR}/observation)
+list(APPEND LIST_INCLUDE_DIRS ${OBSERVATIONS_DIR})
+
+set(SENSORS_DIR sensor)
+list(APPEND LIST_INCLUDE_DIRS ${SENSORS_DIR})
+set(SENSOR_CAM_DIR ${SENSORS_DIR}/camera)
+list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_DIR})
+
+set(DATA_TYPES_DIR dataTypes)
+list(APPEND LIST_INCLUDE_DIRS ${DATA_TYPES_DIR})
+set(FRAME_DIR ${DATA_TYPES_DIR}/frame)
+list(APPEND LIST_INCLUDE_DIRS ${FRAME_DIR})
 
 set(UTILS_DIR tools)
 list(APPEND LIST_INCLUDE_DIRS ${UTILS_DIR})
@@ -32,21 +51,6 @@ list(APPEND LIST_INCLUDE_DIRS ${PARAMS_DIR})
 set(MESSAGING_DIR ${UTILS_DIR}/messaging)
 list(APPEND LIST_INCLUDE_DIRS ${MESSAGING_DIR})
 
-set(DATA_TYPES_DIR dataTypes)
-list(APPEND LIST_INCLUDE_DIRS ${DATA_TYPES_DIR})
-set(WORLD_OBJ_DIR ${DATA_TYPES_DIR}/worldObject)
-list(APPEND LIST_INCLUDE_DIRS ${WORLD_OBJ_DIR})
-set(OBSERVATIONS_DIR ${DATA_TYPES_DIR}/observation)
-list(APPEND LIST_INCLUDE_DIRS ${OBSERVATIONS_DIR})
-set(SENSORS_DIR ${DATA_TYPES_DIR}/sensor)
-list(APPEND LIST_INCLUDE_DIRS ${SENSORS_DIR})
-set(SENSOR_DATA_DIR ${SENSORS_DIR}/data)
-list(APPEND LIST_INCLUDE_DIRS ${SENSOR_DATA_DIR})
-set(SENSOR_CAM_DIR ${SENSORS_DIR}/camera)
-list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_DIR})
-set(FRAME_DIR ${DATA_TYPES_DIR}/frame)
-list(APPEND LIST_INCLUDE_DIRS ${FRAME_DIR})
-
 set(DATA_LOADERS_DIR ${UTILS_DIR}/dataProviders)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
 #set(DATA_STORE_DIR ${DATA_LOADERS_DIR}/dataStore)
@@ -58,7 +62,6 @@ list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
 set(OUTPUT_DIR ${UTILS_DIR}/output)
 list(APPEND LIST_INCLUDE_DIRS ${OUTPUT_DIR})
 
-list(APPEND LINKLIBS ${Python_LIBRARIES})
 
 set(ALL_H_FILES
         ${SYSTEM_DIR}/System.hpp
@@ -75,9 +78,9 @@ set(ALL_H_FILES
         ${SENSOR_CAM_DIR}/Camera.hpp
         ${SENSOR_DATA_DIR}/SensorData.hpp
         ${SENSOR_DATA_DIR}/Image.hpp
-        ${SENSOR_DATA_DIR}/Pose.hpp
+        ${POSE_DIR}/Pose.hpp
         ${SENSORS_DIR}/Sensor.hpp
-        ${SENSORS_DIR}/pose/PoseProvider.hpp
+        ${POSE_DIR}/PoseProvider.hpp
         ${ATLAS_DIR}/Atlas.hpp
         ${ATLAS_DIR}/Map.hpp
         ${BACKEND_DIR}/BackEnd.hpp
@@ -99,6 +102,7 @@ set(ALL_H_FILES
         ${TRAJECTORY_DIR}/Trajectory.hpp
         ${TRAJECTORY_DIR}/TrajManager.hpp
         ${FRAME_DIR}/Frame.hpp
+        ${DATA_TYPES_DIR}/SmartObject.hpp
         ${OUTPUT_DIR}/Output.hpp
         ${OUTPUT_DIR}/Serial.hpp
         ${OUTPUT_DIR}/ImageViewer.hpp
@@ -118,10 +122,10 @@ set(ALL_SRC_FILES
         ${SENSOR_CAM_DIR}/Calibration.cpp
         ${SENSOR_CAM_DIR}/Camera.cpp
         ${SENSORS_DIR}/Sensor.cpp
-        ${SENSORS_DIR}/pose/PoseProvider.cpp
+        ${POSE_DIR}/PoseProvider.cpp
         ${SENSOR_DATA_DIR}/SensorData.cpp
         ${SENSOR_DATA_DIR}/Image.cpp
-        ${SENSOR_DATA_DIR}/Pose.cpp
+        ${POSE_DIR}/Pose.cpp
         ${ATLAS_DIR}/Atlas.cpp
         ${ATLAS_DIR}/Map.cpp
         ${BACKEND_DIR}/BackEnd.cpp
@@ -143,6 +147,7 @@ set(ALL_SRC_FILES
         ${TRAJECTORY_DIR}/Trajectory.cpp
         ${TRAJECTORY_DIR}/TrajManager.cpp
         ${FRAME_DIR}/Frame.cpp
+        ${DATA_TYPES_DIR}/SmartObject.cpp
         ${OUTPUT_DIR}/Output.cpp
         ${OUTPUT_DIR}/Serial.cpp
         ${OUTPUT_DIR}/ImageViewer.cpp

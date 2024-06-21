@@ -11,7 +11,7 @@
 #include "Calibration.hpp"
 #include "TabularTextDS.hpp"
 #include "WorldObject.hpp"
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 
 
 namespace NAV24 {

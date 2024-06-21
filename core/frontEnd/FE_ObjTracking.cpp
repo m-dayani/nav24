@@ -269,7 +269,7 @@ namespace NAV24::FE {
 
     void ObjTracking::sendCoords(const WO::woPtr &Pw) {
 
-        auto pt3d = static_pointer_cast<WO::Point3D>(Pw);
+        auto pt3d = dynamic_pointer_cast<WO::Point3D>(Pw);
         stringstream locStr;
         locStr << " " << pt3d->getPoint().x << " " << pt3d->getPoint().y;
         auto msgSerial = make_shared<Message>(ID_TP_OUTPUT, Output::TOPIC,
@@ -285,7 +285,7 @@ namespace NAV24::FE {
 
             cv::Mat img = pImage->mImage.clone();
 
-            auto pt3d = static_pointer_cast<WO::Point3D>(Pw);
+            auto pt3d = dynamic_pointer_cast<WO::Point3D>(Pw);
             ostringstream locStr;
             locStr << "(" << pt3d->getPoint().x << ", " << pt3d->getPoint().y << ")";
 
@@ -419,7 +419,7 @@ namespace NAV24::FE {
         // create and insert a map point
         auto pPtObs = make_shared<OB::Point2D>(lastPoint.x, lastPoint.y);
         auto pWo = Camera::unproject(pPtObs, mHwc, mpCalib);
-        auto pt3d = static_pointer_cast<WO::Point3D>(pWo);
+        auto pt3d = dynamic_pointer_cast<WO::Point3D>(pWo);
         auto ptcv = pt3d->getPoint();
         pWo = make_shared<WO::Point3D>(ptcv.x/ptcv.z, ptcv.y/ptcv.z, 1);
         vector<WO::woPtr> vpPts3D = {pWo};

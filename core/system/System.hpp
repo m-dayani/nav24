@@ -16,7 +16,7 @@
 #include "Sensor.hpp"
 #include "Atlas.hpp"
 #include "TrajManager.hpp"
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 #include "Output.hpp"
 
 

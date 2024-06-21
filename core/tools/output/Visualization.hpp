@@ -8,7 +8,7 @@
 #include <vector>
 #include <opencv2/core.hpp>
 
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 #include "WorldObject.hpp"
 #include "Calibration.hpp"
 

@@ -21,7 +21,7 @@ namespace NAV24::WO {
         }
 
         void setPoint(const cv::Point3d &point) {
-            Point3D::mPoint = point;
+            mPoint = point;
         }
 
     protected:

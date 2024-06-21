@@ -68,6 +68,8 @@ include_directories(
 #        ${CERES_INCLUDE_DIRS}
 )
 
+list(APPEND LINKLIBS ${Python_LIBRARIES})
+
 add_library(${PROJECT_NAME} SHARED
         ${ALL_H_FILES}
         ${ALL_SRC_FILES}

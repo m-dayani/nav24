@@ -173,7 +173,7 @@ namespace NAV24 {
     WO::woPtr Camera::unproject(const OB::obsPtr &pObs, const TransPtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float scale) {
 
         auto pc = pCalib->undistort(pObs);
-        auto Pc = static_pointer_cast<OB::Point2D>(pc);
+        auto Pc = dynamic_pointer_cast<OB::Point2D>(pc);
         auto pWo = make_shared<WO::Point3D>(Pc->x, Pc->y, 1.0);
         return pPose_wc->transform(pWo);
         //auto Pw_cv = static_pointer_cast<WO::Point3D>(Pw)->getPoint();

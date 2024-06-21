@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 
 
 namespace NAV24 {

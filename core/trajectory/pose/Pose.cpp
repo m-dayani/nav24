@@ -33,8 +33,8 @@ namespace NAV24::TF {
     WO::woPtr Trans2D::transform(const WO::woPtr &pWo) {
 
         WO::woPtr pWoOut = nullptr;
-        if (static_pointer_cast<WO::Point3D>(pWo)) {
-            auto pt3d = static_pointer_cast<WO::Point3D>(pWo);
+        if (dynamic_pointer_cast<WO::Point3D>(pWo)) {
+            auto pt3d = dynamic_pointer_cast<WO::Point3D>(pWo);
             auto Pc = Converter::toVector3d(pt3d->getPoint());
             auto Pw = this->transform(Pc);
             Pw /= Pw[2];
@@ -129,8 +129,8 @@ namespace NAV24::TF {
     WO::woPtr PoseSE3::transform(const WO::woPtr &worldObject) {
 
         WO::woPtr pWo = nullptr;
-        if (static_pointer_cast<WO::Point3D>(worldObject)) {
-            auto pt3d = static_pointer_cast<WO::Point3D>(worldObject);
+        if (dynamic_pointer_cast<WO::Point3D>(worldObject)) {
+            auto pt3d = dynamic_pointer_cast<WO::Point3D>(worldObject);
             auto Pc = Converter::toVector3d(pt3d->getPoint());
             Eigen::Vector4d Pcc(Pc.x(), Pc.y(), Pc.z(), 1.0);
             auto Pw = this->transform(Pcc);

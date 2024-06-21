@@ -6,7 +6,7 @@
 #define NAV24_FRAME_HPP
 
 #include "Image.hpp"
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 #include "Point2D.hpp"
 
 namespace NAV24 {

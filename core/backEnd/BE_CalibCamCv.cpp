@@ -43,8 +43,8 @@ namespace NAV24::BE {
 
             for (size_t i = 0; i < vpPts2d.size(); i++) {
 
-                auto pt2d = static_pointer_cast<OB::Point2D>(vpPts2d[i]);
-                auto pt3d = static_pointer_cast<WO::Point3D>(vpPts3d[i]);
+                auto pt2d = dynamic_pointer_cast<OB::Point2D>(vpPts2d[i]);
+                auto pt3d = dynamic_pointer_cast<WO::Point3D>(vpPts3d[i]);
 
                 if (pt2d) imgPoints[j].emplace_back(pt2d->x, pt2d->y);
                 if (pt3d) objPoints[j].emplace_back(pt3d->getPoint());

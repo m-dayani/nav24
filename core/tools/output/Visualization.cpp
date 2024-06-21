@@ -66,12 +66,12 @@ namespace NAV24 {
 
         for (const auto& pPt3d : vpMapPts) {
             auto pt2d = Camera::project(pPt3d, pPose_cw, pCalib);
-            auto pt = static_pointer_cast<OB::Point2D>(pt2d);
+            auto pt = dynamic_pointer_cast<OB::Point2D>(pt2d);
             cv::Point2f pt_cv((float)pt->x, (float)pt->y);
 
             cv::circle(img, pt_cv, 2, cv::Scalar(cInt, 0, 0), 2);
 
-            auto pt3d = static_pointer_cast<WO::Point3D>(pPt3d);
+            auto pt3d = dynamic_pointer_cast<WO::Point3D>(pPt3d);
             double i = pt3d->getPoint().x;
             double j = pt3d->getPoint().y;
             if (i == 0 && j == 0) orig = pt_cv;

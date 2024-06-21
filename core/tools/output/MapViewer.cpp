@@ -68,8 +68,8 @@ namespace NAV24 {
         glBegin(GL_POINTS);
         glColor3f(0.0, 0.0, 0.0);
 
-        if (pWo && static_pointer_cast<WO::Point3D>(pWo)) {
-            auto pt3d = static_pointer_cast<WO::Point3D>(pWo);
+        if (pWo && dynamic_pointer_cast<WO::Point3D>(pWo)) {
+            auto pt3d = dynamic_pointer_cast<WO::Point3D>(pWo);
             auto pos = pt3d->getPoint();
             glVertex3f((float)pos.x, (float)pos.y, (float)pos.z);
         }

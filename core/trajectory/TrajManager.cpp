@@ -5,7 +5,7 @@
 #include <glog/logging.h>
 
 #include "TrajManager.hpp"
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 
 using namespace std;
 

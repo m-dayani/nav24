@@ -13,7 +13,7 @@
 
 #include "SharedQueue.hpp"
 #include "IMU.hpp"
-#include "Pose.hpp"
+#include "trajectory/pose/Pose.hpp"
 
 namespace NAV24 {
 
