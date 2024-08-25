@@ -11,7 +11,7 @@ set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++-9)
 #set(CMAKE_CXX_COMPILER ${MUSL_ROOT}/aarch64-linux-musl-cross/bin/aarch64-linux-musl-g++)
 
 # where is the target environment located
-set(CMAKE_FIND_ROOT_PATH  /mnt/rasp64-lite)
+set(CMAKE_FIND_ROOT_PATH  /mnt/raspi-aun)
 
 # adjust the default behavior of the FIND_XXX() commands:
 # search programs in the host environment

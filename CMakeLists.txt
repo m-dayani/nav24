@@ -18,8 +18,8 @@ set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/lib)
 
 configure_file(${PROJ_CORE_PATH}/GlobalConfig.h.in ${PROJ_CORE_PATH}/GlobalConfig.h)
 
-option(USE_PANGOLIN "Required for 3D data visualization" ON)
-option(USE_SERIAL "Required for RS232 serial communication (Arduino)" ON)
+option(USE_PANGOLIN "Required for 3D data visualization" OFF)
+option(USE_SERIAL "Required for RS232 serial communication (Arduino)" OFF)
 option(USE_PYTHON "Use python library to embed python in C++" OFF)
 option(USE_ONNX_RUNTIME "Use ONNX Runtime to enable deep learning in C++" OFF)
 
@@ -38,7 +38,7 @@ add_subdirectory(${PROJ_CORE_PATH})
 
 
 install(FILES ${PROJECT_BINARY_DIR}/${PROJ_CORE_PATH}/GlobalConfig.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install(EXPORT NAV_CORE
