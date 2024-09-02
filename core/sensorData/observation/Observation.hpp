@@ -12,8 +12,8 @@
 
 namespace NAV24::WO {
     class WorldObject;
-    typedef std::shared_ptr<WorldObject> woPtr;
-    typedef std::weak_ptr<WorldObject> woPtrW;
+    typedef std::shared_ptr<WorldObject> WoPtr;
+    typedef std::weak_ptr<WorldObject> WoPtrW;
 }
 
 namespace NAV24::OB {
@@ -21,12 +21,16 @@ namespace NAV24::OB {
     class Observation : public SmartObject {
     public:
 
-        void setWorldObject(const WO::woPtr& pWo) { mpWo = pWo; }
-        WO::woPtr getWorldObject() { return mpWo.lock(); }
+        void setWorldObject(const WO::WoPtr& pWo) { mpWo = pWo; }
+        WO::WoPtr getWorldObject() { return mpWo.lock(); }
+
+        [[nodiscard]] long getFrameId() const { return mFrameId; }
+        void setFrameId(const long& frameId) { mFrameId = frameId; }
 
         virtual std::string toString() { return "Observation, Base Class\n"; }
     protected:
-        WO::woPtrW mpWo{};
+        WO::WoPtrW mpWo{};
+        long mFrameId;
     };
     typedef std::shared_ptr<Observation> ObsPtr;
     typedef std::weak_ptr<Observation> ObsPtrW;

@@ -38,6 +38,8 @@ include_directories(${Python_INCLUDE_DIRS})
 #target_link_libraries(tabular_text_ds LINK_PUBLIC ${LIB_NAV_NAME})
 #list(APPEND INSTALLABLE_EXE tabular_text_ds)
 
+# Tests
+
 if (USE_PANGOLIN)
 add_executable(world_viewer tests/world_viewer.cpp)
 target_link_libraries(world_viewer LINK_PUBLIC ${LIB_NAV_NAME})
@@ -56,6 +58,7 @@ target_link_libraries(python_api LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE python_api)
 endif(Python_FOUND)
 
+# Robotic Arm
 
 add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)
 target_link_libraries(aun_robo_arm LINK_PUBLIC ${LIB_NAV_NAME})
@@ -79,3 +82,8 @@ endif (USE_SERIAL)
 
 #install(TARGETS ${INSTALLABLE_EXE} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/bin)
 
+# SLAM
+
+add_executable(v_mono slam/v_mono.cpp)
+target_link_libraries(v_mono LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE v_mono)

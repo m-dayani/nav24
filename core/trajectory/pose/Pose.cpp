@@ -30,9 +30,9 @@ namespace NAV24::TF {
         T_tr = T_rt.inverse();
     }
 
-    WO::woPtr Trans2D::transform(const WO::woPtr &pWo) {
+    WO::WoPtr Trans2D::transform(const WO::WoPtr &pWo) {
 
-        WO::woPtr pWoOut = nullptr;
+        WO::WoPtr pWoOut = nullptr;
         if (dynamic_pointer_cast<WO::Point3D>(pWo)) {
             auto pt3d = dynamic_pointer_cast<WO::Point3D>(pWo);
             auto Pc = Converter::toVector3d(pt3d->getPoint());
@@ -43,12 +43,12 @@ namespace NAV24::TF {
         return pWoOut;
     }
 
-    WO::woPtr Trans2D::transform(const OB::obsPtr &pObs) {
-        return NAV24::WO::woPtr();
+    WO::WoPtr Trans2D::transform(const OB::ObsPtr &pObs) {
+        return NAV24::WO::WoPtr();
     }
 
-    OB::obsPtr Trans2D::transformObs(const OB::obsPtr &pObs) {
-        return NAV24::OB::obsPtr();
+    OB::ObsPtr Trans2D::transformObs(const OB::ObsPtr &pObs) {
+        return NAV24::OB::ObsPtr();
     }
 
     /* ============================================================================================================== */
@@ -126,9 +126,9 @@ namespace NAV24::TF {
 
     }
 
-    WO::woPtr PoseSE3::transform(const WO::woPtr &worldObject) {
+    WO::WoPtr PoseSE3::transform(const WO::WoPtr &worldObject) {
 
-        WO::woPtr pWo = nullptr;
+        WO::WoPtr pWo = nullptr;
         if (dynamic_pointer_cast<WO::Point3D>(worldObject)) {
             auto pt3d = dynamic_pointer_cast<WO::Point3D>(worldObject);
             auto Pc = Converter::toVector3d(pt3d->getPoint());
@@ -140,12 +140,12 @@ namespace NAV24::TF {
         return pWo;
     }
 
-    WO::woPtr PoseSE3::transform(const OB::obsPtr &pObs) {
-        return NAV24::WO::woPtr();
+    WO::WoPtr PoseSE3::transform(const OB::ObsPtr &pObs) {
+        return NAV24::WO::WoPtr();
     }
 
-    OB::obsPtr PoseSE3::transformObs(const OB::obsPtr &pObs) {
-        return NAV24::OB::obsPtr();
+    OB::ObsPtr PoseSE3::transformObs(const OB::ObsPtr &pObs) {
+        return NAV24::OB::ObsPtr();
     }
 
 

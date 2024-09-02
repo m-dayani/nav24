@@ -10,7 +10,7 @@
 #include "FrontEnd.hpp"
 #include "Point3D.hpp"
 #include "Frame.hpp"
-#include "OP_ChBoardDetCv.hpp"
+#include "operators/objDetection/OP_ChBoardDetCv.hpp"
 #include "Calibration.hpp"
 
 
@@ -44,7 +44,7 @@ namespace NAV24::FE {
         cv::Size mImageSize;
 
         std::string mCalibMap;
-        std::vector<WO::woPtr> mvpPts3D;
+        std::vector<WO::WoPtr> mvpPts3D;
 
         std::string mTrajectory;
         std::vector<FramePtr> mvpFrames;

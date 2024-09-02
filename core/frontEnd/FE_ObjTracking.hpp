@@ -35,8 +35,8 @@ namespace NAV24::FE {
         void initialize();
         void track(const FramePtr& pFrame);
         //Eigen::Vector3d unproject(const cv::Point2f& lastPoint);
-        void sendCoords(const WO::woPtr &Pw);
-        void showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const WO::woPtr &Pw);
+        void sendCoords(const WO::WoPtr &Pw);
+        void showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const WO::WoPtr &Pw);
 
         void createAndInsertFrame(const ImagePtr& pImg);
         std::shared_ptr<FrameImgMono> creatNewFrame(const ImagePtr& pImg, const OB::ObsPtr& pObs);
@@ -57,7 +57,7 @@ namespace NAV24::FE {
         //std::string mTrType;
 
         std::string mMapName;
-        std::vector<WO::woPtr> mvpPts3D{};
+        std::vector<WO::WoPtr> mvpPts3D{};
 
         std::string mTrajectory;
         PosePtr mpTwc;

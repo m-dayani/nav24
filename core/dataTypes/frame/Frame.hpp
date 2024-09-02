@@ -8,27 +8,33 @@
 #include "Image.hpp"
 #include "trajectory/pose/Pose.hpp"
 #include "Point2D.hpp"
+#include "MatchedFeatures.hpp"
+#include "FeatureGrid.hpp"
 
 namespace NAV24 {
 
     class Frame {
     public:
-        Frame() : ts(-1.0), mpPose(nullptr), mvpObservations() {}
+        Frame() : ts(-1.0), mpPose(nullptr), mvpObservations(), mId(idCounter++) {}
         Frame(double _ts, PosePtr  pose, const std::vector<OB::ObsPtr>& vObs);
 
         [[nodiscard]] const std::vector<OB::ObsPtr> &getObservations() const;
-        void setObservations(const std::vector<OB::ObsPtr> &mvpObservations);
-        void addObservation(const OB::ObsPtr& pObs);
+        virtual void setObservations(const std::vector<OB::ObsPtr> &mvpObservations);
+//        void addObservation(const OB::ObsPtr& pObs);
 
         [[nodiscard]] const PosePtr &getPose() const;
         void setPose(const PosePtr &pose);
 
-        double getTs() const { return ts; }
+        [[nodiscard]] double getTs() const { return ts; }
+
+        [[nodiscard]] long getId() const { return mId; }
 
     protected:
         std::vector<OB::ObsPtr> mvpObservations;
         PosePtr mpPose;
         double ts;
+        const long mId;
+        static long idCounter;
     };
     typedef std::shared_ptr<Frame> FramePtr;
 
@@ -41,6 +47,21 @@ namespace NAV24 {
         void setImage(const ImagePtr& pImg) { mpImage = pImg; }
     protected:
         ImagePtr mpImage;
+    };
+
+    class FrameMonoGrid : public FrameImgMono {
+    public:
+        FrameMonoGrid(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs) :
+                FrameImgMono(_ts, pose, vObs), mpGrid() {}
+        FrameMonoGrid(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs, const ImagePtr& pImage) :
+                FrameImgMono(_ts, pose, vObs, pImage), mpGrid() {}
+
+        void setObservations(const std::vector<OB::ObsPtr> &mvpObservations) override;
+
+        //std::shared_ptr<OB::FeatureGrid> getGrid() { return mpGrid; }
+        std::vector<std::size_t> getFeaturesInArea(const OB::ObsPtr& pObs, float windowSize, int minLevel, int maxLevel);
+    protected:
+        std::shared_ptr<OB::FeatureGrid> mpGrid;
     };
 
 } // NAV24

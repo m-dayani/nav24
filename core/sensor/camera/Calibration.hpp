@@ -13,6 +13,7 @@
 
 #include "Parameter.hpp"
 #include "WorldObject.hpp"
+#include "GeometricCamera.h"
 
 
 namespace NAV24 {
@@ -23,34 +24,29 @@ namespace NAV24 {
 
         void loadParams(const ParamPtr& pParams);
 
-        virtual OB::obsPtr undistort(const OB::obsPtr& pObs);
-        virtual OB::obsPtr distort(const OB::obsPtr& pObs);
+        virtual OB::ObsPtr undistort(const OB::ObsPtr& pObs);
+        virtual std::vector<OB::ObsPtr> undistort(const std::vector<OB::ObsPtr>& vpObs);
+        virtual OB::ObsPtr distort(const OB::ObsPtr& pObs);
 
-        virtual WO::woPtr unproject(const OB::obsPtr& pt2d);
-        virtual OB::obsPtr project(const WO::woPtr& pt3d);
+        virtual WO::WoPtr unproject(const OB::ObsPtr& pt2d);
+        virtual OB::ObsPtr project(const WO::WoPtr& pt3d);
 
-        cv::Mat getK_cv() { return K_cv; }
-        Eigen::Matrix3f getK_ei() { return K_ei; }
-        cv::Mat getD_cv() { return D_cv; }
+        cv::Mat getK_cv() { return mpCamModel->getK_cv(); }
+        Eigen::Matrix3f getK_ei() { return mpCamModel->getK_ei(); }
+        cv::Mat getD_cv() { return mpCamModel->getDist(); }
 
         virtual std::string printStr(const std::string& prefix);
 
         static ParamPtr getCalibParams(const cv::Mat& K, const cv::Mat& D, const std::string& distType,
                                        std::vector<ParamPtr>& vpParamHolder);
 
+        std::vector<float> computeImageBounds(const cv::Mat &image);
+
+        bool isCalibrated();
+
     protected:
-        float fx{-1.f}, fy{-1.f}, cx{-1.f}, cy{-1.f};
-        cv::Mat K_cv;
-        Eigen::Matrix3f K_ei;
-
         std::string distType;
-        std::vector<double> D{};
-        cv::Mat D_cv;
-
-        // Rectification Matrix
-        cv::Mat mR;
-        // Projection Matrix
-        cv::Mat mP;
+        std::shared_ptr<GeometricCamera> mpCamModel;
     };
     typedef std::shared_ptr<Calibration> CalibPtr;
 

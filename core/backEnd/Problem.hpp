@@ -24,7 +24,7 @@ namespace NAV24 {
     public:
 
         std::vector<FramePtr> mvpFrames;
-        std::vector<WO::woPtr> mvpWorldObjs;
+        std::vector<WO::WoPtr> mvpWorldObjs;
         cv::Size mImgSize;
 
         cv::Mat mK;

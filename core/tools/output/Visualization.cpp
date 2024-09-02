@@ -14,6 +14,22 @@ using namespace std;
 
 namespace NAV24 {
 
+    std::vector<cv::Scalar> Visualization::mColorPallet = {
+            cv::Scalar(255, 0, 0),
+            cv::Scalar(0, 255, 0),
+            cv::Scalar(0, 0, 255),
+            cv::Scalar(255, 255, 0),
+            cv::Scalar(255, 0, 255),
+            cv::Scalar(0, 255, 255),
+            cv::Scalar(255, 255, 255),
+            cv::Scalar(0, 0, 0),
+            cv::Scalar(25, 100, 40),
+            cv::Scalar(25, 10, 40),
+            cv::Scalar(250, 10, 70),
+            cv::Scalar(25, 60, 140),
+            cv::Scalar(205, 10, 44),
+            cv::Scalar(25, 23, 85)
+    };
 
     /*void Visualization::drawGrid(cv::Mat& img, const cv::Mat& K, const cv::Mat& D,
                                  const PosePtr& pPose_cw, int nx, int ny, float scale) {
@@ -59,7 +75,7 @@ namespace NAV24 {
     }*/
 
     void Visualization::projectMap(cv::Mat &img, const PosePtr &pPose_cw, const CalibPtr &pCalib,
-                                   const vector<WO::woPtr> &vpMapPts) {
+                                   const vector<WO::WoPtr> &vpMapPts) {
 
         cv::Point2f orig, ax, ay;
         int cInt = 220;
@@ -67,7 +83,7 @@ namespace NAV24 {
         for (const auto& pPt3d : vpMapPts) {
             auto pt2d = Camera::project(pPt3d, pPose_cw, pCalib);
             auto pt = dynamic_pointer_cast<OB::Point2D>(pt2d);
-            cv::Point2f pt_cv((float)pt->x, (float)pt->y);
+            cv::Point2f pt_cv = pt->getPoint();
 
             cv::circle(img, pt_cv, 2, cv::Scalar(cInt, 0, 0), 2);
 
@@ -85,5 +101,69 @@ namespace NAV24 {
         cv::arrowedLine(img, orig, ay, cv::Scalar(0, cInt, 0), 2);
         cv::putText(img, "Y", ay, cv::FONT_HERSHEY_SIMPLEX, 1.0,
                     cv::Scalar(0, cInt, 0), 2);
+    }
+
+    void Visualization::drawKeyPoints(cv::Mat &image, const FramePtr &pFrame) {
+
+        if (!pFrame) {
+            return;
+        }
+
+        if (image.empty()) {
+            return;
+        }
+
+        if (image.channels() == 1) {
+            cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
+        }
+
+        for (const auto& pObs : pFrame->getObservations()) {
+            if (pObs) {
+                auto pKeyPoint = dynamic_pointer_cast<OB::Point2D>(pObs);
+                if (pKeyPoint) {
+                    cv::Point2f kpt = pKeyPoint->getPoint();
+                    cv::Point2i pti((int)kpt.x, (int)kpt.y);
+                    cv::drawMarker(image, pti, cv::Scalar(0, 0, 255),
+                                   cv::MARKER_CROSS, 8);
+                    if (pKeyPoint->isDistorted()) {
+                        kpt = pKeyPoint->getPointUd();
+                        cv::Point2i pti2 = cv::Point2i((int)kpt.x, (int)kpt.y);
+                        cv::drawMarker(image, pti2, cv::Scalar(0, 255, 0),
+                                       cv::MARKER_CROSS, 8);
+                        cv::line(image, pti, pti2, cv::Scalar(255, 0, 0));
+                    }
+                }
+            }
+        }
+    }
+
+    void Visualization::drawMatchedTracks(cv::Mat &image, const OB::FtTracksPtr &pTracks) {
+
+        if (image.empty() || !pTracks) {
+            return;
+        }
+
+        if (image.channels() == 1) {
+            cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
+        }
+
+        int colorIdx = 0;
+        for (const auto& pTrackPair : pTracks->getAllTracks()) {
+            const auto& pTrack = pTrackPair.second;
+            OB::ObsPtr pLastObs = nullptr;
+            for (const auto& pObs : pTrack->getAllFeatures()) {
+
+                if (pLastObs) {
+                    if (pObs && dynamic_pointer_cast<OB::Point2D>(pObs)) {
+                        const auto& pKpt1 = dynamic_pointer_cast<OB::Point2D>(pLastObs);
+                        const auto& pKpt2 = dynamic_pointer_cast<OB::Point2D>(pObs);
+                        cv::line(image, pKpt1->getPoint(), pKpt2->getPoint(),
+                                 mColorPallet[colorIdx % mColorPallet.size()]);
+                    }
+                }
+                pLastObs = pObs;
+            }
+            colorIdx++;
+        }
     }
 } // NAV24

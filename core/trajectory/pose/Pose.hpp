@@ -20,11 +20,11 @@ namespace NAV24 {
         public:
             Transformation(std::string _ref, std::string _target, double _ts, const double &offset = 0);
 
-            virtual WO::woPtr transform(const WO::woPtr &pWo) = 0;
+            virtual WO::WoPtr transform(const WO::WoPtr &pWo) = 0;
 
-            virtual WO::woPtr transform(const OB::obsPtr &pObs) = 0;
+            virtual WO::WoPtr transform(const OB::ObsPtr &pObs) = 0;
 
-            virtual OB::obsPtr transformObs(const OB::obsPtr &pObs) = 0;
+            virtual OB::ObsPtr transformObs(const OB::ObsPtr &pObs) = 0;
 
             [[nodiscard]] std::string getKey() const { return key; }
 
@@ -50,11 +50,11 @@ namespace NAV24 {
             Trans2D(const std::string &ref_, const std::string &target_, double ts_, Eigen::Matrix3d T_rt_,
                     const double &offset = 0);
 
-            WO::woPtr transform(const WO::woPtr &pWo) override;
+            WO::WoPtr transform(const WO::WoPtr &pWo) override;
 
-            WO::woPtr transform(const OB::obsPtr &pObs) override;
+            WO::WoPtr transform(const OB::ObsPtr &pObs) override;
 
-            OB::obsPtr transformObs(const OB::obsPtr &pObs) override;
+            OB::ObsPtr transformObs(const OB::ObsPtr &pObs) override;
 
             Eigen::Vector3d transform(const Eigen::Vector3d &P_t) { return T_rt * P_t; }
 
@@ -71,11 +71,11 @@ namespace NAV24 {
             PoseSE3(const std::string &ref_, const std::string &target_, double ts_, const Eigen::Matrix3d &R_rt,
                     const Eigen::Vector3d &t_rt, const double &offset = 0);
 
-            WO::woPtr transform(const WO::woPtr &worldObject) override;
+            WO::WoPtr transform(const WO::WoPtr &worldObject) override;
 
-            WO::woPtr transform(const OB::obsPtr &pObs) override;
+            WO::WoPtr transform(const OB::ObsPtr &pObs) override;
 
-            OB::obsPtr transformObs(const OB::obsPtr &pObs) override;
+            OB::ObsPtr transformObs(const OB::ObsPtr &pObs) override;
 
             Eigen::Vector4d transform(const Eigen::Vector4d &P_t) { return T_rt * P_t; }
             //Eigen::Vector4d invTransform(const Eigen::Vector4d& P_r) { return T_tr * P_r; }

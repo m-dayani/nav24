@@ -19,6 +19,10 @@ set(OPERATORS_DIR operators)
 list(APPEND LIST_INCLUDE_DIRS ${OPERATORS_DIR})
 set(OBJ_TRACK_DIR ${OPERATORS_DIR}/objTracking)
 list(APPEND LIST_INCLUDE_DIRS ${OBJ_TRACK_DIR})
+set(OBJ_DET_DIR ${OPERATORS_DIR}/objDetection)
+list(APPEND LIST_INCLUDE_DIRS ${OBJ_DET_DIR})
+set(OBJ_ASSOC_DIR ${OPERATORS_DIR}/objAssoc)
+list(APPEND LIST_INCLUDE_DIRS ${OBJ_ASSOC_DIR})
 
 set(TRAJECTORY_DIR trajectory)
 list(APPEND LIST_INCLUDE_DIRS ${TRAJECTORY_DIR})
@@ -34,6 +38,8 @@ set(SENSORS_DIR sensor)
 list(APPEND LIST_INCLUDE_DIRS ${SENSORS_DIR})
 set(SENSOR_CAM_DIR ${SENSORS_DIR}/camera)
 list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_DIR})
+set(SENSOR_CAM_MODELS_DIR ${SENSOR_CAM_DIR}/models)
+list(APPEND LIST_INCLUDE_DIRS ${SENSOR_CAM_MODELS_DIR})
 
 set(DATA_TYPES_DIR dataTypes)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_TYPES_DIR})
@@ -76,6 +82,10 @@ set(ALL_H_FILES
         ${DATA_LOADERS_DIR}/TabularTextDS.hpp
         ${SENSOR_CAM_DIR}/Calibration.hpp
         ${SENSOR_CAM_DIR}/Camera.hpp
+        ${SENSOR_CAM_MODELS_DIR}/GeometricCamera.h
+        ${SENSOR_CAM_MODELS_DIR}/Pinhole.hpp
+        ${SENSOR_CAM_MODELS_DIR}/PinholeRadTan.hpp
+        ${SENSOR_CAM_MODELS_DIR}/KannalaBrandt8.hpp
         ${SENSOR_DATA_DIR}/SensorData.hpp
         ${SENSOR_DATA_DIR}/Image.hpp
         ${POSE_DIR}/Pose.hpp
@@ -88,13 +98,20 @@ set(ALL_H_FILES
         ${BACKEND_DIR}/BE_CalibCamCv.hpp
         ${OBSERVATIONS_DIR}/Observation.hpp
         ${OBSERVATIONS_DIR}/Point2D.hpp
+        ${OBSERVATIONS_DIR}/MatchedFeatures.hpp
+        ${OBSERVATIONS_DIR}/FeatureGrid.hpp
         ${WORLD_OBJ_DIR}/WorldObject.hpp
         ${WORLD_OBJ_DIR}/Point3D.hpp
         ${FRONTEND_DIR}/FrontEnd.hpp
         ${FRONTEND_DIR}/FE_CalibCamCv.hpp
         ${FRONTEND_DIR}/FE_ObjTracking.hpp
+        ${FRONTEND_DIR}/FE_SlamMonoV.hpp
         ${OPERATORS_DIR}/Operator.hpp
-        ${OPERATORS_DIR}/OP_ChBoardDetCv.hpp
+        ${OBJ_DET_DIR}/OP_ChBoardDetCv.hpp
+        ${OBJ_DET_DIR}/OP_FtDtOrbSlam.hpp
+        ${OBJ_DET_DIR}/OP_FtDt.hpp
+        ${OBJ_ASSOC_DIR}/OP_FtAssoc.hpp
+        ${OBJ_ASSOC_DIR}/OP_FtAssocOrbSlam.hpp
         ${OBJ_TRACK_DIR}/OP_ObjTracking.hpp
         ${OBJ_TRACK_DIR}/OP_ObjTrackingYolo.hpp
         ${OBJ_TRACK_DIR}/OP_ObjTrackingYoloPy.hpp
@@ -121,6 +138,9 @@ set(ALL_SRC_FILES
         ${DATA_LOADERS_DIR}/TabularTextDS.cpp
         ${SENSOR_CAM_DIR}/Calibration.cpp
         ${SENSOR_CAM_DIR}/Camera.cpp
+        ${SENSOR_CAM_MODELS_DIR}/Pinhole.cpp
+        ${SENSOR_CAM_MODELS_DIR}/PinholeRadTan.cpp
+        ${SENSOR_CAM_MODELS_DIR}/KannalaBrandt8.cpp
         ${SENSORS_DIR}/Sensor.cpp
         ${POSE_DIR}/PoseProvider.cpp
         ${SENSOR_DATA_DIR}/SensorData.cpp
@@ -133,13 +153,20 @@ set(ALL_SRC_FILES
         ${BACKEND_DIR}/BE_CalibCamCv.cpp
         ${OBSERVATIONS_DIR}/Observation.cpp
         ${OBSERVATIONS_DIR}/Point2D.cpp
+        ${OBSERVATIONS_DIR}/MatchedFeatures.cpp
+        ${OBSERVATIONS_DIR}/FeatureGrid.cpp
         ${WORLD_OBJ_DIR}/WorldObject.cpp
         ${WORLD_OBJ_DIR}/Point3D.cpp
         ${FRONTEND_DIR}/FrontEnd.cpp
         ${FRONTEND_DIR}/FE_CalibCamCv.cpp
         ${FRONTEND_DIR}/FE_ObjTracking.cpp
+        ${FRONTEND_DIR}/FE_SlamMonoV.cpp
         ${OPERATORS_DIR}/Operator.cpp
-        ${OPERATORS_DIR}/OP_ChBoardDetCv.cpp
+        ${OBJ_DET_DIR}/OP_ChBoardDetCv.cpp
+        ${OBJ_DET_DIR}/OP_FtDtOrbSlam.cpp
+        ${OBJ_DET_DIR}/OP_FtDt.cpp
+        ${OBJ_ASSOC_DIR}/OP_FtAssoc.cpp
+        ${OBJ_ASSOC_DIR}/OP_FtAssocOrbSlam.cpp
         ${OBJ_TRACK_DIR}/OP_ObjTracking.cpp
         ${OBJ_TRACK_DIR}/OP_ObjTrackingYolo.cpp
         ${OBJ_TRACK_DIR}/OP_ObjTrackingCv.cpp

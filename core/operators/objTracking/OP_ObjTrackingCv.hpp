@@ -9,6 +9,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
+#include <opencv2/tracking/tracking_legacy.hpp>
 
 #include "OP_ObjTracking.hpp"
 #include "Message.hpp"
@@ -47,7 +48,7 @@ namespace NAV24::OP {
         std::size_t mTrIdx;
         std::string mTrName;
         std::vector<std::string> mvTrOptions;
-        cv::Ptr<cv::Tracker> mpTracker;
+        cv::Ptr<cv::legacy::Tracker> mpTracker;
 
         bool mbManInit;
         double mInitTs;

@@ -29,7 +29,7 @@ namespace NAV24 {
 
         Eigen::Matrix4f Twc = pPose->getPose().cast<float>();
         //unsigned int index_color = pKF->mnOriginMapId;
-
+#ifdef LIB_PANGOLIN_FOUND
         glPushMatrix();
         glMultMatrixf((GLfloat*)Twc.data());
 
@@ -60,10 +60,11 @@ namespace NAV24 {
         glEnd();
 
         glPopMatrix();
+#endif
     }
 
-    void MapViewer::drawWorldObject(const WO::woPtr &pWo) const {
-
+    void MapViewer::drawWorldObject(const WO::WoPtr &pWo) const {
+#ifdef LIB_PANGOLIN_FOUND
         glPointSize(mPointSize);
         glBegin(GL_POINTS);
         glColor3f(0.0, 0.0, 0.0);
@@ -75,6 +76,7 @@ namespace NAV24 {
         }
 
         glEnd();
+#endif
     }
 
     void MapViewer::drawTrajectory(const vector <FramePtr> &vpFrame) {
@@ -102,16 +104,16 @@ namespace NAV24 {
                 }
                 mMtxPoseQueue.unlock();
             }
-            if (dynamic_pointer_cast<MsgType<vector<WO::woPtr>>>(msg)) {
-                auto vpWo = dynamic_pointer_cast<MsgType<vector<WO::woPtr>>>(msg)->getData();
+            if (dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg)) {
+                auto vpWo = dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg)->getData();
                 mMtxWoQueue.lock();
                 for (const auto& pWo : vpWo) {
                     mspWorldObjects.insert(pWo);
                 }
                 mMtxWoQueue.unlock();
             }
-            if (dynamic_pointer_cast<MsgType<WO::woPtr>>(msg)) {
-                auto pWo = dynamic_pointer_cast<MsgType<WO::woPtr>>(msg)->getData();
+            if (dynamic_pointer_cast<MsgType<WO::WoPtr>>(msg)) {
+                auto pWo = dynamic_pointer_cast<MsgType<WO::WoPtr>>(msg)->getData();
                 mMtxWoQueue.lock();
                 mspWorldObjects.insert(pWo);
                 mMtxWoQueue.unlock();
@@ -128,8 +130,8 @@ namespace NAV24 {
         }
 
         set<PosePtr> spPoseCopy;
-        set<WO::woPtr> spWoCopy;
-
+        set<WO::WoPtr> spWoCopy;
+#ifdef LIB_PANGOLIN_FOUND
         pangolin::CreateWindowAndBind("Main",640,480);
         glEnable(GL_DEPTH_TEST);
 
@@ -181,6 +183,7 @@ namespace NAV24 {
                 break;
             }
         }
+#endif
     }
 
     void MapViewer::setup(const MsgPtr &msg) {
@@ -237,7 +240,9 @@ namespace NAV24 {
 
     void MapViewer::stop() {
         MsgCallback::stop();
+#ifdef LIB_PANGOLIN_FOUND
         pangolin::QuitAll();
+#endif
     }
 
     bool MapViewer::isStopped() {

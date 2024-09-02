@@ -105,7 +105,7 @@ namespace NAV24::FE {
             }
         }
         // Always add parameters in bulk (for efficiency)
-        auto msgAddMapPts = make_shared<MsgType<vector<WO::woPtr>>>(ID_CH_ATLAS, mvpPts3D,
+        auto msgAddMapPts = make_shared<MsgType<vector<WO::WoPtr>>>(ID_CH_ATLAS, mvpPts3D,
                                                                     Atlas::TOPIC, FCN_MAP_ADD_WO, mCalibMap);
         mpChannel->send(msgAddMapPts);
 
@@ -166,7 +166,8 @@ namespace NAV24::FE {
         for (const auto& pObs : vpCorners) {
             auto point = dynamic_pointer_cast<OB::Point2D>(pObs);
             if (point) {
-                vCorners.emplace_back(point->x, point->y);
+                auto ptcv = point->getPoint();
+                vCorners.emplace_back(ptcv.x, ptcv.y);
             }
         }
         cv::drawChessboardCorners(img, mGridSize, vCorners, res);
@@ -259,7 +260,7 @@ namespace NAV24::FE {
 
     void CalibCamCv::drawPoseMap() {
 
-        auto msgSendMap = make_shared<MsgType<vector<WO::woPtr>>>(ID_TP_OUTPUT, mvpPts3D, Output::TOPIC);
+        auto msgSendMap = make_shared<MsgType<vector<WO::WoPtr>>>(ID_TP_OUTPUT, mvpPts3D, Output::TOPIC);
         auto msgSendPose = make_shared<MsgType<vector<FramePtr>>>(ID_TP_OUTPUT, mvpFrames, Output::TOPIC);
 
         mpChannel->publish(msgSendMap);

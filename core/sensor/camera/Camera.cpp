@@ -170,17 +170,18 @@ namespace NAV24 {
         return pCamera;
     }
 
-    WO::woPtr Camera::unproject(const OB::obsPtr &pObs, const TransPtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float scale) {
+    WO::WoPtr Camera::unproject(const OB::ObsPtr &pObs, const TransPtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float scale) {
 
         auto pc = pCalib->undistort(pObs);
         auto Pc = dynamic_pointer_cast<OB::Point2D>(pc);
-        auto pWo = make_shared<WO::Point3D>(Pc->x, Pc->y, 1.0);
+        auto Pc_cv = Pc->getPoint();
+        auto pWo = make_shared<WO::Point3D>(Pc_cv.x, Pc_cv.y, 1.0);
         return pPose_wc->transform(pWo);
         //auto Pw_cv = static_pointer_cast<WO::Point3D>(Pw)->getPoint();
         //return make_shared<WO::Point3D>(Pw_cv.x / Pw_cv.z, Pw_cv.y / Pw_cv.z, 1.0);
     }
 
-    OB::obsPtr Camera::project(const WO::woPtr &pWo, const TransPtr &pPose_cw, const NAV24::CalibPtr &pCalib, const float scale) {
+    OB::ObsPtr Camera::project(const WO::WoPtr &pWo, const TransPtr &pPose_cw, const NAV24::CalibPtr &pCalib, const float scale) {
 
         auto Pc = pPose_cw->transform(pWo);
         return pCalib->project(Pc);

@@ -10,7 +10,6 @@
 #include "OP_ObjTrackingCv.hpp"
 #include "FrontEnd.hpp"
 #include "ParameterBlueprint.h"
-//#include "Point2D.hpp"
 
 using namespace cv;
 using namespace std;
@@ -182,19 +181,19 @@ namespace NAV24::OP {
 #else
         {
             if (mTrName == "BOOSTING")
-                mpTracker = TrackerBoosting::create();
+                mpTracker = cv::legacy::TrackerBoosting::create();
             if (mTrName == "MIL")
-                mpTracker = TrackerMIL::create();
+                mpTracker = cv::legacy::TrackerMIL::create();
             if (mTrName == "KCF")
-                mpTracker = TrackerKCF::create();
+                mpTracker = cv::legacy::TrackerKCF::create();
             if (mTrName == "TLD")
-                mpTracker = TrackerTLD::create();
+                mpTracker = cv::legacy::TrackerTLD::create();
             if (mTrName == "MEDIANFLOW")
-                mpTracker = TrackerMedianFlow::create();
-            if (mTrName == "GOTURN")
-                mpTracker = TrackerGOTURN::create();
+                mpTracker = cv::legacy::TrackerMedianFlow::create();
+//            if (mTrName == "GOTURN")
+//                mpTracker = cv::TrackerGOTURN::create();
             if (mTrName == "CSRT")
-                mpTracker = TrackerCSRT::create();
+                mpTracker = cv::legacy::TrackerCSRT::create();
         }
 #endif
 

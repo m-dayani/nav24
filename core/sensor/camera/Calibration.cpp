@@ -5,12 +5,13 @@
 #include "Calibration.hpp"
 
 #include <glog/logging.h>
-#include <opencv2/calib3d.hpp>
 #include <Eigen/Eigen>
 
-#include "DataConversion.hpp"
 #include "Point2D.hpp"
 #include "Point3D.hpp"
+#include "Pinhole.hpp"
+#include "PinholeRadTan.hpp"
+#include "KannalaBrandt8.hpp"
 
 
 using namespace std;
@@ -20,6 +21,8 @@ namespace NAV24 {
 #define PARAM_KEY_INTRINSICS "intrinsics"
 #define PARAM_KEY_DIST_TYPE "distType"
 #define PARAM_KEY_DIST_COEFS "distCoefs"
+#define PARAM_KEY_R "R"
+#define PARAM_KEY_P "P"
 
     Calibration::Calibration(const ParamPtr& pParams) {
         this->loadParams(pParams);
@@ -32,23 +35,15 @@ namespace NAV24 {
             return;
         }
 
+        vector<float> vParams;
+        vParams.reserve(10);
+
         // Load intrinsics
         auto pParamIntrinsics = find_param<ParamSeq<double>>(PARAM_KEY_INTRINSICS, pParams);
         if (pParamIntrinsics) {
             vector<double> vIntrinsics = pParamIntrinsics->getValue();
-            if (vIntrinsics.size() >= 4) {
-
-                fx = (float) vIntrinsics[0];
-                fy = (float) vIntrinsics[1];
-                cx = (float) vIntrinsics[2];
-                cy = (float) vIntrinsics[3];
-
-                K_ei << fx, 0.f, cx,
-                        0.f, fy, cy,
-                        0.f, 0.f, 1.f;
-
-                Eigen::Matrix<double, 3, 3> convK(K_ei.cast<double>());
-                K_cv = Converter::toCvMat(convK);
+            for (const auto& v : vIntrinsics) {
+                vParams.push_back((float)v);
             }
         }
 
@@ -61,13 +56,40 @@ namespace NAV24 {
         auto pParamDistCoefs = find_param<ParamSeq<double>>(PARAM_KEY_DIST_COEFS, pParams);
         if (pParamDistCoefs) {
             vector<double> vDistCoefs = pParamDistCoefs->getValue();
-            D_cv = cv::Mat((int) vDistCoefs.size(), 1, CV_64FC1);
-            int i = 0;
-            for (const auto& d : vDistCoefs) {
-                D.push_back(d);
-                D_cv.at<double>(i, 0) = d;
-                i++;
+            for (const auto& v : vDistCoefs) {
+                vParams.push_back((float)v);
             }
+        }
+
+        // Rectification Matrix
+        auto pParamR = find_param<ParamType<cv::Mat>>(PARAM_KEY_R, pParams);
+        cv::Mat R;
+        if (pParamR) {
+            R = pParamR->getValue();
+        }
+
+        // Projection Matrix
+        auto pParamP = find_param<ParamType<cv::Mat>>(PARAM_KEY_P, pParams);
+        cv::Mat P;
+        if (pParamP) {
+            P = pParamP->getValue();
+        }
+
+        if (distType == "radial-tangential") {
+            mpCamModel = make_shared<PinholeRadTan>(vParams);
+        }
+        else if (distType == "kannala-brandt8") {
+            mpCamModel = make_shared<KannalaBrandt8>(vParams);
+        }
+        else {
+            // no distortion
+            mpCamModel = make_shared<Pinhole>(vParams);
+        }
+        if (!R.empty()) {
+            mpCamModel->setRectificationMat(R);
+        }
+        if (!P.empty()) {
+            mpCamModel->setProjectionMat(P);
         }
     }
 
@@ -75,9 +97,9 @@ namespace NAV24 {
 
         ostringstream oss;
 
-        oss << prefix << "K: " << K_cv << "\n";
+        oss << prefix << "K: " << getK_cv() << "\n";
         oss << prefix << "Distortion Type: " << distType << "\n";
-        oss << prefix << "D: " << Converter::toString(D) << "\n";
+        oss << prefix << "D: " << getD_cv() << "\n";
 
         return oss.str();
     }
@@ -110,71 +132,104 @@ namespace NAV24 {
     }
 
 
-    OB::obsPtr Calibration::undistort(const OB::obsPtr &pObs) {
+    OB::ObsPtr Calibration::undistort(const OB::ObsPtr &pObs) {
 
-        OB::obsPtr pObsOut = nullptr;
+        OB::ObsPtr pObsOut = pObs;
 
         if (dynamic_pointer_cast<OB::Point2D>(pObs)) {
             auto pObsIn = dynamic_pointer_cast<OB::Point2D>(pObs);
-            cv::Mat ptOrig(1, 2, CV_32FC1), ptUndist(1, 2, CV_32FC1);
-            ptOrig.at<float>(0, 0) = pObsIn->x;
-            ptOrig.at<float>(0, 1) = pObsIn->y;
-            // todo: distortion might be more complex
-            // todo: this won't work for older versions of opencv
-            cv::undistortPoints(ptOrig, ptUndist, K_cv, D_cv);
-
-            pObsOut = make_shared<OB::Point2D>(ptUndist.at<float>(0, 0), ptUndist.at<float>(0, 1));
+            cv::KeyPoint kpt;
+            kpt.pt = pObsIn->getPoint();
+            auto vpUndist = mpCamModel->UndistortKeyPoints({kpt});
+            pObsIn->setPointUd(vpUndist[0].pt);
+            pObsIn->updateDistorted(true);
         }
 
         return pObsOut;
     }
 
-    OB::obsPtr Calibration::distort(const OB::obsPtr &pObs) {
+    OB::ObsPtr Calibration::distort(const OB::ObsPtr &pObs) {
 
         // todo: implement distort
         return pObs;
     }
 
-    WO::woPtr Calibration::unproject(const OB::obsPtr& pt2d) {
+    WO::WoPtr Calibration::unproject(const OB::ObsPtr& pt2d) {
 
-        WO::woPtr pWobj = nullptr;
+        WO::WoPtr pWobj;
+        cv::Point2f kpt;
 
         if (dynamic_pointer_cast<OB::Point2D>(pt2d)) {
-            auto pObs = dynamic_pointer_cast<OB::Point2D>(pt2d);
-            Eigen::Vector3f pt3d, Pt3d;
-            pt3d << pObs->x, pObs->y, 1.f;
-            Pt3d = K_ei.inverse() * pt3d;
-            pWobj = make_shared<WO::Point3D>(Pt3d.x(), Pt3d.y(), Pt3d.z());
+            auto pObsIn = dynamic_pointer_cast<OB::Point2D>(pt2d);
+            kpt = pObsIn->getPoint();
         }
 
+        auto Pt3d = mpCamModel->unproject(kpt);
+
+        pWobj = make_shared<WO::Point3D>(Pt3d.x, Pt3d.y, Pt3d.z);
         return pWobj;
     }
 
-    OB::obsPtr Calibration::project(const WO::woPtr& pt3d) {
+    OB::ObsPtr Calibration::project(const WO::WoPtr& pt3d) {
 
-        OB::obsPtr pObs = nullptr;
-
-        vector<cv::Point2d> ptsOut;
-        vector<cv::Point3d> ptsTemp;
-        cv::Mat rtemp, ttemp;
-        rtemp.create( 3, 1, CV_32F );
-        rtemp.setTo( 0 );
-        rtemp.copyTo( ttemp );
+        OB::ObsPtr pObs = nullptr;
 
         if (dynamic_pointer_cast<WO::Point3D>(pt3d)) {
             auto pWo = dynamic_pointer_cast<WO::Point3D>(pt3d);
 
-            ptsTemp = {pWo->getPoint()};
-            projectPoints(ptsTemp, rtemp, ttemp, K_cv, D_cv, ptsOut);
-            pObs = make_shared<OB::Point2D>(ptsOut[0].x, ptsOut[0].y);
-
-//            Eigen::Vector3f Pt3d;
-//            Pt3d << pt3d.x, pt3d.y, pt3d.z;
-//            Pt3d /= Pt3d[2];
-//            Eigen::Vector3f projPt = K_ei * Pt3d;
+            auto pt2d = mpCamModel->project(pWo->getPoint());
+            pObs = make_shared<OB::Point2D>(pt2d.x, pt2d.y);
         }
 
         return pObs;
+    }
+
+    std::vector<OB::ObsPtr> Calibration::undistort(const vector <OB::ObsPtr> &vpObs) {
+
+        vector<OB::ObsPtr> vpObsOut(vpObs.size());
+        for (int i = 0; i < vpObs.size(); i++) {
+            vpObsOut[i] = undistort(vpObs[i]);
+        }
+        return vpObsOut;
+    }
+
+    std::vector<float> Calibration::computeImageBounds(const cv::Mat &image) {
+
+        vector<float> res(4);
+
+        if(!this->isCalibrated()) {
+
+            vector<OB::ObsPtr> vpImageCorners;
+            vpImageCorners.push_back(make_shared<OB::Point2D>(0.f, 0.f));
+            vpImageCorners.push_back(make_shared<OB::Point2D>(image.cols, 0.f));
+            vpImageCorners.push_back(make_shared<OB::Point2D>(0.f, image.rows));
+            vpImageCorners.push_back(make_shared<OB::Point2D>(image.cols, image.rows));
+
+            vpImageCorners = this->undistort(vpImageCorners);
+
+            vector<float> vCoords;
+            vCoords.reserve(8);
+            for (const auto& pImageCorner : vpImageCorners) {
+                auto point = dynamic_pointer_cast<OB::Point2D>(pImageCorner)->getPointUd();
+                vCoords.push_back(point.x);
+                vCoords.push_back(point.y);
+            }
+
+            res[0] = min(vCoords[0], vCoords[4]);
+            res[1] = max(vCoords[2], vCoords[6]);
+            res[2] = min(vCoords[1], vCoords[3]);
+            res[3] = max(vCoords[5], vCoords[7]);
+        }
+        else {
+            res = {0.f, (float)image.cols, 0.f, (float)image.rows};
+        }
+
+        return res;
+    }
+
+    bool Calibration::isCalibrated() {
+
+        return distType != "radial-tangential" && distType != "kannala-brandt8";
     }
 
 

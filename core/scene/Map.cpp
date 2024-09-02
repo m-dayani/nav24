@@ -9,7 +9,7 @@
 namespace NAV24 {
     Map::Map(std::string mapName) : mName(std::move(mapName)), mvpWorldObjects() {}
 
-    void Map::addWorldObject(const WO::woPtr &pWorldObj) {
+    void Map::addWorldObject(const WO::WoPtr &pWorldObj) {
         mvpWorldObjects.push_back(pWorldObj);
     }
 } // NAV24

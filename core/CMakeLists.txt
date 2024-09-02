@@ -8,11 +8,7 @@ project(nav_core)
 find_package(Eigen3 3.1.0 REQUIRED)
 
 find_package(OpenCV 4.2.0 REQUIRED)
-MESSAGE("-- OpenCV Version: ${OpenCV_VERSION}")
 
-#set(Boost_USE_STATIC_LIBS OFF)
-#set(Boost_USE_MULTITHREADED ON)
-#set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 find_package(glog REQUIRED)

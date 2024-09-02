@@ -267,7 +267,7 @@ namespace NAV24::FE {
         return Pw;
     }*/
 
-    void ObjTracking::sendCoords(const WO::woPtr &Pw) {
+    void ObjTracking::sendCoords(const WO::WoPtr &Pw) {
 
         auto pt3d = dynamic_pointer_cast<WO::Point3D>(Pw);
         stringstream locStr;
@@ -277,7 +277,7 @@ namespace NAV24::FE {
         mpChannel->publish(msgSerial);
     }
 
-    void ObjTracking::showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const WO::woPtr &Pw) {
+    void ObjTracking::showResults(const ImagePtr& pImg, const cv::Point2f& lastPoint, const WO::WoPtr &Pw) {
 
         if (pImg && dynamic_pointer_cast<ImageTs>(pImg)) {
 
@@ -298,7 +298,7 @@ namespace NAV24::FE {
                                                         Output::TOPIC);
             mpChannel->publish(msgImShow);
 
-            auto msgShowPw = make_shared<MsgType<WO::woPtr>>(ID_TP_OUTPUT, Pw, Output::TOPIC);
+            auto msgShowPw = make_shared<MsgType<WO::WoPtr>>(ID_TP_OUTPUT, Pw, Output::TOPIC);
             mpChannel->publish(msgShowPw);
         }
     }
@@ -422,12 +422,12 @@ namespace NAV24::FE {
         auto pt3d = dynamic_pointer_cast<WO::Point3D>(pWo);
         auto ptcv = pt3d->getPoint();
         pWo = make_shared<WO::Point3D>(ptcv.x/ptcv.z, ptcv.y/ptcv.z, 1);
-        vector<WO::woPtr> vpPts3D = {pWo};
+        vector<WO::WoPtr> vpPts3D = {pWo};
 
         pWo->setObservation(pObs);
         pObs->setWorldObject(pWo);
 
-        auto msgAddMapPts = make_shared<MsgType<vector<WO::woPtr>>>(ID_CH_ATLAS, vpPts3D,
+        auto msgAddMapPts = make_shared<MsgType<vector<WO::WoPtr>>>(ID_CH_ATLAS, vpPts3D,
                                                                     Atlas::TOPIC, FCN_MAP_ADD_WO, mMapName);
         mpChannel->send(msgAddMapPts);
 

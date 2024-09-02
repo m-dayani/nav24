@@ -9,8 +9,11 @@
 #include <memory>
 #include <queue>
 #include <set>
-#include <pangolin/pangolin.h>
+
 #include <Eigen/Dense>
+#ifdef LIB_PANGOLIN_FOUND
+#include <pangolin/pangolin.h>
+#endif
 
 #include "Output.hpp"
 #include "Frame.hpp"
@@ -36,7 +39,7 @@ namespace NAV24 {
         void run() override;
 
         void drawPose(const PosePtr& pPose) const;
-        void drawWorldObject(const WO::woPtr &pWo) const;
+        void drawWorldObject(const WO::WoPtr &pWo) const;
         void drawTrajectory(const std::vector<FramePtr>& vpFrame);
 
     private:
@@ -55,7 +58,7 @@ namespace NAV24 {
         std::mutex mMtxPoseQueue;
         std::set<PosePtr> mspPose;
         std::mutex mMtxWoQueue;
-        std::set<WO::woPtr> mspWorldObjects;
+        std::set<WO::WoPtr> mspWorldObjects;
     };
 } // NAV24
 

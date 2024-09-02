@@ -42,7 +42,7 @@ namespace NAV24 {
     void Atlas::addWorldObjects(const MsgPtr &msg) {
 
         if (msg) {
-            auto msgData = dynamic_pointer_cast<MsgType<vector<WO::woPtr>>>(msg);
+            auto msgData = dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg);
             if (msgData) {
                 string mapName = msg->getMessage();
                 if (mapName.empty()) {

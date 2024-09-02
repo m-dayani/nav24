@@ -17,11 +17,11 @@ namespace NAV24 {
     public:
         explicit Map(std::string  mapName);
 
-        void addWorldObject(const WO::woPtr& pWorldObj);
+        void addWorldObject(const WO::WoPtr& pWorldObj);
 
     protected:
         std::string mName;
-        std::vector<WO::woPtr> mvpWorldObjects;
+        std::vector<WO::WoPtr> mvpWorldObjects;
     };
     typedef std::shared_ptr<Map> MapPtr;
 

@@ -2,6 +2,7 @@
 #include "TabularTextDS.hpp"
 
 #include <utility>
+#include <boost/algorithm/string.hpp>
 
 #include "Parameter.hpp"
 
@@ -23,6 +24,27 @@ namespace NAV24 {
             mDelim(std::move(delim)), mSortFiles(sortFiles) {
 
         this->resolveFilePaths(baseDir, fileName);
+    }
+
+
+    // trim from start (in place)
+    inline void ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }));
+    }
+
+    // trim from end (in place)
+    inline void rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+    }
+
+    // trim from both ends (in place)
+    inline void trim(std::string &s) {
+        rtrim(s);
+        ltrim(s);
     }
 
     void TabularTextDS::openFile()
@@ -156,6 +178,9 @@ namespace NAV24 {
 
             if (checkExtension(fullPath, mExt)) {
                 mLoadState = LoadState::READY;
+                if (mExt == ".csv") {
+                    mDelim = ",";
+                }
             }
             else {
                 mLoadState = LoadState::BAD_PATH;
@@ -185,6 +210,8 @@ namespace NAV24 {
         getline(this->mTxtDataFile, line);
         this->mnCurrByteIdx += line.length();
 
+//        trim(line);
+        boost::trim(line);
         if (line.empty()) {
             DLOG(INFO) << "TabularTextDS::getNextData, line is empty\n";
             return 0;
