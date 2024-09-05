@@ -80,7 +80,7 @@ namespace NAV24::OP {
         vector<OB::ObsPtr> vpObs(nPoints);
         for (int i = 0; i < nPoints; i++) {
             auto pObs = make_shared<OB::KeyPoint2D>(keyPoints[i], descriptors.row(i).clone());
-            pObs->setFrameId(pFrame->getId());
+            pObs->setFrame(pFrame);
             vpObs[i] = pObs;
         }
         pFrame->setObservations(vpObs);

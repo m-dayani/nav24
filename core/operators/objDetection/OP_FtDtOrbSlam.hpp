@@ -54,6 +54,8 @@ namespace NAV24::OP {
             return mvInvLevelSigma2;
         }
 
+        void setNumFeatures(const int nFt) override;
+
     protected:
         void ComputePyramid(cv::Mat image);
         void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint>>& allKeypoints);

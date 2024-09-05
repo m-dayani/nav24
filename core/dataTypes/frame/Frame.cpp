@@ -13,7 +13,7 @@ namespace NAV24 {
     long Frame::idCounter;
 
     Frame::Frame(double _ts, PosePtr pose, const std::vector<OB::ObsPtr> &vObs) :
-        ts(_ts), mpPose(std::move(pose)), mvpObservations(vObs), mId(idCounter++) {}
+        ts(_ts), mpPose(std::move(pose)), mvpObservations(vObs), mId(idCounter++), mOptId(0) {}
 
     const std::vector<OB::ObsPtr> &Frame::getObservations() const {
         return mvpObservations;
@@ -41,6 +41,12 @@ namespace NAV24 {
     FrameImgMono::FrameImgMono(double _ts, const PosePtr &pose, const std::vector<OB::ObsPtr> &vObs,
                                const ImagePtr &pImage) : FrameImgMono(_ts, pose, vObs) {
         mpImage = pImage;
+    }
+
+    void FrameImgMono::deleteCvImage() {
+        if (mpImage) {
+            mpImage->mImage = cv::Mat();
+        }
     }
 
     void FrameMonoGrid::setObservations(const std::vector<OB::ObsPtr> &vpObservations) {

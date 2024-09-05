@@ -23,7 +23,7 @@ std::vector<cv::Mat> Converter::toDescriptorVector(const cv::Mat &Descriptors)
     return vDesc;
 }
 
-/*g2o::SE3Quat Converter::toSE3Quat(const cv::Mat &cvT)
+g2o::SE3Quat Converter::toSE3Quat(const cv::Mat &cvT)
 {
     Eigen::Matrix<double,3,3> R;
     R << cvT.at<float>(0,0), cvT.at<float>(0,1), cvT.at<float>(0,2),
@@ -47,7 +47,7 @@ cv::Mat Converter::toCvMat(const g2o::Sim3 &Sim3)
     Eigen::Vector3d eigt = Sim3.translation();
     double s = Sim3.scale();
     return toCvSE3(s*eigR,eigt);
-}*/
+}
 
 cv::Mat Converter::toCvMat(const Eigen::Matrix<double,4,4> &m)
 {
@@ -257,7 +257,7 @@ cv::Mat Converter::getCurrTcw(const cv::Mat &Tc0w, const cv::Mat &Tcc0) {
 }
 
 // TODO: This seem to be mathematically wrong
-/*g2o::SE3Quat Converter::interpTcw(const g2o::SE3Quat &Tcw0, const g2o::SE3Quat &Tcw1, const double dTs0, const double dTs) {
+g2o::SE3Quat Converter::interpTcw(const g2o::SE3Quat &Tcw0, const g2o::SE3Quat &Tcw1, const double dTs0, const double dTs) {
 
     g2o::SE3Quat Tcwi;
     const double s = dTs0 / dTs;
@@ -266,7 +266,7 @@ cv::Mat Converter::getCurrTcw(const cv::Mat &Tc0w, const cv::Mat &Tcc0) {
     Tcwi.setTranslation(Tcw0.translation() * (1-s) + Tcw1.translation() * s);
 
     return Tcwi;
-}*/
+}
 
 /* ================================================================================================================== */
 // PoseSE3 to string
@@ -286,7 +286,7 @@ std::string Converter::toString(const cv::Mat& pose, const std::string& prefix) 
     return oss.str();
 }
 
-/*std::string Converter::toString(const g2o::SE3Quat& pose, const std::string& prefix) {
+std::string Converter::toString(const g2o::SE3Quat& pose, const std::string& prefix) {
 
     return toString(toCvMat(pose), prefix);
 }
@@ -297,7 +297,7 @@ std::string Converter::toString(const g2o::Sim3& pose, const std::string& prefix
     oss << toString(g2o::SE3Quat(pose.rotation(), pose.translation()), prefix);
     oss << prefix << ", s = " << pose.scale() << endl;
     return oss.str();
-}*/
+}
 
 std::string Converter::toString(const Eigen::MatrixXd& pose, const std::string& prefix) {
 
@@ -355,7 +355,7 @@ std::string Converter::toStringQuat(const cv::Mat &pose, const std::string& pref
     return oss.str();
 }
 
-/*std::string Converter::toStringQuat(const g2o::SE3Quat& pose, const std::string& prefix) {
+std::string Converter::toStringQuat(const g2o::SE3Quat& pose, const std::string& prefix) {
 
     ostringstream oss;
     oss << prefix << "[" << pose.translation().x() << ", " << pose.translation().y() << ", "
@@ -371,7 +371,7 @@ std::string Converter::toStringQuat(const g2o::Sim3& pose, const std::string& pr
     oss << toStringQuat(g2o::SE3Quat(pose.rotation(), pose.translation()), prefix);
     oss << prefix << ", scale = " << pose.scale() << endl;
     return oss.str();
-}*/
+}
 
     std::string Converter::toString(const std::vector<double> &vData, const std::string& prefix) {
 
@@ -415,4 +415,4 @@ std::string Converter::toStringQuat(const g2o::Sim3& pose, const std::string& pr
         return P_t_euler;
     }
 
-} //namespace ORB_SLAM
+} //namespace NAV24

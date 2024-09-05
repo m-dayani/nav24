@@ -23,6 +23,8 @@ set(OBJ_DET_DIR ${OPERATORS_DIR}/objDetection)
 list(APPEND LIST_INCLUDE_DIRS ${OBJ_DET_DIR})
 set(OBJ_ASSOC_DIR ${OPERATORS_DIR}/objAssoc)
 list(APPEND LIST_INCLUDE_DIRS ${OBJ_ASSOC_DIR})
+set(MAP_INIT_DIR ${OPERATORS_DIR}/mapInit)
+list(APPEND LIST_INCLUDE_DIRS ${MAP_INIT_DIR})
 
 set(TRAJECTORY_DIR trajectory)
 list(APPEND LIST_INCLUDE_DIRS ${TRAJECTORY_DIR})
@@ -45,6 +47,8 @@ set(DATA_TYPES_DIR dataTypes)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_TYPES_DIR})
 set(FRAME_DIR ${DATA_TYPES_DIR}/frame)
 list(APPEND LIST_INCLUDE_DIRS ${FRAME_DIR})
+set(OPTIM_DT_DIR ${DATA_TYPES_DIR}/optimization)
+list(APPEND LIST_INCLUDE_DIRS ${OPTIM_DT_DIR})
 
 set(UTILS_DIR tools)
 list(APPEND LIST_INCLUDE_DIRS ${UTILS_DIR})
@@ -96,6 +100,7 @@ set(ALL_H_FILES
         ${BACKEND_DIR}/BackEnd.hpp
         ${BACKEND_DIR}/Problem.hpp
         ${BACKEND_DIR}/BE_CalibCamCv.hpp
+        ${BACKEND_DIR}/BE_GraphOptim.hpp
         ${OBSERVATIONS_DIR}/Observation.hpp
         ${OBSERVATIONS_DIR}/Point2D.hpp
         ${OBSERVATIONS_DIR}/MatchedFeatures.hpp
@@ -107,6 +112,8 @@ set(ALL_H_FILES
         ${FRONTEND_DIR}/FE_ObjTracking.hpp
         ${FRONTEND_DIR}/FE_SlamMonoV.hpp
         ${OPERATORS_DIR}/Operator.hpp
+        ${MAP_INIT_DIR}/OP_MapInitialization.hpp
+        ${MAP_INIT_DIR}/OP_2ViewReconstruction.hpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.hpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.hpp
         ${OBJ_DET_DIR}/OP_FtDt.hpp
@@ -120,6 +127,8 @@ set(ALL_H_FILES
         ${TRAJECTORY_DIR}/TrajManager.hpp
         ${FRAME_DIR}/Frame.hpp
         ${DATA_TYPES_DIR}/SmartObject.hpp
+        ${OPTIM_DT_DIR}/OptimizableTypes.hpp
+#        ${OPTIM_DT_DIR}/G2oTypes.h
         ${OUTPUT_DIR}/Output.hpp
         ${OUTPUT_DIR}/Serial.hpp
         ${OUTPUT_DIR}/ImageViewer.hpp
@@ -151,6 +160,7 @@ set(ALL_SRC_FILES
         ${BACKEND_DIR}/BackEnd.cpp
         ${BACKEND_DIR}/Problem.cpp
         ${BACKEND_DIR}/BE_CalibCamCv.cpp
+        ${BACKEND_DIR}/BE_GraphOptim.cpp
         ${OBSERVATIONS_DIR}/Observation.cpp
         ${OBSERVATIONS_DIR}/Point2D.cpp
         ${OBSERVATIONS_DIR}/MatchedFeatures.cpp
@@ -162,6 +172,8 @@ set(ALL_SRC_FILES
         ${FRONTEND_DIR}/FE_ObjTracking.cpp
         ${FRONTEND_DIR}/FE_SlamMonoV.cpp
         ${OPERATORS_DIR}/Operator.cpp
+        ${MAP_INIT_DIR}/OP_MapInitialization.cpp
+        ${MAP_INIT_DIR}/OP_2ViewReconstruction.cpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.cpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.cpp
         ${OBJ_DET_DIR}/OP_FtDt.cpp
@@ -175,6 +187,8 @@ set(ALL_SRC_FILES
         ${TRAJECTORY_DIR}/TrajManager.cpp
         ${FRAME_DIR}/Frame.cpp
         ${DATA_TYPES_DIR}/SmartObject.cpp
+        ${OPTIM_DT_DIR}/OptimizableTypes.cpp
+#        ${OPTIM_DT_DIR}/G2oTypes.cc
         ${OUTPUT_DIR}/Output.cpp
         ${OUTPUT_DIR}/Serial.cpp
         ${OUTPUT_DIR}/ImageViewer.cpp

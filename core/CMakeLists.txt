@@ -16,7 +16,8 @@ find_package(glog REQUIRED)
 # Optional Packages
 
 #find_package(Ceres)
-#find_package(g2o)
+find_package(g2o)
+find_package(DBoW2)
 
 if (USE_PANGOLIN)
     find_package(Pangolin)
@@ -61,6 +62,7 @@ include_directories(
         ${Python_INCLUDE_DIRS}
         ${onnxruntime_INCLUDE_DIRS}
         ${Pangolin_INCLUDE_DIRS}
+        ${DBoW2_INCLUDE_DIRS}
 #        ${CERES_INCLUDE_DIRS}
 )
 
@@ -96,12 +98,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         glog::glog
         -lboost_system
         -lboost_filesystem
+        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
+        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
 #        ${EIGEN3_LIBS}
 #        -lboost_serialization
 #        -lcrypto
 #        ${CERES_LIBRARIES}
-#        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
-#        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
 )
 
 install(TARGETS ${PROJECT_NAME}

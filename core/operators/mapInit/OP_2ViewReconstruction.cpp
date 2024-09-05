@@ -18,15 +18,13 @@
 
 #include<thread>
 
-#include "TwoViewReconstruction.h"
+#include "OP_2ViewReconstruction.hpp"
 
-#include "Thirdparty/DBoW2/DUtils/Random.h"
-
+#include "../thirdparty/DBoW2/DUtils/Random.h"
 
 using namespace std;
 
-namespace ORB_SLAM3
-{
+namespace NAV24::OP {
 
 std::string ReconstInfo::print() const {
 
@@ -39,6 +37,8 @@ std::string ReconstInfo::print() const {
         oss << val << ((val == mvnGood.size()-1) ? "}" : ", ");
     }
     oss << endl;
+
+    return oss.str();
 }
 
 TwoViewReconstruction::TwoViewReconstruction(const cv::Mat& K, float sigma, int iterations)
@@ -1373,4 +1373,4 @@ void TwoViewReconstruction::DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R
         R2=-R2;
 }
 
-} //namespace ORB_SLAM
+} //namespace NAV24::OP

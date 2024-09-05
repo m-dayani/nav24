@@ -23,7 +23,9 @@
 
 #include <unordered_set>
 
-namespace ORB_SLAM3 {
+//#include "Operator.hpp"
+
+namespace NAV24::OP {
 
 #define DEF_TH_HF_RATIO 0.45f
 #define DEF_MIN_PARALLAX 1.0f
@@ -79,8 +81,8 @@ struct ReconstInfo {
     std::string print() const;
 };
 
-class TwoViewReconstruction
-{
+class TwoViewReconstruction {
+
     typedef std::pair<int,int> Match;
 
 public:
@@ -176,6 +178,6 @@ private:
     std::vector<std::vector<size_t> > mvSets;
 };
 
-} //namespace ORB_SLAM
+} //namespace NAV24::OP
 
 #endif // TwoViewReconstruction_H

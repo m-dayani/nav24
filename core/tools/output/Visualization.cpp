@@ -103,7 +103,7 @@ namespace NAV24 {
                     cv::Scalar(0, cInt, 0), 2);
     }
 
-    void Visualization::drawKeyPoints(cv::Mat &image, const FramePtr &pFrame) {
+    void Visualization::drawKeyPoints(cv::Mat &image, const FramePtr &pFrame, const bool drawDistorted) {
 
         if (!pFrame) {
             return;
@@ -125,7 +125,7 @@ namespace NAV24 {
                     cv::Point2i pti((int)kpt.x, (int)kpt.y);
                     cv::drawMarker(image, pti, cv::Scalar(0, 0, 255),
                                    cv::MARKER_CROSS, 8);
-                    if (pKeyPoint->isDistorted()) {
+                    if (drawDistorted && pKeyPoint->isDistorted()) {
                         kpt = pKeyPoint->getPointUd();
                         cv::Point2i pti2 = cv::Point2i((int)kpt.x, (int)kpt.y);
                         cv::drawMarker(image, pti2, cv::Scalar(0, 255, 0),

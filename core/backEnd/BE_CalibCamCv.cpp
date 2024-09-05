@@ -71,6 +71,6 @@ namespace NAV24::BE {
             vFrames[i]->setPose(pPose);
         }
 
-        prob->solved = true;
+        prob->setSolved(true);
     }
 } // NAV24::BE

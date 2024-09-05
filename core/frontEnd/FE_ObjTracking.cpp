@@ -424,7 +424,7 @@ namespace NAV24::FE {
         pWo = make_shared<WO::Point3D>(ptcv.x/ptcv.z, ptcv.y/ptcv.z, 1);
         vector<WO::WoPtr> vpPts3D = {pWo};
 
-        pWo->setObservation(pObs);
+        pWo->addObservation(pObs);
         pObs->setWorldObject(pWo);
 
         auto msgAddMapPts = make_shared<MsgType<vector<WO::WoPtr>>>(ID_CH_ATLAS, vpPts3D,

@@ -15,10 +15,36 @@ namespace NAV24 {
 
     class Problem {
     public:
+        Problem() : solved(false), mMtxSolved(), nIterations(5), thConverge(0.1f) {}
 
-        bool solved = false;
+        [[nodiscard]] virtual bool isSolved() const { return solved; }
+        virtual void setSolved(const bool state) {
+            mMtxSolved.lock();
+            solved = state;
+            mMtxSolved.unlock();
+        }
+
+        [[nodiscard]] int getNumIter() const { return nIterations; }
+        void setNumIter(const int numIter) { nIterations = numIter; }
+
+        [[nodiscard]] float getThConverge() const { return thConverge; }
+        void setThConverge(const float thConv) { thConverge = thConv; }
+
+    protected:
+        bool solved;
+        std::mutex mMtxSolved;
+        int nIterations;
+        float thConverge;
     };
     typedef std::shared_ptr<Problem> ProblemPtr;
+
+    class PR_VBA : public Problem {
+    public:
+        PR_VBA(const std::vector<FramePtr>& vpFrames, const CalibPtr& pCalib) : mvpFrames(vpFrames), mpCalib(pCalib) {}
+        std::vector<FramePtr> mvpFrames;
+        CalibPtr mpCalib;
+        bool mbRobust = false;
+    };
 
     class PR_CamCalibCV : public Problem {
     public:

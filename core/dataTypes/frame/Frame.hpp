@@ -13,9 +13,9 @@
 
 namespace NAV24 {
 
-    class Frame {
+    class Frame : public SmartObject {
     public:
-        Frame() : ts(-1.0), mpPose(nullptr), mvpObservations(), mId(idCounter++) {}
+        Frame() : ts(-1.0), mpPose(nullptr), mvpObservations(), mId(idCounter++), mOptId(0) {}
         Frame(double _ts, PosePtr  pose, const std::vector<OB::ObsPtr>& vObs);
 
         [[nodiscard]] const std::vector<OB::ObsPtr> &getObservations() const;
@@ -29,12 +29,16 @@ namespace NAV24 {
 
         [[nodiscard]] long getId() const { return mId; }
 
+        [[nodiscard]] unsigned long getOptId() const { return mOptId; }
+        void setOptId(const unsigned long &optId) { mOptId = optId; }
+
     protected:
         std::vector<OB::ObsPtr> mvpObservations;
         PosePtr mpPose;
         double ts;
         const long mId;
         static long idCounter;
+        unsigned long mOptId;
     };
     typedef std::shared_ptr<Frame> FramePtr;
 
@@ -45,6 +49,7 @@ namespace NAV24 {
 
         ImagePtr getImage() { return mpImage; }
         void setImage(const ImagePtr& pImg) { mpImage = pImg; }
+        void deleteCvImage();
     protected:
         ImagePtr mpImage;
     };

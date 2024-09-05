@@ -23,7 +23,7 @@ namespace NAV24 {
 //        static void drawGrid(cv::Mat& img, const cv::Mat& K, const cv::Mat& D,
 //                             const PosePtr& pPose_cw, int nx, int ny, float scale);
 
-        static void drawKeyPoints(cv::Mat& img, const FramePtr& pFrame);
+        static void drawKeyPoints(cv::Mat& img, const FramePtr& pFrame, bool drawDistorted = false);
 
         static void drawMatchedTracks(cv::Mat& img, const OB::FtTracksPtr& pTracks);
 

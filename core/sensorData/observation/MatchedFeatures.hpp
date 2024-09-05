@@ -15,6 +15,7 @@
 namespace NAV24::OB {
 
     // Data structures for efficient observation manipulation
+    // The first two classes are two unstable and inefficient
 
     class MatchedFeatures {
     public:
@@ -26,11 +27,18 @@ namespace NAV24::OB {
 
         std::vector<ObsPtr> getAllFeatures() { return mvpMatches; }
 
+        std::size_t size() { return mspMatches.size(); }
+        long minFrame() { return *(msFrameIds.begin()); }
+        long maxFrame() { return *(msFrameIds.rbegin()); }
+
+        ObsPtr findObsByFrameId(const long& frameId);
+
     protected:
         long mId;
         static long idCounter;
         std::set<ObsPtr> mspMatches;
         std::vector<ObsPtr> mvpMatches;
+        std::set<long> msFrameIds;
     };
     typedef std::shared_ptr<MatchedFeatures> MatchedFtPtr;
 
@@ -41,12 +49,20 @@ namespace NAV24::OB {
 
         void addMatch(const ObsPtr& pObs, const ObsPtr& pMatch);
 
-        std::size_t getNumTracks() { return mmTracks.size(); }
+//        std::size_t getNumTracks() { return mmTracks.size(); }
 
         std::map<long, MatchedFtPtr> getAllTracks() { return mmTracks; }
 
+        bool findGoodFramesMapInit(int thNumTracks, int thNumMch, long& firstFrame, long& secondFrame);
+
+        std::vector<std::pair<ObsPtr, ObsPtr>> getMatches(long frame1, long frame2);
+
+        void cleanTracks(int lastFrameDist=3);
+        void refreshAll();
+
     protected:
         void addFeatureToFrames(const ObsPtr& pObs);
+        void removeTrack(const long& trackId);
 
     protected:
         std::map<long, MatchedFtPtr> mmTracks;
@@ -54,6 +70,16 @@ namespace NAV24::OB {
         std::map<long, std::set<ObsPtr>> mmFrameMatches;
     };
     typedef std::shared_ptr<FeatureTracks> FtTracksPtr;
+
+
+    class MatchedObs {
+    public:
+        MatchedObs() : mnMatches(0), mvMatches12() {}
+
+        int mnMatches;
+        FramePtrW mpMatchedFrame;
+        std::vector<int> mvMatches12;
+    };
 
 } // NAV24::OB
 

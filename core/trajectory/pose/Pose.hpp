@@ -14,6 +14,11 @@
 
 
 namespace NAV24 {
+
+//    class Frame;
+//    typedef std::shared_ptr<Frame> FramePtr;
+//    typedef std::weak_ptr<Frame> FramePtrW;
+
     namespace TF {
 
         class Transformation : public SensorData {
@@ -36,7 +41,12 @@ namespace NAV24 {
 
             [[nodiscard]] double getOffset() const { return offset; }
 
+//            FramePtr getFrame() { return mpFrame.lock(); }
+//            void setFrame(const FramePtr& pFrame) { mpFrame = pFrame; }
+
         protected:
+//            FramePtrW mpFrame;
+
             std::string ref;
             std::string target;
             std::string key;

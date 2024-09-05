@@ -232,5 +232,19 @@ namespace NAV24 {
         return distType != "radial-tangential" && distType != "kannala-brandt8";
     }
 
+    Eigen::Vector2d Calibration::project(const Eigen::Vector3d &pt3d) {
+        if (mpCamModel) {
+            return mpCamModel->project(pt3d);
+        }
+        return Eigen::Vector2d();
+    }
+
+    Eigen::Matrix<double, 2, 3> Calibration::projectJac(const Eigen::Vector3d &pt3d) {
+        if (mpCamModel) {
+            return mpCamModel->projectJac(pt3d);
+        }
+        return Eigen::Matrix<double, 2, 3>();
+    }
+
 
 }   //NAV24

@@ -925,7 +925,7 @@ namespace NAV24::OP {
         vector<OB::ObsPtr> vpObservations(nkeypoints);
         for (int i = 0; i < nKeyPoints; i++) {
             auto pObs = make_shared<OB::KeyPoint2D>(_keypoints[i], descriptors.row(i));
-            pObs->setFrameId(pFrame->getId());
+            pObs->setFrame(pFrame);
             vpObservations[i] = pObs;
         }
         pFrame->setObservations(vpObservations);
@@ -957,5 +957,21 @@ namespace NAV24::OP {
             }
         }
 
+    }
+
+    void FtDtOrbSlam::setNumFeatures(const int nFt) {
+        FtDt::setNumFeatures(nFt);
+
+        float factor = 1.0f / scaleFactor;
+        float nDesiredFeaturesPerScale = mnFeatures * (1 - factor) / (1 - (float)pow((double)factor, (double)nlevels));
+
+        int sumFeatures = 0;
+        for( int level = 0; level < nlevels-1; level++ )
+        {
+            mnFeaturesPerLevel[level] = cvRound(nDesiredFeaturesPerScale);
+            sumFeatures += mnFeaturesPerLevel[level];
+            nDesiredFeaturesPerScale *= factor;
+        }
+        mnFeaturesPerLevel[nlevels-1] = std::max(mnFeatures - sumFeatures, 0);
     }
 } // NAV24::OP

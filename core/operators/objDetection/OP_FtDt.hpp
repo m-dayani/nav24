@@ -17,6 +17,8 @@ namespace NAV24::OP {
         static std::shared_ptr<FtDt> create(const ParamPtr& pParam, ChannelPtr& pChannel);
         virtual int detect(FramePtr& pFrame) = 0;
 
+        [[nodiscard]] int getNumFeatures() const { return mnFeatures; }
+        virtual void setNumFeatures(const int nFt) { mnFeatures = nFt; }
     protected:
         int mnFeatures;
     };

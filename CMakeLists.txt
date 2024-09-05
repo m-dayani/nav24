@@ -24,8 +24,8 @@ option(USE_PYTHON "Use python library to embed python in C++" OFF)
 option(USE_ONNX_RUNTIME "Use ONNX Runtime to enable deep learning in C++" OFF)
 
 # External dependencies
-#add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
-#add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
+add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
+add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
 if (USE_SERIAL)
 add_subdirectory(${PROJ_THIRDPARTY_PATH}/serial)
 endif()
@@ -33,7 +33,7 @@ endif()
 
 add_subdirectory(${PROJ_EXAMPLES_PATH})
 add_subdirectory(${PROJ_CORE_PATH})
-# WARNING: Always source ros setup before config.
+# WARNING: Always source ros setup before configuring this.
 #add_subdirectory(${PROJ_ROS_PATH})
 
 

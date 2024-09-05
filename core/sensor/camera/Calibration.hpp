@@ -30,6 +30,8 @@ namespace NAV24 {
 
         virtual WO::WoPtr unproject(const OB::ObsPtr& pt2d);
         virtual OB::ObsPtr project(const WO::WoPtr& pt3d);
+        virtual Eigen::Vector2d project(const Eigen::Vector3d& pt3d);
+        virtual Eigen::Matrix<double, 2, 3> projectJac(const Eigen::Vector3d& pt3d);
 
         cv::Mat getK_cv() { return mpCamModel->getK_cv(); }
         Eigen::Matrix3f getK_ei() { return mpCamModel->getK_ei(); }

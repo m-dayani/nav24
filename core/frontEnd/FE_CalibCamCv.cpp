@@ -191,7 +191,7 @@ namespace NAV24::FE {
         pProblem->mvpFrames = mvpFrames;
         pProblem->mvpWorldObjs = mvpPts3D;
         pProblem->mImgSize = mImageSize;
-        pProblem->solved = false;
+        pProblem->setSolved(false);
 
         // Solve the problem in the back-end
         // Normally you would send a problem message to a back-end
@@ -199,7 +199,7 @@ namespace NAV24::FE {
         solver->solve(pProblem);
 
         // Update the results
-        if (pProblem->solved) {
+        if (pProblem->isSolved()) {
 
             // Update calibration parameters: K, D
             auto pCalibParam = Calibration::getCalibParams(pProblem->mK, pProblem->mDistCoeffs,

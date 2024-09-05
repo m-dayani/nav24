@@ -7,11 +7,12 @@
 
 #include "FrontEnd.hpp"
 #include "Frame.hpp"
-#include "OP_FtDtOrbSlam.hpp"
 #include "MatchedFeatures.hpp"
 #include "FeatureGrid.hpp"
 #include "Calibration.hpp"
+#include "OP_FtDtOrbSlam.hpp"
 #include "OP_FtAssocOrbSlam.hpp"
+#include "OP_MapInitialization.hpp"
 
 
 namespace NAV24::FE {
@@ -34,6 +35,7 @@ namespace NAV24::FE {
 
     protected:
         bool mbInitialized;
+        bool mbMapInitialized;
 
         //std::string mTrType;
 
@@ -46,14 +48,19 @@ namespace NAV24::FE {
         FramePtr mpFirstFrame;
         FramePtr mpLastFrame;
         FramePtr mpCurrFrame;
+        std::map<long, FramePtr> mmpFrames;
+        std::vector<FramePtr> mvpKeyFrames;
+        std::vector<WO::WoPtr> mvpLocalMapPoints;
+        std::vector<FramePtr> mvpTrackedFrames;
 
         std::shared_ptr<OB::FeatureTracks> mpFtTracks;
-//        std::shared_ptr<OB::FeatureGrid> mpDummyGrid;
+        std::shared_ptr<OB::FeatureGrid> mpDummyGrid;
 
         CalibPtr mpCalib;
 
         std::shared_ptr<OP::FtDt> mpOrbDetector;
         std::shared_ptr<OP::FtAssoc> mpOrbMatcher;
+        std::shared_ptr<OP::MapInitializer> mpMapInit;
     };
 
 }
