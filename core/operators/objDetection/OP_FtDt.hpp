@@ -13,14 +13,19 @@
 namespace NAV24::OP {
     class FtDt : public Operator {
     public:
-        explicit FtDt(int nFt = 0) : mnFeatures(nFt) {}
+        explicit FtDt(int nFt) : mnFeatures(nFt), mnIniNumFts(nFt) {}
         static std::shared_ptr<FtDt> create(const ParamPtr& pParam, ChannelPtr& pChannel);
         virtual int detect(FramePtr& pFrame) = 0;
 
         [[nodiscard]] int getNumFeatures() const { return mnFeatures; }
+        void scaleNumFeatures(const float& scale) { this->setNumFeatures((int) (scale * mnIniNumFts)); }
+
+    protected:
         virtual void setNumFeatures(const int nFt) { mnFeatures = nFt; }
+
     protected:
         int mnFeatures;
+        const int mnIniNumFts;
     };
     typedef std::shared_ptr<FtDt> FtDtPtr;
 

@@ -48,10 +48,14 @@ namespace NAV24 {
         FrameImgMono(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs, const ImagePtr& pImage);
 
         ImagePtr getImage() { return mpImage; }
-        void setImage(const ImagePtr& pImg) { mpImage = pImg; }
+//        void setImage(const ImagePtr& pImg) { mpImage = pImg; }
         void deleteCvImage();
+
+        void setMatches(const OB::MatchedObsPtr& pMatches12) { mpMatches12 = pMatches12; }
+        OB::MatchedObsPtr getMatches() { return mpMatches12; }
     protected:
         ImagePtr mpImage;
+        OB::MatchedObsPtr mpMatches12;
     };
 
     class FrameMonoGrid : public FrameImgMono {

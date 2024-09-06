@@ -33,6 +33,8 @@ namespace NAV24::FE {
 
         void initOperators();
 
+        static void connectMatchedFrames(FramePtr& pFrame1, FramePtr& pFrame2);
+
     protected:
         bool mbInitialized;
         bool mbMapInitialized;

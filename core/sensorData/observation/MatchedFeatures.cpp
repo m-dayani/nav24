@@ -203,4 +203,28 @@ namespace NAV24::OB {
         mmTracks.clear();
         mmFrameMatches.clear();
     }
+
+    int MatchedObs::getNumMatches(const FramePtr &pFrame) {
+        if (pFrame && dynamic_pointer_cast<FrameImgMono>(pFrame)) {
+            auto pMatchedObs = dynamic_pointer_cast<FrameImgMono>(pFrame)->getMatches();
+            if (pMatchedObs) {
+                return pMatchedObs->mnMatches;
+            }
+        }
+        return 0;
+    }
+
+    void MatchedObs::getMatches(const FramePtr &pFrame, vector<int> &vMatches12, int &nMatches) {
+
+        if (!pFrame || !dynamic_pointer_cast<FrameImgMono>(pFrame)) {
+            return;
+        }
+        auto pImgFrame = dynamic_pointer_cast<FrameImgMono>(pFrame);
+        auto pMatches12 = pImgFrame->getMatches();
+        if (!pMatches12) {
+            return;
+        }
+        vMatches12 = pMatches12->mvMatches12;
+        nMatches = pMatches12->mnMatches;
+    }
 } // NAV24::OB

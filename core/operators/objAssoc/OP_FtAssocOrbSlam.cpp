@@ -88,7 +88,7 @@ namespace NAV24::OP {
         return dist;
     }
 
-    std::vector<int> FtAssocOrbSlam::match(const FramePtr &pFrame1, const FramePtr &pFrame2) {
+    std::vector<int> FtAssocOrbSlam::matchV(const FramePtr &pFrame1, const FramePtr &pFrame2) {
 
         int nmatches=0;
         auto vpObs1 = pFrame1->getObservations();
@@ -224,7 +224,7 @@ namespace NAV24::OP {
 
     int FtAssocOrbSlam::match(const FramePtr &pFrame1, const FramePtr &pFrame2, OB::FtTracksPtr &pTracks) {
 
-        vector<int> vMatches12 = this->match(pFrame1, pFrame2);
+        vector<int> vMatches12 = this->matchV(pFrame1, pFrame2);
         auto vpObs1 = pFrame1->getObservations();
         auto vpObs2 = pFrame2->getObservations();
         if (vMatches12.empty()) {
@@ -242,5 +242,20 @@ namespace NAV24::OP {
         }
 
         return cnt;
+    }
+
+    void FtAssocOrbSlam::match(const FramePtr &pFrame1, const FramePtr &pFrame2) {
+
+        vector<int> matches12 = this->matchV(pFrame1, pFrame2);
+        int nMatches = 0;
+        for (const auto& m : matches12) {
+            if (m >= 0) {
+                nMatches++;
+            }
+        }
+        auto pMatchedObs = make_shared<OB::MatchedObs>(pFrame1, matches12, nMatches);
+        if (dynamic_pointer_cast<FrameImgMono>(pFrame2)) {
+            dynamic_pointer_cast<FrameImgMono>(pFrame2)->setMatches(pMatchedObs);
+        }
     }
 } // NAV24::OP

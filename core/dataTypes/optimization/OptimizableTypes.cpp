@@ -19,6 +19,7 @@
 #include "OptimizableTypes.hpp"
 
 namespace ORB_SLAM3 {
+/*
     bool EdgeSE3ProjectXYZOnlyPose::read(std::istream& is){
         for (int i=0; i<2; i++){
             is >> _measurement[i];
@@ -105,7 +106,7 @@ namespace ORB_SLAM3 {
 
         _jacobianOplusXi = -pCamera->projectJac(X_r) * mTrl.rotation().toRotationMatrix() * SE3deriv;
     }
-
+*/
     EdgeSE3ProjectXYZ::EdgeSE3ProjectXYZ() : BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexSBAPointXYZ, g2o::VertexSE3Expmap>() {
     }
 
@@ -158,7 +159,7 @@ namespace ORB_SLAM3 {
 
         _jacobianOplusXj = projectJac * SE3deriv;
     }
-
+/*
     EdgeSE3ProjectXYZToBody::EdgeSE3ProjectXYZToBody() : BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexSBAPointXYZ, g2o::VertexSE3Expmap>() {
     }
 
@@ -328,5 +329,5 @@ namespace ORB_SLAM3 {
             }
         return os.good();
     }
-
+*/
 }

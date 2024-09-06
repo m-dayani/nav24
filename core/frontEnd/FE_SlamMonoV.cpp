@@ -2,6 +2,16 @@
 // Created by masoud on 8/29/24.
 //
 
+/*
+ * todo: Future Directions
+ * 1. Better optimization: account for other vtx signals (ignore, inValid, ...)
+ *      count number of fixed/non-fixed and decide how to formulate the problem (e.g. schur decomposition)
+ *      if a problem is ill-conditioned, abort optimization
+ * 2. Separate Backend Loop and send problems through message passing
+ * 3. Add logic for keyframe/map point insertion (ORB-SLAM Local Mapping thread)
+ * 4. Visualization & broadcasting vars to other components
+ */
+
 #include <glog/logging.h>
 #include "opencv2/core.hpp"
 #ifdef HAVE_OPENCV_XFEATURES2D
@@ -49,7 +59,7 @@ namespace NAV24::FE {
             }
             if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
                 mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
-                mpMapInit = make_shared<OP::MapInitializer>(mpCalib->getK_cv());
+                mpMapInit = make_shared<OP::MapInitializer>(mpCalib);
             }
             if (dynamic_pointer_cast<MsgConfig>(msg)) {
                 // can receive messages from parameter server and main
@@ -92,7 +102,7 @@ namespace NAV24::FE {
 
                 // Extract features
                 mpCurrFrame = make_shared<FrameMonoGrid>(pImage->mTimeStamp, nullptr, vector<OB::ObsPtr>(), pImage);
-                mmpFrames.insert(make_pair(mpCurrFrame->getId(), mpCurrFrame));
+//                mmpFrames.insert(make_pair(mpCurrFrame->getId(), mpCurrFrame));
                 if (mpOrbDetector) {
                     mpOrbDetector->detect(mpCurrFrame);
                 }
@@ -108,74 +118,31 @@ namespace NAV24::FE {
 
                 // Match Features
                 if (mpOrbMatcher && mpFirstFrame && mpFirstFrame != mpCurrFrame) {
-                    int nMch = mpOrbMatcher->match(mpFirstFrame, mpCurrFrame, mpFtTracks);
+                    mpOrbMatcher->match(mpFirstFrame, mpCurrFrame);
 //                    cout << "N matches: " << nMch << endl;
                 }
 
                 if (!mbMapInitialized) {
 
                     // Initialize map
-                    long firstFrame = mpFirstFrame->getId(), secondFrame = mpCurrFrame->getId();
-//                    bool resFindMatches = mpFtTracks->findGoodFramesMapInit(100, 3, firstFrame, secondFrame);
-
-//                    cout << "Initializing map between frame: " << firstFrame << " & frame: " << secondFrame << endl;
-                    if (secondFrame - firstFrame > 3) {
-                        auto matches12 = mpFtTracks->getMatches(firstFrame, secondFrame);
-                        size_t nMch = matches12.size();
-                        if (nMch >= 100) {
-                            // call the two-view reconstruction
-                            if (mpMapInit) {
-                                mvpLocalMapPoints.clear();
-                                bool resMapInit = mpMapInit->reconstruct(matches12, mpFirstFrame, mpCurrFrame,
-                                                                  mvpLocalMapPoints);
-                                if (resMapInit) {
-//                                    cout << "Map Points Triangulated successfully!\n";
-                                    // Init. GBA
-                                    // Formulate BA problem
-                                    mpFirstFrame->setOptFixed(true);
-                                    auto vpFrames = {mpFirstFrame, mpCurrFrame};
-                                    auto pProblem = make_shared<PR_VBA>(vpFrames, mpCalib);
-                                    pProblem->setNumIter(10);
-                                    // Publish to the BA backend
-                                    auto pVbaSolver = make_shared<BE::GraphOptim>();
-                                    pVbaSolver->solve(pProblem);
-//                                    BE::GraphOptim::static_solve(pProblem);
-                                    // Establish links, publish vars
-//                                    cout << "MapInit Problem Solved!\n";
-
-                                    mvpKeyFrames.clear();
-                                    mvpKeyFrames.push_back(mpFirstFrame);
-                                    mvpKeyFrames.push_back(mpCurrFrame);
-                                    mbMapInitialized = true;
-                                    mpOrbDetector->setNumFeatures(mpOrbDetector->getNumFeatures() / 5);
-                                    mpFirstFrame = mpCurrFrame;
-                                    mvpTrackedFrames.clear();
-                                    mvpTrackedFrames.push_back(mpFirstFrame);
-                                }
-                            }
-//                        cout << "Num matches: " << matches12.size() << endl;
-//                        cout << "Diff frames: " << secondFrame - firstFrame << endl;
-                        }
-                        else if (nMch < 50) {
+                    if (mpMapInit) {
+                        mvpLocalMapPoints.clear();
+                        bool resMapInit = mpMapInit->reconstruct(mpFirstFrame, mpCurrFrame,mvpLocalMapPoints);
+                        if (resMapInit) {
+                            mvpKeyFrames.clear();
+                            mvpKeyFrames.push_back(mpFirstFrame);
+                            mvpKeyFrames.push_back(mpCurrFrame);
+                            mbMapInitialized = true;
+                            mpOrbDetector->scaleNumFeatures(0.2f);
                             mpFirstFrame = mpCurrFrame;
-//                            mpFtTracks->cleanTracks(); -> exception!
-                            mpFtTracks->refreshAll();
+                            mvpTrackedFrames.clear();
+                            mvpTrackedFrames.push_back(mpFirstFrame);
                         }
                     }
                 }
                 else {
                     // Track local map
-                    long firstFrame = mvpKeyFrames.back()->getId(), secondFrame = mpCurrFrame->getId();
-                    auto matches12 = mpFtTracks->getMatches(firstFrame, secondFrame);
-                    size_t nMch = matches12.size();
-
-                    // connect matches through map points
-                    for (auto& matchedObs : matches12) {
-                        auto pObs1 = matchedObs.first;
-                        if (pObs1 && pObs1->getWorldObject() && matchedObs.second) {
-                            pObs1->getWorldObject()->addObservation(matchedObs.second);
-                        }
-                    }
+                    connectMatchedFrames(mvpTrackedFrames.back(), mpCurrFrame);
 
                     auto pLastPose = mpLastFrame->getPose();
                     mpCurrFrame->setPose(make_shared<TF::PoseSE3>(pLastPose->getRef(),
@@ -197,16 +164,17 @@ namespace NAV24::FE {
                     auto pVbaSolver = make_shared<BE::GraphOptim>();
                     pVbaSolver->solve(pProblem);
 
-                    if (nMch < 50 || mvpTrackedFrames.size() > 10) {
-                        // tracking lost
-                        mpOrbDetector->setNumFeatures(mpOrbDetector->getNumFeatures() * 5);
-                        mbMapInitialized = false;
-                        mpFirstFrame = mpCurrFrame;
-                        mpFtTracks->refreshAll();
-                    }
+
                 }
 
                 mpLastFrame = mpCurrFrame;
+
+                if (OB::MatchedObs::getNumMatches(mpCurrFrame) < 50 || mvpTrackedFrames.size() > 10) {
+                    // tracking lost
+                    mpFirstFrame = mpCurrFrame;
+                    mbMapInitialized = false;
+                    mpOrbDetector->scaleNumFeatures(5.f);
+                }
 
                 cv::Mat imgShow;
 
@@ -276,9 +244,42 @@ namespace NAV24::FE {
                 auto pOpParam = pOpParamPair.second.lock();
 
                 mpOrbDetector = OP::FtDt::create(pOpParam, mpChannel);
-                mpOrbDetector->setNumFeatures(mpOrbDetector->getNumFeatures() * 5);
+                mpOrbDetector->scaleNumFeatures(5.f);
             }
         }
 
+    }
+
+    void SlamMonoV::connectMatchedFrames(FramePtr &pFrame1, FramePtr &pFrame2) {
+
+        if (!pFrame2 || !pFrame1) {
+            return;
+        }
+
+        vector<int> vMatches12{};
+        int nMatches = 0;
+        OB::MatchedObs::getMatches(pFrame2, vMatches12, nMatches);
+        if (nMatches <= 0) {
+            return;
+        }
+
+        auto vpObs1 = pFrame1->getObservations();
+        auto vpObs2 = pFrame2->getObservations();
+
+        // connect matches through map points
+        for (size_t i1 = 0; i1 < vMatches12.size(); i1++) {
+            int i2 = vMatches12[i1];
+            if (i2 < 0) {
+                continue;
+            }
+            if (i1 >= vpObs1.size() || i2 >= vpObs2.size()) {
+                continue;
+            }
+            auto pObs1 = vpObs1[i1];
+            auto pObs2 = vpObs2[i2];
+            if (pObs1 && pObs1->getWorldObject() && pObs2) {
+                pObs1->getWorldObject()->addObservation(pObs2);
+            }
+        }
     }
 }

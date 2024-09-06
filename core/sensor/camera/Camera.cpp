@@ -463,9 +463,9 @@ namespace NAV24 {
                 mpChannel->publish(msgSensor);
 
                 auto duration = duration_cast<chrono::milliseconds>(t2 - t1);
-                if (Ts > duration) {
-                    std::this_thread::sleep_for(Ts - duration);
-                }
+//                if (Ts > duration) {
+//                    std::this_thread::sleep_for(Ts - duration);
+//                }
 
                 if (this->isStopped()) {
                     break;

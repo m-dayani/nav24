@@ -64,4 +64,52 @@ namespace NAV24::OB {
 
         return {rect.x + rect.width * 0.5f, rect.y + rect.height * 0.5f};
     }
+
+    std::vector<cv::Point2f> Point2D::toCvPoint(const vector <ObsPtr> &vpObs) {
+
+        vector<cv::Point2f> vPt2d;
+        vPt2d.reserve(vpObs.size());
+        for (const auto& pObs : vpObs) {
+            if (pObs && dynamic_pointer_cast<Point2D>(pObs)) {
+                vPt2d.push_back(dynamic_pointer_cast<Point2D>(pObs)->getPoint());
+            }
+        }
+        return vPt2d;
+    }
+
+    std::vector<cv::Point2f> Point2D::toCvPointUd(const vector <ObsPtr> &vpObs) {
+
+        vector<cv::Point2f> vPt2d;
+        vPt2d.reserve(vpObs.size());
+        for (const auto& pObs : vpObs) {
+            if (pObs && dynamic_pointer_cast<Point2D>(pObs)) {
+                vPt2d.push_back(dynamic_pointer_cast<Point2D>(pObs)->getPointUd());
+            }
+        }
+        return vPt2d;
+    }
+
+    std::vector<cv::KeyPoint> KeyPoint2D::toCvKeyPoint(const vector <ObsPtr> &vpObs) {
+
+        vector<cv::KeyPoint> vPt2d;
+        vPt2d.reserve(vpObs.size());
+        for (const auto& pObs : vpObs) {
+            if (pObs && dynamic_pointer_cast<KeyPoint2D>(pObs)) {
+                vPt2d.push_back(dynamic_pointer_cast<KeyPoint2D>(pObs)->getKeyPoint());
+            }
+        }
+        return vPt2d;
+    }
+
+    std::vector<cv::KeyPoint> KeyPoint2D::toCvKeyPointUd(const vector <ObsPtr> &vpObs) {
+
+        vector<cv::KeyPoint> vPt2d;
+        vPt2d.reserve(vpObs.size());
+        for (const auto& pObs : vpObs) {
+            if (pObs && dynamic_pointer_cast<KeyPoint2D>(pObs)) {
+                vPt2d.push_back(dynamic_pointer_cast<KeyPoint2D>(pObs)->getKeyPointUd());
+            }
+        }
+        return vPt2d;
+    }
 } // NAV24::OB

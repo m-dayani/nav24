@@ -30,6 +30,7 @@
 
 
 namespace ORB_SLAM3 {
+/*
 class  EdgeSE3ProjectXYZOnlyPose: public  g2o::BaseUnaryEdge<2, Eigen::Vector2d, g2o::VertexSE3Expmap>{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -87,7 +88,7 @@ public:
 
     g2o::SE3Quat mTrl;
 };
-
+*/
 class  EdgeSE3ProjectXYZ: public  g2o::BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexSBAPointXYZ, g2o::VertexSE3Expmap>{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -115,7 +116,7 @@ public:
 
     NAV24::CalibPtr pCamera;
 };
-
+/*
 class  EdgeSE3ProjectXYZToBody: public  g2o::BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexSBAPointXYZ, g2o::VertexSE3Expmap>{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -215,7 +216,7 @@ public:
     // virtual void linearizeOplus();
 
 };
-
+*/
 // You'll get runtime exception (Segmentation fault) if instantiate the g2o type directly
     class MyVertexSE3Expmap : public g2o::VertexSE3Expmap {
     public:

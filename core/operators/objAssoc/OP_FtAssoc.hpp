@@ -16,7 +16,8 @@ namespace NAV24::OP {
     public:
         FtAssoc() = default;
 
-        virtual std::vector<int> match(const FramePtr& pFrame1, const FramePtr& pFrame2) = 0;
+        virtual void match(const FramePtr& pFrame1, const FramePtr& pFrame2) = 0;
+        virtual std::vector<int> matchV(const FramePtr& pFrame1, const FramePtr& pFrame2) = 0;
         virtual int match(const FramePtr& pFrame1, const FramePtr& pFrame2, OB::FtTracksPtr& pTracks) = 0;
     };
 
@@ -24,7 +25,7 @@ namespace NAV24::OP {
     public:
         FtAssocOCV();
 
-        std::vector<int> match(const FramePtr &pFrame1, const FramePtr &pFrame2) override;
+        std::vector<int> matchV(const FramePtr &pFrame1, const FramePtr &pFrame2) override;
 
         int match(const FramePtr &pFrame1, const FramePtr &pFrame2, OB::FtTracksPtr &pTracks) override;
 

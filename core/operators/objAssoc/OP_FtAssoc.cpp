@@ -39,7 +39,7 @@ namespace NAV24::OP {
         return descriptors;
     }
 
-    std::vector<int> FtAssocOCV::match(const FramePtr &pFrame1, const FramePtr &pFrame2) {
+    std::vector<int> FtAssocOCV::matchV(const FramePtr &pFrame1, const FramePtr &pFrame2) {
 
         cv::Mat descriptors1 = getAllDescriptors(pFrame1);
         cv::Mat descriptors2 = getAllDescriptors(pFrame2);

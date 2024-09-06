@@ -14,8 +14,10 @@ namespace NAV24::OP {
     public:
         explicit FtAssocOrbSlam(float nnratio=0.6, bool checkOri=true);
 
-        std::vector<int> match(const FramePtr& pFrame1, const FramePtr& pFrame2) override;//, MatchedObs<OB::ObsPtr>& pMatchedObs);
+        std::vector<int> matchV(const FramePtr& pFrame1, const FramePtr& pFrame2) override;//, MatchedObs<OB::ObsPtr>& pMatchedObs);
         int match(const FramePtr &pFrame1, const FramePtr &pFrame2, OB::FtTracksPtr &pTracks) override;
+
+        void match(const FramePtr &pFrame1, const FramePtr &pFrame2) override;
 
         // Computes the Hamming distance between two ORB descriptors
         static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);

@@ -41,7 +41,7 @@ namespace NAV24::OB {
         std::set<long> msFrameIds;
     };
     typedef std::shared_ptr<MatchedFeatures> MatchedFtPtr;
-
+    typedef std::vector<std::pair<OB::ObsPtr, OB::ObsPtr>> VecObsPair;
 
     class FeatureTracks {
     public:
@@ -55,7 +55,7 @@ namespace NAV24::OB {
 
         bool findGoodFramesMapInit(int thNumTracks, int thNumMch, long& firstFrame, long& secondFrame);
 
-        std::vector<std::pair<ObsPtr, ObsPtr>> getMatches(long frame1, long frame2);
+        VecObsPair getMatches(long frame1, long frame2);
 
         void cleanTracks(int lastFrameDist=3);
         void refreshAll();
@@ -75,11 +75,17 @@ namespace NAV24::OB {
     class MatchedObs {
     public:
         MatchedObs() : mnMatches(0), mvMatches12() {}
+        MatchedObs(FramePtr pFrame, const std::vector<int>& matches12, int nMatches) :
+                mnMatches(nMatches), mvMatches12(matches12), mpMatchedFrame(pFrame) {}
+
+        static int getNumMatches(const FramePtr& pFrame);
+        static void getMatches(const FramePtr& pFrame, std::vector<int>& vMatches12, int& nMatches);
 
         int mnMatches;
         FramePtrW mpMatchedFrame;
         std::vector<int> mvMatches12;
     };
+    typedef std::shared_ptr<MatchedObs> MatchedObsPtr;
 
 } // NAV24::OB
 
