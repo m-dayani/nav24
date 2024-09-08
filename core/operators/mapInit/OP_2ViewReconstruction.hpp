@@ -24,6 +24,9 @@
 #include <unordered_set>
 
 //#include "Operator.hpp"
+#include "Frame.hpp"
+#include "OP_FtAssocOrbSlam.hpp"
+#include "Calibration.hpp"
 
 namespace NAV24::OP {
 
@@ -105,6 +108,10 @@ public:
             std::vector<std::vector<cv::Point3f>>& vP3D, std::vector<std::vector<bool>>& vbTriangulated,
             std::vector<bool> &vbTransInliers, ReconstInfo& reconstInfo = dummyReconstInfo);
 
+//    static void CreateNewMapPoints(const std::vector<FramePtr>& vpKeyFrames, const CalibPtr& pCalib,
+//                                   const std::shared_ptr<FtAssocOrbSlam>& matcher,
+//                                   bool mbMonocular = true, bool mbInertial = false);
+
     static void Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2, cv::Mat &x3D);
 
     Params2VR mParams2VR;
@@ -175,7 +182,7 @@ private:
     int mMaxIterations;
 
     // Ransac sets
-    std::vector<std::vector<size_t> > mvSets;
+    std::vector<std::vector<size_t>> mvSets;
 };
 
 } //namespace NAV24::OP
