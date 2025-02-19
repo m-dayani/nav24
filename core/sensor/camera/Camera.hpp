@@ -28,6 +28,13 @@ namespace NAV24 {
     public:
         inline static const std::string TOPIC = "Camera";
 
+        enum CamOperation {
+            NONE,
+            OFFLINE,
+            STREAM,
+            BOTH
+        };
+
         explicit Camera(const ChannelPtr& pChannel);
 
         void receive(const MsgPtr &msg) override;
@@ -45,17 +52,66 @@ namespace NAV24 {
         [[nodiscard]] std::string printStr(const std::string &prefix) const override;
 
     protected:
+        CamOperation mCamOp;
+
         cv::Size mImgSz;
         float mFps;
         float mTs;
-        CalibPtr mpCalib;
+        double tsFactor;
 
         static int camIdx;
+
+        CalibPtr mpCalib;
     };
 
     /* ============================================================================================================== */
 
-    class CamStream : public virtual Camera {
+    // All sensors must support storage operation (to record sensors)
+    class CameraMono : public Camera {
+    public:
+        explicit CameraMono(const ChannelPtr& pChannel);
+        ~CameraMono();
+
+        void receive(const MsgPtr &msg) override;
+
+        static ParamPtr getFoldersParams(const std::string& seqBase, const std::string& imgBase,
+                                         const std::string& imgFile, const double& tsFact,
+                                         std::vector<ParamPtr>& vpParam);
+
+    protected:
+        void setup(const MsgPtr &msg) override;
+        void setupStream(const MsgPtr &msg);
+        void setupOffline(const MsgPtr &msg);
+        void initVideoCap(int port, const std::string& video = "");
+
+
+        void getNext(MsgPtr pReq) override;
+        void getNextBr(MsgPtr msg) override;
+        MsgPtr getNextStream(const MsgPtr& msg);
+        MsgPtr getNextOffline(const MsgPtr& msg);
+        void getNextImageFile(std::string& path, double& ts);
+
+        void run() override;
+        void runStream();
+        void runOffline();
+
+        void reset() override;
+
+
+        [[nodiscard]] std::string printStr(const std::string &prefix) const override;
+
+    protected:
+        std::string mVideoBase;
+        std::string mVideoFile;
+        std::shared_ptr<cv::VideoCapture> mpVideoCap;
+        std::mutex mMtxCap;
+
+        std::shared_ptr<TabularTextDS> mpImgDS;
+    };
+
+    /* ============================================================================================================== */
+
+    /*class CamStream : public virtual Camera {
     public:
         explicit CamStream(const ChannelPtr& pChannel);
         ~CamStream();
@@ -78,11 +134,11 @@ namespace NAV24 {
         std::string mVideoFile;
         std::shared_ptr<cv::VideoCapture> mpVideoCap;
         std::mutex mMtxCap;
-    };
+    };*/
 
     /* ============================================================================================================== */
 
-    class CamOffline : public virtual Camera {
+    /*class CamOffline : public virtual Camera {
     public:
         explicit CamOffline(const ChannelPtr& pChannel);
         ~CamOffline();
@@ -113,11 +169,11 @@ namespace NAV24 {
         double tsFactor;
 
         std::shared_ptr<TabularTextDS> mpImgDS;
-    };
+    };*/
 
     /* ============================================================================================================== */
 
-    class CamMixed : public CamOffline, public CamStream {
+    /*class CamMixed : public CamOffline, public CamStream {
     public:
         enum CamOperation {
             NONE,
@@ -145,7 +201,7 @@ namespace NAV24 {
 
     private:
         CamOperation mCamOp;
-    };
+    };*/
 
 }   //NAV24
 

@@ -77,7 +77,9 @@ namespace NAV24::FE {
                 this->handleImageMsg(msg);
             }
             if (msg->getTargetId() == FCN_SHOW_LAST_FRAME) {
-                this->drawFrame(mvpFrames.back());
+                if (!mvpFrames.empty()) {
+                    this->drawFrame(mvpFrames.back());
+                }
             }
         }
     }
@@ -246,7 +248,11 @@ namespace NAV24::FE {
 
     void CalibCamCv::drawFrame(const FramePtr &pFrame) {
 
-        shared_ptr<FrameImgMono> pImgFr = static_pointer_cast<FrameImgMono>(pFrame);
+        if (!pFrame) {
+            return;
+        }
+
+        shared_ptr<FrameImgMono> pImgFr = dynamic_pointer_cast<FrameImgMono>(pFrame);
         if (!pImgFr) {
             return;
         }

@@ -38,7 +38,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/EuRoC.yaml";
+    string confFile = "../config/EuRoC.yaml";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
     // Create the system

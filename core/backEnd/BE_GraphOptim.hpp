@@ -11,10 +11,10 @@
 #include "BackEnd.hpp"
 
 
-namespace NAV24::BE {
-
-    typedef std::map<unsigned long, std::pair<g2o::OptimizableGraph::Vertex*, FramePtr>> TaggedVertexPose;
-    typedef std::map<unsigned long, std::pair<g2o::OptimizableGraph::Vertex*, WO::WoPtr>> TaggedVertexMP;
+namespace NAV24 {
+namespace BE {
+    typedef std::map<unsigned long, std::pair<g2o::OptimizableGraph::Vertex *, FramePtr>> TaggedVertexPose;
+    typedef std::map<unsigned long, std::pair<g2o::OptimizableGraph::Vertex *, WO::WoPtr>> TaggedVertexMP;
 
     class GraphOptim : public BackEnd {
     public:
@@ -23,15 +23,19 @@ namespace NAV24::BE {
         void solve(const ProblemPtr &problem) override;
 
     protected:
-        static void addFrameVertices(const std::vector<FramePtr>& vpFrames, unsigned long lastId,
-                                     g2o::SparseOptimizer& optimizer, TaggedVertexPose& poseMap);
-        static void extractMapPoints(const std::vector<FramePtr>& vpFrames, std::set<WO::WoPtr>& spPoint3d);
-        static void addMapPointVertices(const ProblemPtr &problem, unsigned long lastId,
-                                        g2o::SparseOptimizer& optimizer, TaggedVertexMP& point3dMap);
+        static void addFrameVertices(const std::vector<FramePtr> &vpFrames, unsigned long lastId,
+                                     g2o::SparseOptimizer &optimizer, TaggedVertexPose &poseMap);
 
-        static void recoverPose(TaggedVertexPose& poseMap);
-        static void recoverMapPoints(TaggedVertexMP& point3dMap);
+        static void extractMapPoints(const std::vector<FramePtr> &vpFrames, std::set<WO::WoPtr> &spPoint3d);
+
+        static void addMapPointVertices(const ProblemPtr &problem, unsigned long lastId,
+                                        g2o::SparseOptimizer &optimizer, TaggedVertexMP &point3dMap);
+
+        static void recoverPose(TaggedVertexPose &poseMap);
+
+        static void recoverMapPoints(TaggedVertexMP &point3dMap);
     };
-} // NAV24::BE
+} // BE
+} // NAV24
 
 #endif //NAV24_BE_GRAPHOPTIM_HPP

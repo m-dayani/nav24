@@ -33,6 +33,12 @@ namespace NAV24 {
     public:
         inline static const std::string TOPIC = "Sensor";
 
+        enum SensorType {
+            CAMERA,
+            IMU,
+            POSE
+        };
+
         Sensor();
         explicit Sensor(const ChannelPtr& pChannel);
 
@@ -57,6 +63,13 @@ namespace NAV24 {
         // All sensors have means of communication with other modules
         std::shared_ptr<SensorInterface> mpInterface;
         bool mbRunningInBg;
+
+        // folder structure for read/write
+        std::string mSensorBase;
+        std::string mSensorFile;
+        std::string mSeqPath;
+
+        SensorType mSensorType;
     };
 
 }   //NAV24

@@ -11,6 +11,7 @@
 #include "System.hpp"
 #include "FE_CalibCamCv.hpp"
 #include "FE_ObjTracking.hpp"
+#include "Camera.hpp"
 
 using namespace std;
 using namespace NAV24;
@@ -19,9 +20,15 @@ using namespace NAV24;
 class ParamReceiver : public MsgCallback {
 public:
     void receive(const MsgPtr &msg) override {
-        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
-            mpParam = pMsgConfig->getConfig();
+
+        if (msg) {
+            if (dynamic_pointer_cast<MsgConfig>(msg)) {
+                auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
+                mpParam = pMsgConfig->getConfig();
+            }
+            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
+                mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+            }
         }
     }
 
@@ -32,6 +39,7 @@ protected:
 
 public:
     ParamPtr mpParam;
+    CalibPtrRO mpCalib;
 };
 
 void exec_calib(const shared_ptr<System>& mpSystem, const string& saveFile, bool needCurrPattern = true) {
@@ -107,12 +115,12 @@ int main([[maybe_unused]] int argc, char** argv) {
     mpSystem->receive(msgLoadSettings);
 
     // Check camera calibration
+    auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, pParamRec,
+                                               Sensor::TOPIC, FCN_CAM_GET_CALIB);
+    mpSystem->send(msgReqCalib);
+
     bool isCamCalibrated = false;
-    // todo: avoid hard-wired strings
-    MsgReqPtr msgGetCamParams = make_shared<MsgRequest>(ID_CH_PARAMS, pParamRec, ParameterServer::TOPIC,
-                                                        FCN_PS_REQ, string(PARAM_CAM) + "/0/calib");
-    mpSystem->send(msgGetCamParams);
-    if (pParamRec->mpParam && pParamRec->mpParam->getAllChildren().count("intrinsics") > 0) {
+    if (pParamRec->mpCalib && pParamRec->mpCalib->isCalibrated()) {
         isCamCalibrated = true;
     }
 

@@ -6,6 +6,7 @@
 
 #include <glog/logging.h>
 #include <Eigen/Eigen>
+#include <opencv2/calib3d.hpp>
 
 #include "Point2D.hpp"
 #include "Point3D.hpp"
@@ -75,6 +76,9 @@ namespace NAV24 {
             P = pParamP->getValue();
         }
 
+        if (vParams.empty()) {
+            vParams.resize(4);
+        }
         if (distType == "radial-tangential") {
             mpCamModel = make_shared<PinholeRadTan>(vParams);
         }
@@ -132,7 +136,7 @@ namespace NAV24 {
     }
 
 
-    OB::ObsPtr Calibration::undistort(const OB::ObsPtr &pObs) {
+    OB::ObsPtr Calibration::undistort(const OB::ObsPtr &pObs) const {
 
         OB::ObsPtr pObsOut = pObs;
 
@@ -227,7 +231,7 @@ namespace NAV24 {
         return res;
     }
 
-    bool Calibration::isCalibrated() {
+    bool Calibration::isCalibrated() const {
 
         return distType != "radial-tangential" && distType != "kannala-brandt8";
     }
@@ -246,5 +250,273 @@ namespace NAV24 {
         return Eigen::Matrix<double, 2, 3>();
     }
 
+
+    bool Calibration::isInImage(const float x, const float y) const {
+
+        return (x >= 0 && x < float(mImWidth)) && (y >= 0 && y < float(mImHeight));
+    }
+
+    bool Calibration::isInImage(const float x, const float y, const int imWidth, const int imHeight) {
+
+        return (x >= 0 && x < float(imWidth)) && (y >= 0 && y < float(imHeight));
+    }
+
+    bool Calibration::isInImage(const float x, const float y, const cv::Scalar &imageSize) {
+
+        return (x >= 0 && x < imageSize[0]) && (y >= 0 && y < imageSize[1]);
+    }
+
+    bool Calibration::isDistorted(const cv::Mat &distCoefs) {
+
+        return !distCoefs.empty() && distCoefs.rows * distCoefs.cols >= 4 &&
+               fabs(distCoefs.at<float>(0)) > 1e-9;
+    }
+
+    void Calibration::generateUndistMaps() {
+
+        if (this->isPinhole()) {
+            DLOG(INFO) << "Generating Pinhole distortion maps...\n";
+            this->generateUndistMapsPinhole();
+        }
+        else if (this->isFishEye()) {
+            DLOG(INFO) << "Generating FishEye distortion maps...\n";
+            this->generateUndistMapsFishEye();
+        }
+    }
+
+    void Calibration::generateUndistMapsPinhole() {
+
+        //cv::initUndistortRectifyMap(mK, mDistCoefs, mR, mP,
+        //        mImSize, CV_32FC1, mUndistMapX, mUndistMapY);
+
+        mUndistMapX = cv::Mat(mImHeight, mImWidth, CV_32FC1);
+        mUndistMapY = cv::Mat(mImHeight, mImWidth, CV_32FC1);
+
+        for (int x = 0; x < mImWidth; x++) {
+            for (int y = 0; y < mImHeight; y++) {
+
+                cv::Point2f srcPt(x,y);
+                this->undistPointPinhole(srcPt, srcPt);
+
+                mUndistMapX.at<float>(y, x) = srcPt.x;
+                mUndistMapY.at<float>(y, x) = srcPt.y;
+            }
+        }
+    }
+
+    void Calibration::generateUndistMapsFishEye() {
+
+        //cv::fisheye::initUndistortRectifyMap(mK, mDistCoefs, mR, mP,
+        //        mImSize, CV_32FC1, mUndistMapX, mUndistMapY);
+
+        mUndistMapX = cv::Mat(mImHeight, mImWidth, CV_32FC1);
+        mUndistMapY = cv::Mat(mImHeight, mImWidth, CV_32FC1);
+
+        for (int x = 0; x < mImWidth; x++) {
+            for (int y = 0; y < mImHeight; y++) {
+
+                cv::Point2f srcPt(x,y);
+                this->undistPointFishEye(srcPt, srcPt);
+
+                mUndistMapX.at<float>(y, x) = srcPt.x;
+                mUndistMapY.at<float>(y, x) = srcPt.y;
+            }
+        }
+    }
+
+    void Calibration::undistPoint(const cv::Point2f &srcPt, cv::Point2f &dstPt) {
+
+        if (this->isPinhole()) {
+            this->undistPointPinhole(srcPt, dstPt);
+        }
+        else if (this->isFishEye()) {
+            this->undistPointFishEye(srcPt, dstPt);
+        }
+    }
+
+    void Calibration::undistPointPinhole(const cv::Point2f &srcPt, cv::Point2f &dstPt) {
+
+        undistPointPinhole(srcPt, dstPt, mK, mDistCoefs, mR, mP);
+    }
+
+    void Calibration::undistPointPinhole(const cv::Point2f &srcPt, cv::Point2f &dstPt, const cv::Mat &K,
+                                          const cv::Mat &distCoefs, const cv::Mat& R, const cv::Mat& P) {
+
+        if(!isDistorted(distCoefs)) {
+            DLOG_EVERY_N(WARNING, 1000) << "MyCalibrator::undistPointPinhole: Point is not distorted -> nothing to do!\n";
+            dstPt = srcPt;
+            return;
+        }
+
+        cv::Mat srcMat(1, 1, CV_32FC2, cv::Scalar(srcPt.x, srcPt.y));
+        cv::undistortPoints(srcMat, srcMat, K, distCoefs, R, P);
+        srcMat.reshape(1);
+
+        dstPt.x = srcMat.at<float>(0,0);
+        dstPt.y = srcMat.at<float>(0,1);
+    }
+
+    void Calibration::undistPointFishEye(const cv::Point2f &srcPt, cv::Point2f &dstPt) {
+
+        undistPointFishEye(srcPt, dstPt, mK, mDistCoefs, mR, mP);
+    }
+
+    void Calibration::undistPointFishEye(const cv::Point2f &srcPt, cv::Point2f &dstPt, const cv::Mat &K,
+                                          const cv::Mat &distCoefs, const cv::Mat& R, const cv::Mat& P) {
+
+        if(!isDistorted(distCoefs)) {
+            DLOG_EVERY_N(WARNING, 1000) << "MyCalibrator::undistPointFishEye: Point is not distorted -> nothing to do!\n";
+            dstPt = srcPt;
+            return;
+        }
+
+        cv::Mat srcMat(1, 1, CV_32FC2, cv::Scalar(srcPt.x, srcPt.y));
+        cv::fisheye::undistortPoints(srcMat, srcMat, K, distCoefs, R, P);
+        srcMat.reshape(1);
+
+        dstPt.x = srcMat.at<float>(0,0);
+        dstPt.y = srcMat.at<float>(0,1);
+    }
+
+    void Calibration::undistPointMaps(const cv::Point2f &srcPt, cv::Point2f &dstPt) {
+
+        undistPointMaps(srcPt, dstPt, mUndistMapX, mUndistMapY);
+    }
+
+    // Attention!! cv undistMaps are like image: size = (height, width)!
+    void Calibration::undistPointMaps(const cv::Point2f &srcPt, cv::Point2f &dstPt,
+                                       const cv::Mat &mapX, const cv::Mat &mapY) {
+
+        int rowsX = mapX.rows;
+        int colsX = mapX.cols;
+        int rowsY = mapY.rows;
+        int colsY = mapY.cols;
+
+        int x = static_cast<int>(srcPt.x);
+        int y = static_cast<int>(srcPt.y);
+
+        if (!(rowsX == rowsY && colsX == colsY && x >= 0 && x < colsX && y >= 0 && y < rowsX)) {
+            dstPt.x = -1;
+            dstPt.y = -1;
+            return;
+        }
+
+        dstPt.x = mapX.at<float>(y, x);
+        dstPt.y = mapY.at<float>(y, x);
+    }
+
+    void Calibration::undistKeyPoints(const std::vector<cv::KeyPoint> &vDistKPts, std::vector<cv::KeyPoint> &vUndistKPts) {
+
+        if (this->isPinhole()) {
+            this->undistKeyPointsPinhole(vDistKPts, vUndistKPts);
+        }
+        else if (this->isFishEye()) {
+            this->undistKeyPointsFishEye(vDistKPts, vUndistKPts);
+            //this->undistKeyPointsPinhole(vDistKPts, vUndistKPts);
+            //vUndistKPts = vDistKPts;
+        }
+    }
+
+    void Calibration::undistKeyPointsPinhole(const std::vector<cv::KeyPoint> &vDistKPts, std::vector<cv::KeyPoint> &vUndistKPts) {
+
+        undistKeyPointsPinhole(vDistKPts, vUndistKPts, mK, mDistCoefs, mR, mP);
+    }
+
+    void Calibration::undistKeyPointsPinhole(const std::vector<cv::KeyPoint> &vDistKPts,
+                                              std::vector<cv::KeyPoint> &vUndistKPts, const cv::Mat &K, const cv::Mat &distCoefs,
+                                              const cv::Mat& R, const cv::Mat& P) {
+
+        if (vDistKPts.empty()) {
+            LOG(WARNING) << "MyCalibrator::undistKeyPointsPinhole: Empty key point vector -> nothing to do!\n";
+            return;
+        }
+        if(!isDistorted(distCoefs)) {
+            DLOG(WARNING) << "MyCalibrator::undistKeyPointsPinhole: Key points are not distorted -> nothing to do!\n";
+            vUndistKPts = vDistKPts;
+            return;
+        }
+
+        int nPts = vDistKPts.size();
+        // Fill matrix with points
+        cv::Mat mat(nPts,2, CV_32F);
+
+        for(int i=0; i<nPts; i++)
+        {
+            mat.at<float>(i,0)=vDistKPts[i].pt.x;
+            mat.at<float>(i,1)=vDistKPts[i].pt.y;
+        }
+
+        // Undistort points
+        mat=mat.reshape(2);
+        cv::undistortPoints(mat, mat, K, distCoefs, R, P);
+        mat=mat.reshape(1);
+
+
+        // Fill undistorted keypoint vector
+        vUndistKPts.resize(nPts);
+        for(int i=0; i<nPts; i++)
+        {
+            cv::KeyPoint kp = vDistKPts[i];
+            kp.pt.x=mat.at<float>(i,0);
+            kp.pt.y=mat.at<float>(i,1);
+            vUndistKPts[i]=kp;
+        }
+    }
+
+    void Calibration::undistKeyPointsFishEye(const std::vector<cv::KeyPoint> &vDistKPts,
+                                              std::vector<cv::KeyPoint> &vUndistKPts) {
+
+        undistKeyPointsFishEye(vDistKPts, vUndistKPts, mK, mDistCoefs, mR, mP);
+    }
+
+    void Calibration::undistKeyPointsFishEye(const std::vector<cv::KeyPoint> &vDistKPts,
+                                              std::vector<cv::KeyPoint> &vUndistKPts, const cv::Mat &K, const cv::Mat &distCoefs,
+                                              const cv::Mat& R, const cv::Mat& P) {
+
+        if (vDistKPts.empty()) {
+            LOG(WARNING) << "MyCalibrator::undistKeyPointsFishEye: Empty key point vector -> nothing to do!\n";
+            return;
+        }
+        if(!isDistorted(distCoefs)) {
+            DLOG(WARNING) << "MyCalibrator::undistKeyPointsFishEye: Key points are not distorted -> nothing to do!\n";
+            vUndistKPts = vDistKPts;
+            return;
+        }
+
+        int nPts = vDistKPts.size();
+        // Fill matrix with points
+        cv::Mat mat(nPts,2, CV_32F);
+
+        for(int i=0; i<nPts; i++)
+        {
+            mat.at<float>(i,0)=vDistKPts[i].pt.x;
+            mat.at<float>(i,1)=vDistKPts[i].pt.y;
+        }
+
+        // Undistort points
+        mat=mat.reshape(2);
+        cv::fisheye::undistortPoints(mat, mat, K, distCoefs, R, P);
+        mat=mat.reshape(1);
+
+        // Fill undistorted keypoint vector
+        vUndistKPts.resize(nPts);
+        for(int i=0; i<nPts; i++)
+        {
+            cv::KeyPoint kp = vDistKPts[i];
+            kp.pt.x=mat.at<float>(i,0);
+            kp.pt.y=mat.at<float>(i,1);
+            vUndistKPts[i]=kp;
+        }
+    }
+
+    void Calibration::undistImageMaps(const cv::Mat &srcImage, cv::Mat &dstImage) {
+
+        undistImageMaps(srcImage, mUndistMapX, mUndistMapY, dstImage);
+    }
+
+    void Calibration::undistImageMaps(const cv::Mat &srcImage, const cv::Mat &mapX, const cv::Mat &mapY, cv::Mat &dstImage) {
+
+        cv::remap(srcImage,dstImage,mapX,mapY,cv::INTER_LINEAR);
+    }
 
 }   //NAV24

@@ -80,7 +80,7 @@ namespace NAV24 {
     template<typename T>
     class ParamType : public Parameter {
     public:
-        ParamType<T>(const std::string& name_, const ParamPtr& parent_, const T& value) :
+        ParamType(const std::string& name_, const ParamPtr& parent_, const T& value) :
                 Parameter(name_, parent_), mData(value) {}
 
         [[nodiscard]] std::string printStr(const std::string &prefix) const override;
@@ -95,7 +95,7 @@ namespace NAV24 {
     template<typename T>
     class ParamSeq : public Parameter {
     public:
-        ParamSeq<T>(const std::string& name_, const ParamPtr& parent_, const std::vector<T>& value) :
+        ParamSeq(const std::string& name_, const ParamPtr& parent_, const std::vector<T>& value) :
                 Parameter(name_, parent_), mvData(value) {}
 
         [[nodiscard]] std::string printStr(const std::string &prefix) const override;

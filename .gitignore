@@ -41,3 +41,7 @@ ros/examples/rosbag_loader
 *__pycache__/
 *.txt
 
+thirdparty/Sophus
+thirdparty/g2o
+thirdparty/DBoW2
+

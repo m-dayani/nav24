@@ -14,17 +14,23 @@
 #include "Parameter.hpp"
 #include "WorldObject.hpp"
 #include "GeometricCamera.h"
+#include "Pose.hpp"
 
 
 namespace NAV24 {
 
     class Calibration {
     public:
+        enum CameraType {
+            PINHOLE,
+            FISHEYE
+        };
+
         explicit Calibration(const ParamPtr& pParams);
 
         void loadParams(const ParamPtr& pParams);
 
-        virtual OB::ObsPtr undistort(const OB::ObsPtr& pObs);
+        [[nodiscard]] virtual OB::ObsPtr undistort(const OB::ObsPtr& pObs) const;
         virtual std::vector<OB::ObsPtr> undistort(const std::vector<OB::ObsPtr>& vpObs);
         virtual OB::ObsPtr distort(const OB::ObsPtr& pObs);
 
@@ -44,13 +50,79 @@ namespace NAV24 {
 
         std::vector<float> computeImageBounds(const cv::Mat &image);
 
-        bool isCalibrated();
+        bool isCalibrated() const;
+
+        static bool isInImage(float x, float y, const cv::Scalar& imageSize);
+        static bool isInImage(float x, float y, int imWidth, int imHeight);
+        bool isInImage(float x, float y) const;
+
+        static bool isDistorted(const cv::Mat& distCoefs);
+
+        bool isFishEye() const { return mCamType == FISHEYE; }
+        bool isPinhole() const { return mCamType == PINHOLE; }
+
+
+        void generateUndistMaps();
+        void generateUndistMapsPinhole();
+        void generateUndistMapsFishEye();
+
+
+        void undistKeyPoints(const std::vector<cv::KeyPoint>& vDistKPts, std::vector<cv::KeyPoint>& vUndistKPts);
+
+        void undistKeyPointsPinhole(const std::vector<cv::KeyPoint>& vDistKPts, std::vector<cv::KeyPoint>& vUndistKPts);
+        static void undistKeyPointsPinhole(const std::vector<cv::KeyPoint>& vDistKPts,
+                                           std::vector<cv::KeyPoint>& vUndistKPts, const cv::Mat& K, const cv::Mat& distCoefs,
+                                           const cv::Mat& R = cv::Mat(), const cv::Mat& P = cv::Mat());
+
+        void undistKeyPointsFishEye(const std::vector<cv::KeyPoint>& vDistKPts, std::vector<cv::KeyPoint>& vUndistKPts);
+        static void undistKeyPointsFishEye(const std::vector<cv::KeyPoint>& vDistKPts,
+                                           std::vector<cv::KeyPoint>& vUndistKPts, const cv::Mat& K, const cv::Mat& distCoefs,
+                                           const cv::Mat& R = cv::Mat(), const cv::Mat& P = cv::Mat());
+
+
+        void undistPoint(const cv::Point2f& srcPt, cv::Point2f& dstPt);
+
+        void undistPointPinhole(const cv::Point2f& srcPt, cv::Point2f& dstPt);
+        static void undistPointPinhole(const cv::Point2f& srcPt, cv::Point2f& dstPt, const cv::Mat& K,
+                                       const cv::Mat& distCoefs, const cv::Mat& R = cv::Mat(), const cv::Mat& P = cv::Mat());
+
+        void undistPointFishEye(const cv::Point2f& srcPt, cv::Point2f& dstPt);
+        static void undistPointFishEye(const cv::Point2f& srcPt, cv::Point2f& dstPt, const cv::Mat& K,
+                                       const cv::Mat& distCoefs, const cv::Mat& R, const cv::Mat& P = cv::Mat());
+
+
+        // This is not so easy because it requires interpolation
+        //void undistKeyPointsMaps(const std::vector<cv::KeyPoint>& vDistKPts, std::vector<cv::KeyPoint>& vUndistKPts);
+        //static void undistKeyPointsMaps(const std::vector<cv::KeyPoint>& vDistKPts,
+        //        std::vector<cv::KeyPoint>& vUndistKPts, const cv::Mat& mapX, const cv::Mat& mapY);
+
+
+        // Only use these for integer points!
+        void undistPointMaps(const cv::Point2f& srcPt, cv::Point2f& dstPt);
+        static void undistPointMaps(const cv::Point2f& srcPt, cv::Point2f& dstPt, const cv::Mat& mapX, const cv::Mat& mapY);
+
+        void undistImageMaps(const cv::Mat& srcImage, cv::Mat& dstImage);
+        static void undistImageMaps(const cv::Mat& srcImage, const cv::Mat& mapX, const cv::Mat& mapY, cv::Mat& dstImage);
 
     protected:
         std::string distType;
+        // Camera model (intrinsics)
         std::shared_ptr<GeometricCamera> mpCamModel;
+        // Camera to body transformation (extrinsic params)
+        PosePtr mpTcb;
+
+        CameraType mCamType;
+        int mImWidth, mImHeight;
+        cv::Size mImSize;
+        cv::Mat mK;
+        cv::Mat mDistCoefs;
+        cv::Mat mR; // Rectification Matrix
+        cv::Mat mP; // Projection Matrix
+        cv::Mat mUndistMapX, mUndistMapY;
+        cv::Mat mNewCamMatrix;
     };
     typedef std::shared_ptr<Calibration> CalibPtr;
+    typedef std::shared_ptr<const Calibration> CalibPtrRO;
 
 }   //NAV24
 

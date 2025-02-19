@@ -7,7 +7,7 @@ project(nav_core)
 
 find_package(Eigen3 3.1.0 REQUIRED)
 
-find_package(OpenCV 4.2.0 REQUIRED)
+find_package(OpenCV 4.5.1 REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 
@@ -16,8 +16,10 @@ find_package(glog REQUIRED)
 # Optional Packages
 
 #find_package(Ceres)
-find_package(g2o)
-find_package(DBoW2)
+find_package(g2o CONFIG)
+#message("-- g2o libs: ${g2o_LIBRARIES}")
+find_package(DBoW2 CONFIG)
+#message("-- DBoW2 libs: ${DBoW2_LIBRARIES}")
 
 if (USE_PANGOLIN)
     find_package(Pangolin)
@@ -62,6 +64,7 @@ include_directories(
         ${Python_INCLUDE_DIRS}
         ${onnxruntime_INCLUDE_DIRS}
         ${Pangolin_INCLUDE_DIRS}
+        ${g2o_INCLUDE_DIRS}
         ${DBoW2_INCLUDE_DIRS}
 #        ${CERES_INCLUDE_DIRS}
 )
@@ -95,12 +98,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ${serial_LIBRARIES}
         ${Python_LIBRARIES}
         ${onnxruntime_LIBRARIES}
+        ${DBoW2_LIBRARIES}
         glog::glog
+        g2o::core g2o::types_sba g2o::types_slam3d
         -lboost_system
         -lboost_filesystem
-        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
-        ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
-#        ${EIGEN3_LIBS}
 #        -lboost_serialization
 #        -lcrypto
 #        ${CERES_LIBRARIES}
@@ -114,7 +116,7 @@ install(TARGETS ${PROJECT_NAME}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(FILES ${ALL_H_FILES} DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR})
+#install(FILES ${ALL_H_FILES} DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR})
 
 
 

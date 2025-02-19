@@ -6,6 +6,7 @@
 #define NAV24_TABULARTEXTDS_H
 
 #include <iostream>
+#include <fstream>
 
 #include <boost/filesystem.hpp>
 #include <boost/any.hpp>

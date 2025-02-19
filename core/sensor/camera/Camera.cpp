@@ -27,7 +27,8 @@ namespace NAV24 {
     int Camera::camIdx = 0;
 
     Camera::Camera(const ChannelPtr& pChannel) : Sensor(pChannel), mImgSz(DEF_IMG_WIDTH, DEF_IMG_HEIGHT),
-                                                  mFps(DEF_CAM_FPS), mTs(DEF_CAM_TS), mpCalib() {
+                                                 mFps(DEF_CAM_FPS), mTs(DEF_CAM_TS), mpCalib(), tsFactor(1.0),
+                                                 mCamOp(OFFLINE) {
         DLOG(INFO) << "Camera::Camera, Constructor\n";
     }
 
@@ -132,15 +133,16 @@ namespace NAV24 {
 
             MsgReqPtr msgGetCamParams{};
 
-            if (interfaceType == "offline") {
-                pCamera = make_shared<CamOffline>(pChannel);
-            }
-            else if (interfaceType == "stream") {
-                pCamera = make_shared<CamStream>(pChannel);
+            auto camOp = OFFLINE;
+            if (interfaceType == "stream") {
+                camOp = STREAM;
             }
             else if (interfaceType == "mixed") {
-                pCamera = make_shared<CamMixed>(pChannel);
+                camOp = BOTH;
             }
+
+            pCamera = make_shared<CameraMono>(pChannel);
+
             if (pCamera) {
                 // todo: make this target based
                 string keyIfTarget = string(PKEY_INTERFACE) + "/" + string(PKEY_IF_TARGET);
@@ -189,7 +191,7 @@ namespace NAV24 {
 
     /* ============================================================================================================== */
 
-    CamStream::CamStream(const ChannelPtr& pChannel) : Camera(pChannel), mMtxCap() {
+    /*CamStream::CamStream(const ChannelPtr& pChannel) : Camera(pChannel), mMtxCap() {
         DLOG(INFO) << "CamStream::CamStream\n";
     }
     CamStream::~CamStream() {
@@ -351,11 +353,11 @@ namespace NAV24 {
         ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, "");
         auto msgSensor = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
         mpChannel->publish(msgSensor);
-    }
+    }*/
 
     /* ============================================================================================================== */
 
-    CamOffline::CamOffline(const ChannelPtr& pChannel) : Camera(pChannel), tsFactor(1.0) {
+    /*CamOffline::CamOffline(const ChannelPtr& pChannel) : Camera(pChannel), tsFactor(1.0) {
         DLOG(INFO) << "CamOffline::CamOffline\n";
     }
 
@@ -604,12 +606,12 @@ namespace NAV24 {
         ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, nextFile);
         auto msgSensor = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
         mpChannel->publish(msgSensor);
-    }
+    }*/
 
     /* ============================================================================================================== */
 
-    CamMixed::CamMixed(const ChannelPtr &pChannel) : Camera(pChannel), CamOffline(pChannel), CamStream(pChannel),
-        mCamOp{CamOperation::OFFLINE} {
+    /*CamMixed::CamMixed(const ChannelPtr &pChannel) : Camera(pChannel), CamOffline(pChannel), CamStream(pChannel),
+        mCamOp(CamOperation::OFFLINE) {
         DLOG(INFO) << "CamMixed::CamMixed\n";
     }
 
@@ -721,5 +723,460 @@ namespace NAV24 {
                 DLOG(WARNING) << "CamMixed::getNextBr, Action not supported.\n";
                 break;
         }
+    }*/
+
+    /* ============================================================================================================== */
+
+    CameraMono::CameraMono(const ChannelPtr &pChannel) : Camera(pChannel), mMtxCap() {
+//        DLOG(INFO) << "CamStream::CamStream\n";
     }
+
+    CameraMono::~CameraMono() {
+        if (mpVideoCap && mpVideoCap->isOpened()) {
+            mpVideoCap->release();
+            mpVideoCap = nullptr;
+        }
+    }
+
+    void CameraMono::receive(const MsgPtr &msg) {
+        Camera::receive(msg);
+
+        if (!msg) {
+            DLOG(WARNING) << "CameraMono::receive, Null message detected, abort\n";
+            return;
+        }
+
+        if (msg->getTargetId() == FCN_CAM_LOAD_VIDEO) {
+            // sensor file here is the video file and sensor type is stream
+//            mSensorFile = msg->getMessage();
+//            mCamOp = CamOperation::STREAM;
+            mVideoFile = msg->getMessage();
+            this->setup(msg);
+        }
+        if (msg->getTargetId() == FCN_SEN_CONFIG) {
+            string camOp = msg->getMessage();
+            if (camOp == TAG_SEN_MX_OFFLINE) {
+                mCamOp = CamOperation::OFFLINE;
+            }
+            else if (camOp == TAG_SEN_MX_STREAM) {
+                mCamOp = CamOperation::STREAM;
+            }
+            else if (camOp == TAG_SEN_MX_BOTH) {
+                mCamOp = CamOperation::BOTH;
+            }
+            else {
+                mCamOp = CamOperation::NONE;
+            }
+        }
+    }
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    ParamPtr CameraMono::getFoldersParams(const string &seqBase, const string &imgBase, const string &imgFile,
+                                          const double &tsFact, vector <ParamPtr> &vpParams) {
+
+        ParamPtr pParam = make_shared<Parameter>(PKEY_IMG_PATHS, nullptr, Parameter::NodeType::MAP_NODE);
+
+        auto pSeqBase = make_shared<ParamType<string>>(PKEY_SEQ_BASE, pParam, seqBase);
+        auto pImgBase = make_shared<ParamType<string>>(PKEY_IMG_BASE, pParam, imgBase);
+        auto pImgFile = make_shared<ParamType<string>>(PKEY_IMG_FILE, pParam, imgFile);
+        auto pTsFactor = make_shared<ParamType<double>>(PKEY_TS_FACT, pParam, tsFact);
+
+        pParam->insertChild(PKEY_SEQ_BASE, pSeqBase);
+        pParam->insertChild(PKEY_IMG_BASE, pImgBase);
+        pParam->insertChild(PKEY_IMG_FILE, pImgFile);
+        pParam->insertChild(PKEY_TS_FACT, pTsFactor);
+
+        vpParams.push_back(pImgBase);
+        vpParams.push_back((pImgFile));
+        vpParams.push_back(pSeqBase);
+        vpParams.push_back(pTsFactor);
+        vpParams.push_back(pParam);
+
+        return pParam;
+    }
+
+    void CameraMono::setup(const MsgPtr &msg) {
+        Camera::setup(msg);
+        this->setupStream(msg);
+        this->setupOffline(msg);
+    }
+
+    void CameraMono::initVideoCap(int port, const string &video) {
+
+        // Initialize OpenCV VideoCapture
+        if (port >= 0) {
+            mpVideoCap = make_shared<cv::VideoCapture>(port);
+        }
+        else if (!video.empty()) {
+            mpVideoCap = make_shared<cv::VideoCapture>(video);
+        }
+        if (mpVideoCap) {
+            // set image size
+            mpVideoCap->set(cv::CAP_PROP_FRAME_HEIGHT, mImgSz.height);
+            mpVideoCap->set(cv::CAP_PROP_FRAME_WIDTH, mImgSz.width);
+            // disable auto-focus
+            mpVideoCap->set(cv::CAP_PROP_AUTOFOCUS, 0);
+        }
+    }
+
+    void CameraMono::getNext(MsgPtr msg) {
+
+        if (!msg) {
+            DLOG(WARNING) << "CameraMono::getNext, Null message detected, abort\n";
+            return;
+        }
+
+        MsgReqPtr request = dynamic_pointer_cast<MsgRequest>(msg);
+        if (!request) {
+            DLOG(WARNING) << "CameraMono::getNext, Null request detected\n";
+            return;
+        }
+
+        MsgCbPtr sender = request->getCallback();
+        if (!sender) {
+            DLOG(WARNING) << "CameraMono::getNext, Null sender detected\n";
+            return;
+        }
+
+        MsgPtr pMsg = nullptr, pMsg2 = nullptr;
+        switch (mCamOp) {
+            case OFFLINE:
+                pMsg = this->getNextOffline(msg);
+                break;
+            case STREAM:
+                pMsg = this->getNextStream(msg);
+                break;
+            case BOTH:
+                pMsg = this->getNextOffline(msg);
+                pMsg2 = this->getNextStream(msg);
+                break;
+            case NONE:
+            default:
+                DLOG(WARNING) << "CamMixed::getNext, Action not supported.\n";
+                break;
+        }
+
+        sender->receive(pMsg);
+        if (pMsg2) {
+            sender->receive(pMsg2);
+        }
+    }
+
+    void CameraMono::getNextBr(MsgPtr msg) {
+
+        if (!msg || !mpChannel) {
+            DLOG(WARNING) << "CameraMono::getNextBr, Null channel or message detected, abort\n";
+            return;
+        }
+
+        MsgPtr pMsg = nullptr, pMsg2 = nullptr;
+        switch (mCamOp) {
+            case OFFLINE: {
+                pMsg = this->getNextOffline(msg);
+                break;
+            }
+            case STREAM: {
+                pMsg = this->getNextStream(msg);
+                break;
+            }
+            case BOTH: {
+                pMsg = this->getNextOffline(msg);
+                pMsg2 = this->getNextStream(msg);
+                break;
+            }
+            case NONE:
+            default:
+                DLOG(WARNING) << "CamMixed::getNextBr, Action not supported.\n";
+                break;
+        }
+
+        mpChannel->publish(pMsg);
+        if (pMsg2) {
+            mpChannel->publish(pMsg);
+        }
+    }
+
+    MsgPtr CameraMono::getNextStream(const MsgPtr& msg) {
+
+        if (!mpVideoCap) {
+            DLOG(WARNING) << "CamStream::getNextStream, VideoCapture is not opened, abort\n";
+            return nullptr;
+        }
+
+        if (!msg) {
+            DLOG(WARNING) << "CamStream::getNextStream, Null message detected, abort\n";
+            return nullptr;
+        }
+
+        cv::Mat image;
+        mpVideoCap->read(image);
+
+        auto ts_chrono = chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now());
+        auto ts = ts_chrono.time_since_epoch().count();
+
+        ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, "");
+        auto msgSensor = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
+        return msgSensor;
+    }
+
+    MsgPtr CameraMono::getNextOffline(const MsgPtr& msg) {
+
+        if (!msg) {
+            DLOG(WARNING) << "CamOffline::getNext, Null message detected, abort\n";
+            return nullptr;
+        }
+
+        if (!mpImgDS) {
+            DLOG(WARNING) << "CamOffline::getNext, ImageDS is not configured, abort\n";
+            return nullptr;
+        }
+
+        double ts = -1.0;
+        string nextFile{};
+        this->getNextImageFile(nextFile, ts);
+        while(TabularTextDS::isComment(nextFile)) {
+            nextFile = string{};
+            this->getNextImageFile(nextFile, ts);
+        }
+
+        cv::Mat image = cv::imread(nextFile, cv::IMREAD_UNCHANGED);
+        ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, nextFile);
+        auto msgSensor = make_shared<MsgSensorData>(DEF_CAT, imgObj,
+                                                    DEF_TOPIC, FCN_SEN_GET_NEXT);
+
+        return msgSensor;
+    }
+
+    void CameraMono::getNextImageFile(string &path, double &ts) {
+
+        if (mpImgDS) {
+            if (mSensorFile.empty()) {
+                path = mpImgDS->getNextFile();
+                ts = -1.0;
+            }
+            else {
+                vector<string> vData{};
+                vData.reserve(2);
+                mpImgDS->getNextData(vData);
+
+                if (vData.size() >= 2 && !TabularTextDS::isComment(vData[0])) {
+
+                    istringstream iss{vData[0]};
+                    iss >> ts;
+                    if (mSensorBase.empty()) {
+                        path = mSeqPath + '/' + vData[1];
+                    }
+                    else {
+                        path = mSeqPath + '/' + mSensorBase + '/' + vData[1];
+                    }
+                }
+                else if (!vData.empty() && TabularTextDS::isComment(vData[0])) {
+                    path = vData[0];
+                }
+            }
+        }
+    }
+
+    void CameraMono::run() {
+
+        switch (mCamOp) {
+            case OFFLINE:
+                this->runOffline();
+                break;
+            case STREAM:
+                this->runStream();
+                break;
+            case BOTH:
+                this->runOffline();
+                this->runStream();
+                break;
+            case NONE:
+            default:
+                DLOG(WARNING) << "CamMixed::run, Action not supported.\n";
+                break;
+        }
+    }
+
+    void CameraMono::runStream() {
+
+        if (mpChannel && mpVideoCap) {
+
+            auto Ts = std::chrono::milliseconds(static_cast<int>(mTs * 1000.f));
+
+            while (mpVideoCap->isOpened()) {
+
+                auto t1 = chrono::high_resolution_clock::now();
+
+                cv::Mat image;
+                mMtxCap.lock();
+                bool res = mpVideoCap->read(image);
+                mMtxCap.unlock();
+                auto ts_chrono = chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now());
+
+                if (!res) {
+                    break;
+                }
+
+                auto ts = ts_chrono.time_since_epoch().count();
+                ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, "");
+                auto msg = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
+
+                auto t2 = chrono::high_resolution_clock::now();
+
+                mpChannel->publish(msg);
+
+                auto duration = duration_cast<chrono::milliseconds>(t2 - t1);
+                if (Ts > duration) {
+                    std::this_thread::sleep_for(Ts - duration);
+                }
+
+                if (this->isStopped()) {
+                    break;
+                }
+            }
+        }
+    }
+
+    void CameraMono::runOffline() {
+
+        if (mpChannel && mpImgDS) {
+
+            double ts = -1.0;
+            string nextFile{};
+            auto Ts = std::chrono::milliseconds(static_cast<int>(mTs * 1000.f));
+
+            this->getNextImageFile(nextFile, ts);
+            while(!nextFile.empty()) {
+
+                auto t1 = chrono::high_resolution_clock::now();
+
+                if (TabularTextDS::isComment(nextFile)) {
+                    nextFile = string{};
+                    this->getNextImageFile(nextFile, ts);
+                    continue;
+                }
+
+                cv::Mat image = cv::imread(nextFile, cv::IMREAD_UNCHANGED);
+                ImagePtr imgObj = make_shared<ImageTs>(image.clone(), ts, nextFile);
+                auto msgSensor = make_shared<MsgSensorData>(ID_TP_SDATA, imgObj);
+
+                nextFile = string{};
+                this->getNextImageFile(nextFile, ts);
+
+                auto t2 = chrono::high_resolution_clock::now();
+
+                mpChannel->publish(msgSensor);
+
+                auto duration = duration_cast<chrono::milliseconds>(t2 - t1);
+                if (Ts > duration) {
+                    std::this_thread::sleep_for(Ts - duration);
+                }
+
+                if (this->isStopped()) {
+                    break;
+                }
+            }
+        }
+    }
+
+    void CameraMono::reset() {
+        this->stop();
+        if (mpImgDS) {
+            mpImgDS->reset();
+        }
+    }
+
+    std::string CameraMono::printStr(const string &prefix) const {
+        ostringstream oss;
+
+        oss << Camera::printStr(prefix);
+        oss << prefix << "Sequence Base: " << mSeqPath << "\n";
+        oss << prefix << "Sensor Base: " << mSensorBase << "\n";
+        oss << prefix << "Sensor File Name: " << mSensorFile << "\n";
+        oss << prefix << "Timestamp Factor: " << tsFactor << "\n";
+        if (mpImgDS) {
+            oss << mpImgDS->printStr(prefix);
+        }
+
+        return oss.str();
+    }
+
+    void CameraMono::setupStream(const MsgPtr &msg) {
+
+        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
+            auto pMsgConf = dynamic_pointer_cast<MsgConfig>(msg);
+            auto pParamVideoPath = pMsgConf->getConfig();
+            if (pParamVideoPath && dynamic_pointer_cast<ParamType<string>>(pParamVideoPath)) {
+                mVideoBase = dynamic_pointer_cast<ParamType<string>>(pParamVideoPath)->getValue();
+            }
+        }
+
+        if (mpInterface) {
+            int port = mpInterface->port;
+            if (port >= 0) {
+                this->initVideoCap(port);
+            }
+            else if (!mVideoBase.empty() && !mVideoFile.empty()) {
+                this->initVideoCap(port, mVideoBase + "/" + mVideoFile);
+            }
+        }
+    }
+
+    void CameraMono::setupOffline(const MsgPtr &msg) {
+
+        if (!msg || !dynamic_pointer_cast<MsgConfig>(msg)) {
+            DLOG(WARNING) << "CamOffline::setup, bad config message, abort\n";
+            return;
+        }
+
+        // We only need to load image path params here
+        if (msg->getTopic() != DataStore::TOPIC) {
+            DLOG(INFO) << "CamOffline::setup, No image paths message, abort\n";
+            return;
+        }
+
+        auto pConfig = dynamic_pointer_cast<MsgConfig>(msg);
+        auto pParamDS = pConfig->getConfig();
+        if (pParamDS) {
+            // Sequence base
+            auto pSeqBase = find_param<ParamType<string>>(PKEY_SEQ_BASE, pParamDS);
+            if (pSeqBase) {
+                mSeqPath = pSeqBase->getValue();
+            }
+            // Image base
+            auto pImgBase = find_param<ParamType<string>>(PKEY_IMG_BASE, pParamDS);
+            if (pImgBase) {
+                mSensorBase = pImgBase->getValue();
+            }
+            // Image file
+            auto pFileName = find_param<ParamType<string>>(PKEY_IMG_FILE, pParamDS);
+            if (pFileName) {
+                mSensorFile = pFileName->getValue();
+            }
+            // Ts Factor
+            auto pTsFactor = find_param<ParamType<double>>(PKEY_TS_FACT, pParamDS);
+            if (pTsFactor) {
+                tsFactor = pTsFactor->getValue();
+            }
+
+            // Create the image data store
+//            string imgExt = boost::filesystem::extension(boost::filesystem::path(mSensorFile));
+            auto path_sensor = boost::filesystem::path(mSensorFile);
+            string imgExt = path_sensor.extension().string();
+            if (imgExt.empty()) {
+                imgExt = ".png";
+            }
+
+            if (mSensorFile.empty()) {
+                mpImgDS = make_shared<TabularTextDS>(mSeqPath + "/" + mSensorBase, mSensorFile, imgExt);
+            }
+            else {
+                mpImgDS = make_shared<TabularTextDS>(mSeqPath, mSensorFile, imgExt);
+                mpImgDS->open();
+            }
+        }
+    }
+
+
 }   //NAV24

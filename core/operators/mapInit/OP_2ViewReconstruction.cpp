@@ -19,7 +19,9 @@
 #include <thread>
 #include <Eigen/Dense>
 
-#include "../thirdparty/DBoW2/DUtils/Random.h"
+//#include "../thirdparty/DBoW2/DUtils/Random.h"
+#include <random>
+//#include <cstdlib>
 
 #include "OP_2ViewReconstruction.hpp"
 
@@ -106,16 +108,20 @@ bool TwoViewReconstruction::Reconstruct(const std::vector<cv::KeyPoint>& vKeys1,
     // Generate sets of 8 points for each RANSAC iteration
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(8,0));
 
-    DUtils::Random::SeedRandOnce(0);
+    //DUtils::Random::SeedRandOnce(0);
+    std::random_device dev;
+    std::mt19937 rng(dev());
 
     for(int it=0; it<mMaxIterations; it++)
     {
         vAvailableIndices = vAllIndices;
+        std::uniform_int_distribution<std::mt19937::result_type> dist6(0,vAvailableIndices.size()-1); 
 
         // Select a minimum set
         for(size_t j=0; j<8; j++)
         {
-            int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            //int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            int randi = dist6(rng);
             int idx = vAvailableIndices[randi];
 
             mvSets[it][j] = idx;
@@ -203,16 +209,20 @@ bool TwoViewReconstruction::Reconstruct(const std::vector<cv::KeyPoint>& vKeys1,
     // Generate sets of 8 points for each RANSAC iteration
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(8,0));
 
-    DUtils::Random::SeedRandOnce(0);
+    //DUtils::Random::SeedRandOnce(0);
+    std::random_device dev;
+    std::mt19937 rng(dev());
 
     for(int it=0; it<mMaxIterations; it++)
     {
         vAvailableIndices = vAllIndices;
+        std::uniform_int_distribution<std::mt19937::result_type> dist6(0,vAvailableIndices.size()-1); 
 
         // Select a minimum set
         for(size_t j=0; j<8; j++)
         {
-            int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            //int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            int randi = dist6(rng);
             int idx = vAvailableIndices[randi];
 
             mvSets[it][j] = idx;

@@ -61,7 +61,9 @@ namespace NAV24 {
             mbQwFirst = (pQwFirst) ? pQwFirst->getValue() : mbQwFirst;
 
             // Create the image data store
-            string poseExt = boost::filesystem::extension(boost::filesystem::path(mPoseFile));
+//            string poseExt = boost::filesystem::extension();
+            auto pose_path = boost::filesystem::path(mPoseFile);
+            string poseExt = pose_path.extension().string();
             if (poseExt.empty()) {
                 poseExt = ".txt";
             }

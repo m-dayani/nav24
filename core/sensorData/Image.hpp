@@ -13,6 +13,8 @@
 
 //#include "SharedQueue.hpp"
 #include "SensorData.hpp"
+#include "Calibration.hpp"
+#include "Point2D.hpp"
 
 
 namespace NAV24 {
@@ -22,12 +24,11 @@ namespace NAV24 {
         Image(const cv::Mat& image, std::string  imPath) : mImage(image.clone()), mPath(std::move(imPath)) {}
         virtual ~Image() = default;
 
-        virtual std::string printStr() const;
+        [[nodiscard]] virtual std::string printStr() const;
 
         cv::Mat mImage;
         std::string mPath;
     };
-
     typedef std::shared_ptr<Image> ImagePtr;
 
     struct ImageTs : public Image {
@@ -35,9 +36,22 @@ namespace NAV24 {
         ImageTs(const cv::Mat& image, double ts, const std::string& imPath) :
                 Image(image, imPath), mTimeStamp(ts) {}
 
-        std::string printStr() const override;
+        [[nodiscard]] std::string printStr() const override;
 
         double mTimeStamp;
+    };
+
+    struct ImageTsCalib : public ImageTs {
+
+        ImageTsCalib(const cv::Mat& image, double ts, const std::string& imPath, const CalibPtr pCalib) :
+                ImageTs(image, ts, imPath), mpCamera(pCalib) {}
+
+        void hello() {
+            auto bili = std::make_shared<OB::Point2D>(3, 4);
+            mpCamera->undistort(bili);
+        }
+        // This must be protected against the content modification
+        CalibPtrRO mpCamera;
     };
 
     //typedef std::shared_ptr<ImageTs> ImageTsPtr;

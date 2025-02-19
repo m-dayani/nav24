@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.22.1)
-project(NAV24 VERSION 1.0)
+cmake_minimum_required(VERSION 3.28.3)
+project(NAV24 VERSION 2.0)
 
 #include(GNUInstallDirs)
 
@@ -7,10 +7,20 @@ project(NAV24 VERSION 1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(PROJ_CORE_PATH core)
-set(PROJ_EXAMPLES_PATH examples)
-set(PROJ_ROS_PATH ros)
-set(PROJ_THIRDPARTY_PATH thirdparty)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+message("-- CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+
+set(PROJ_CORE_PATH ${PROJECT_SOURCE_DIR}/core)
+set(PROJ_EXAMPLES_PATH ${PROJECT_SOURCE_DIR}/examples)
+set(PROJ_ROS_PATH ${PROJECT_SOURCE_DIR}/ros)
+set(PROJ_THIRDPARTY_PATH ${PROJECT_SOURCE_DIR}/thirdparty)
 
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/lib)
 #set(DESTDIR ${CMAKE_INSTALL_PREFIX})
@@ -24,8 +34,8 @@ option(USE_PYTHON "Use python library to embed python in C++" OFF)
 option(USE_ONNX_RUNTIME "Use ONNX Runtime to enable deep learning in C++" OFF)
 
 # External dependencies
-add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
-add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
+#add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
+#add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
 if (USE_SERIAL)
 add_subdirectory(${PROJ_THIRDPARTY_PATH}/serial)
 endif()
@@ -37,9 +47,9 @@ add_subdirectory(${PROJ_CORE_PATH})
 #add_subdirectory(${PROJ_ROS_PATH})
 
 
-install(FILES ${PROJECT_BINARY_DIR}/${PROJ_CORE_PATH}/GlobalConfig.h
-        DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR}
-)
+#install(FILES ${PROJECT_BINARY_DIR}/${PROJ_CORE_PATH}/GlobalConfig.h
+#        DESTINATION include ${CMAKE_INSTALL_INCLUDEDIR}
+#)
 
 install(EXPORT NAV_CORE
         FILE NAV_CORE.cmake

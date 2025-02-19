@@ -112,7 +112,7 @@ namespace NAV24 {
         ParamPtr pParam = nullptr;
 
         if (tag == TAG_DS_GET_PATH_IMG) {
-            pParam = CamOffline::getFoldersParams(this->getSequencePath(), mPathImBase,
+            pParam = CameraMono::getFoldersParams(this->getSequencePath(), mPathImBase,
                                                   mPathImFile, mTsFactor, mvpParams);
         }
         else if (tag == TAG_DS_GET_PATH_IMU) {
