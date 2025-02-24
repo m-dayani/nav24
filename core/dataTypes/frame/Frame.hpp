@@ -15,7 +15,7 @@ namespace NAV24 {
 
     class Frame : public SmartObject {
     public:
-        Frame() : ts(-1.0), mpPose(nullptr), mvpObservations(), mId(idCounter++), mOptId(0) {}
+        Frame() : mvpObservations(), mpPose(nullptr), ts(-1.0), mId(idCounter++), mOptId(0) {}
         Frame(double _ts, PosePtr  pose, const std::vector<OB::ObsPtr>& vObs);
 
         [[nodiscard]] const std::vector<OB::ObsPtr> &getObservations() const;

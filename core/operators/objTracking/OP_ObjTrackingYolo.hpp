@@ -8,7 +8,7 @@
 #include <queue>
 //#undef LIB_ONNX_RUNTIME_FOUND
 #ifdef LIB_ONNX_RUNTIME_FOUND
-#include <onnxruntime_cxx_api.h>
+#include <onnxruntime/onnxruntime_cxx_api.h>
 #endif
 
 #include "Image.hpp"

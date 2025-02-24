@@ -23,7 +23,7 @@ namespace NAV24 {
 
     class MapViewer : public Output {
     public:
-        MapViewer(const ChannelPtr& pChannel);
+        explicit MapViewer(const ChannelPtr& pChannel);
         void receive(const MsgPtr &msg) override;
 
     protected:
@@ -39,8 +39,13 @@ namespace NAV24 {
         void run() override;
 
         void drawPose(const PosePtr& pPose) const;
+        void drawPoseFrame(const PosePtr& pPose) const;
         void drawWorldObject(const WO::WoPtr &pWo) const;
         void drawTrajectory(const std::vector<FramePtr>& vpFrame);
+
+#ifdef LIB_PANGOLIN_FOUND
+        void getLastOpenGlCamera(pangolin::OpenGlMatrix& Twc);
+#endif
 
     private:
         bool mbDisabled;
@@ -59,6 +64,11 @@ namespace NAV24 {
         std::set<PosePtr> mspPose;
         std::mutex mMtxWoQueue;
         std::set<WO::WoPtr> mspWorldObjects;
+
+        //std::string mWinName;
+
+        PosePtr mLastPose;
+        int mSetFirstPoseState;
     };
 } // NAV24
 

@@ -25,7 +25,7 @@ namespace NAV24 {
 
     DataStore::DataStore(const ChannelPtr& server) :
             MsgCallback(server), mLoadState(TabularTextDS::LoadState::BAD_PATH),
-            mDsFormat(), mDsName(), mSeqNames(), mSeqCount(0), mSeqTarget(0), mSeqIdx(0),
+            mDsName(), mDsFormat(), mSeqCount(0), mSeqTarget(0), mSeqNames(), mSeqIdx(0),
             mnMaxIter(0), mTsFactor(1.0), mbGtQwFirst(false), mbGtPosFirst(false), mbImuGyroFirst(false) {
 
         mName = mDsName;
@@ -275,7 +275,7 @@ namespace NAV24 {
         if (pParamSeqStr) {
             seqNames = pParamSeqStr->getValue();
         }
-        unsigned int seqCount = seqNames.size();
+        int seqCount = static_cast<int>(seqNames.size());
 
         if (seqCount) {
             // Check target sequence path(s) exist.
@@ -303,7 +303,7 @@ namespace NAV24 {
             else {
                 // If some sequences do not exist, we still want to
                 // be able to work with existing sequences
-                for (size_t seq = 0; seq < seqCount; seq++) {
+                for (int seq = 0; seq < seqCount; seq++) {
                     string seqPath = mPathDsRoot + '/' + seqNames[seq];
                     if (!TabularTextDS::checkDirectory(seqPath)) {
                         LOG(INFO) << "** Failed to find sequence: " << seqPath << endl;
@@ -377,12 +377,12 @@ namespace NAV24 {
             return {};
         }
         if (mSeqTarget < 0) {
-            if (mSeqIdx >= 0 && mSeqIdx < mSeqCount) {
+            if (mSeqIdx < mSeqCount) {
                 return mPathDsRoot + '/' + mSeqNames[mSeqIdx];
             }
         }
         else {
-            if (mSeqTarget < mSeqCount) {
+            if (mSeqTarget < (int) mSeqCount) {
                 return mPathDsRoot + '/' + mSeqNames[mSeqTarget];
             }
         }
@@ -412,7 +412,7 @@ namespace NAV24 {
 
     void DataStore::changeSeqByName(const string &seqName) {
 
-        for (int i = 0; i < mSeqCount; i++) {
+        for (size_t i = 0; i < mSeqCount; i++) {
             if (mSeqNames[i] == seqName) {
                 mSeqIdx = i;
                 return;

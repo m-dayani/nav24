@@ -28,8 +28,8 @@ namespace NAV24::FE {
 #define FRAME_BUFF_MAX_SIZE 100
 
     ObjTracking::ObjTracking(const ChannelPtr &pChannel) : FrontEnd(pChannel), mbInitialized(false),
-        mvpParamHolder(), mMapName(), mTrajectory(), mvpThTrackers(), mbTrInit(false),
-        mTsYoloUpdate(-1), mpTempParam(), mmpFrameBuffer() {
+            mMapName(), mTrajectory(), mpTempParam(), mvpParamHolder(), mvpThTrackers(),
+            mmpFrameBuffer(), mbTrInit(false), mLockTrInit(), mTsYoloUpdate(-1) {
 
         //mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
         //mpObjTracker = make_shared<OP::ObjTrackingCv>(pChannel);
@@ -93,7 +93,7 @@ namespace NAV24::FE {
         }
     }
 
-    void ObjTracking::setup(const MsgPtr &msg) {
+    void ObjTracking::setup(const MsgPtr &) {
 
         // Create a tracking map
         // Never store a local map or anything else (leave this to each manager)

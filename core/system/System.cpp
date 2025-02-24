@@ -12,9 +12,10 @@ using namespace std;
 
 namespace NAV24 {
 
-    System::System() : mmChannels(), mmPublishers(), mmSubscribers(), mpParamServer(), mmpDataStores(), mmpSensors(),
-                       mmpTrans(), mmpOutputs(), mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr),
-                       mpThreads() {
+    System::System() : mmChannels(), mmPublishers(), mmSubscribers(),
+                       mpParamServer(), mmpDataStores(), mmpSensors(),
+                       mmpTrans(), mmpOutputs(), mpThreads(),
+                       mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr) {
         mName = "System";
     }
 
@@ -295,7 +296,7 @@ namespace NAV24 {
         }
     }
 
-    void System::setup(const MsgPtr &configMsg) {
+    void System::setup(const MsgPtr &) {
 
     }
 

@@ -75,8 +75,8 @@ namespace NAV24::OB {
     class MatchedObs {
     public:
         MatchedObs() : mnMatches(0), mvMatches12() {}
-        MatchedObs(FramePtr pFrame, const std::vector<int>& matches12, int nMatches) :
-                mnMatches(nMatches), mvMatches12(matches12), mpMatchedFrame(pFrame) {}
+        MatchedObs(const FramePtr& pFrame, const std::vector<int>& matches12, int nMatches) :
+                mnMatches(nMatches), mpMatchedFrame(pFrame), mvMatches12(matches12) {}
 
         static int getNumMatches(const FramePtr& pFrame);
         static void getMatches(const FramePtr& pFrame, std::vector<int>& vMatches12, int& nMatches);

@@ -23,11 +23,11 @@ namespace NAV24::OP {
     ObjTracking::ObjTracking(const ChannelPtr& pChannel) : MsgCallback(pChannel), Operator(),
         mqpImages(), mMtxImgQ(), mbInitialized(false) {}
 
-    void ObjTracking::setup(const MsgPtr &configMsg) {
+    void ObjTracking::setup(const MsgPtr &) {
 
     }
 
-    void ObjTracking::handleRequest(const MsgPtr &reqMsg) {
+    void ObjTracking::handleRequest(const MsgPtr &) {
 
     }
 
@@ -50,11 +50,11 @@ namespace NAV24::OP {
         }
     }
 
-    void ObjTracking::init(const MsgPtr &msg) {
+    void ObjTracking::init(const MsgPtr &) {
 
     }
 
-    void ObjTracking::update(const FramePtr &pImage) {
+    void ObjTracking::update(const FramePtr &) {
 
     }
 

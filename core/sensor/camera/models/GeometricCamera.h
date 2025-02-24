@@ -35,6 +35,7 @@ namespace NAV24 {
             ar & mnId;
             ar & mnType;
             ar & mvParameters;
+            ar & version;
         }
 
     public:
@@ -44,8 +45,10 @@ namespace NAV24 {
 
             mK_cv = cv::Mat::eye(3, 3, CV_32F);
             mD_cv = cv::Mat::zeros(4, 1, CV_32F);
-            mR = cv::Mat::eye(3, 3, CV_32F);
-            mP = mK_cv.clone();
+//            mR = cv::Mat::eye(3, 3, CV_32F);
+//            mP = mK_cv.clone();
+            mR = cv::Mat();
+            mP = cv::Mat();
         }
 
         explicit GeometricCamera(std::vector<float>  _vParameters) : mvParameters(std::move(_vParameters)) {
@@ -62,8 +65,10 @@ namespace NAV24 {
             mK_cv = (cv::Mat_<float>(3, 3) << fx, 0.f, cx, 0.f, fy, cy, 0.f, 0.f, 1.f);
             mK_ei << fx, 0.f, cx, 0.f, fy, cy, 0.f, 0.f, 1.f;
             mD_cv = cv::Mat::zeros(4, 1, CV_32F);
-            mR = cv::Mat::eye(3, 3, CV_32F);
-            mP = mK_cv.clone();
+//            mR = cv::Mat::eye(3, 3, CV_32F);
+//            mP = mK_cv.clone();
+            mR = cv::Mat();
+            mP = cv::Mat();
         }
 
         virtual ~GeometricCamera() = default;
@@ -97,9 +102,9 @@ namespace NAV24 {
 
         size_t size() { return mvParameters.size(); }
 
-        unsigned int GetId() { return mnId; }
+        [[nodiscard]] unsigned int GetId() const { return mnId; }
 
-        unsigned int GetType() { return mnType; }
+        [[nodiscard]] unsigned int GetType() const { return mnType; }
 
         cv::Mat getK_cv() { return mK_cv; }
         Eigen::Matrix3f getK_ei() { return mK_ei; }

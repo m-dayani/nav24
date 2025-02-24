@@ -6,6 +6,7 @@
 #define NAV24_OBSERVATION_HPP
 
 #include <memory>
+#include <opencv2/core.hpp>
 
 #include "SmartObject.hpp"
 
@@ -38,6 +39,8 @@ namespace NAV24::OB {
             return mpFrame.lock();
         }
         void setFrame(const FramePtr& pFrame) { mpFrame = pFrame; }
+
+        virtual void draw(cv::Mat& img) = 0;
 
         virtual std::string toString() { return "Observation, Base Class\n"; }
     protected:

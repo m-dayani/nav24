@@ -12,8 +12,8 @@ namespace NAV24 {
     public:
         explicit PinholeRadTan(const std::vector<float>& vParams) : Pinhole(vParams) {
 
-            for (int i = 4; i < vParams.size(); i++) {
-                mD_cv.at<float>(i-4) = vParams[i];
+            for (size_t i = 4; i < vParams.size(); i++) {
+                mD_cv.at<float>((int)i-4) = vParams[i];
             }
         }
 

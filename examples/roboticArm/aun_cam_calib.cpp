@@ -5,9 +5,7 @@
 #include <iostream>
 
 #include <glog/logging.h>
-#include <opencv2/core.hpp>
 
-#include "ParameterBlueprint.h"
 #include "System.hpp"
 #include "FE_CalibCamCv.hpp"
 #include "FE_ObjTracking.hpp"
@@ -17,28 +15,15 @@ using namespace std;
 using namespace NAV24;
 
 
-class ParamReceiver : public MsgCallback {
+class ParamReceiverCalib : public ParamReceiver {
 public:
     void receive(const MsgPtr &msg) override {
-
-        if (msg) {
-            if (dynamic_pointer_cast<MsgConfig>(msg)) {
-                auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
-                mpParam = pMsgConfig->getConfig();
-            }
-            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
-                mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
-            }
+        ParamReceiver::receive(msg);
+        if (msg && dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
+            mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
         }
     }
 
-protected:
-    void setup(const MsgPtr &configMsg) override {}
-    void handleRequest(const MsgPtr &reqMsg) override {}
-    void run() override {}
-
-public:
-    ParamPtr mpParam;
     CalibPtrRO mpCalib;
 };
 
@@ -102,9 +87,14 @@ int main([[maybe_unused]] int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/BluePrint.yaml";
-    string saveFile = "../../config/AUN_ARM2.yaml";
-    shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
+    if (argc < 3) {
+        cerr << "Usage: " << argv[0] << " config_blueprint.yaml config_result.yaml\n";
+        return 1;
+    }
+
+    string confFile = argv[1];
+    string saveFile = argv[2];
+    shared_ptr<ParamReceiverCalib> pParamRec = make_shared<ParamReceiverCalib>();
 
     // Create the system
     shared_ptr<System> mpSystem = make_shared<System>();

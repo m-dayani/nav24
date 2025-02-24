@@ -33,9 +33,9 @@ namespace NAV24::FE {
 #define PARAM_KEY_GRID_SZ "grid_size"
 #define PARAM_KEY_GRID_SC "grid_scale"
 
-    CalibCamCv::CalibCamCv(const ChannelPtr &pChannel) : FrontEnd(pChannel),
+    CalibCamCv::CalibCamCv(const ChannelPtr &pChannel) : FrontEnd(pChannel), mbInitialized(false),
             mGridSize(DEF_CALIB_GRID_X, DEF_CALIB_GRID_Y), mGridScale(DEF_CALIB_GRID_S),
-            mbInitialized(false), mImageSize(), mvpParamHolder() {
+            mImageSize(), mvpParamHolder() {
 
         cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.0001);
         mpOpChBoardDetCv = make_shared<OP::OP_ChBoardDetCv>(mGridSize, criteria);
@@ -84,7 +84,7 @@ namespace NAV24::FE {
         }
     }
 
-    void CalibCamCv::setup(const MsgPtr& msg) {
+    void CalibCamCv::setup(const MsgPtr&) {
 
         // Create a calibration map
         // Never store a local map or anything else (leave this to each manager)

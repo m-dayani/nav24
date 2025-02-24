@@ -26,9 +26,10 @@ namespace NAV24 {
 
     int Camera::camIdx = 0;
 
-    Camera::Camera(const ChannelPtr& pChannel) : Sensor(pChannel), mImgSz(DEF_IMG_WIDTH, DEF_IMG_HEIGHT),
-                                                 mFps(DEF_CAM_FPS), mTs(DEF_CAM_TS), mpCalib(), tsFactor(1.0),
-                                                 mCamOp(OFFLINE) {
+    Camera::Camera(const ChannelPtr& pChannel) : Sensor(pChannel), mCamOp(OFFLINE),
+                                                 mImgSz(DEF_IMG_WIDTH, DEF_IMG_HEIGHT),
+                                                 mFps(DEF_CAM_FPS), mTs(DEF_CAM_TS), tsFactor(1.0),
+                                                 mpCalib() {
         DLOG(INFO) << "Camera::Camera, Constructor\n";
     }
 
@@ -172,18 +173,18 @@ namespace NAV24 {
         return pCamera;
     }
 
-    WO::WoPtr Camera::unproject(const OB::ObsPtr &pObs, const TransPtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float scale) {
+    WO::WoPtr Camera::unproject(const OB::ObsPtr &pObs, const TransPtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float) {
 
         auto pc = pCalib->undistort(pObs);
         auto Pc = dynamic_pointer_cast<OB::Point2D>(pc);
-        auto Pc_cv = Pc->getPoint();
+        auto Pc_cv = Pc->getPointUd();
         auto pWo = make_shared<WO::Point3D>(Pc_cv.x, Pc_cv.y, 1.0);
         return pPose_wc->transform(pWo);
         //auto Pw_cv = static_pointer_cast<WO::Point3D>(Pw)->getPoint();
         //return make_shared<WO::Point3D>(Pw_cv.x / Pw_cv.z, Pw_cv.y / Pw_cv.z, 1.0);
     }
 
-    OB::ObsPtr Camera::project(const WO::WoPtr &pWo, const TransPtr &pPose_cw, const NAV24::CalibPtr &pCalib, const float scale) {
+    OB::ObsPtr Camera::project(const WO::WoPtr &pWo, const TransPtr &pPose_cw, const NAV24::CalibPtr &pCalib, const float) {
 
         auto Pc = pPose_cw->transform(pWo);
         return pCalib->project(Pc);

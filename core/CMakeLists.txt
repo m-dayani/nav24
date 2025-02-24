@@ -15,12 +15,16 @@ find_package(glog REQUIRED)
 
 # Optional Packages
 
+# Optimization
 #find_package(Ceres)
 find_package(g2o CONFIG)
 #message("-- g2o libs: ${g2o_LIBRARIES}")
+
+# VPR
 find_package(DBoW2 CONFIG)
 #message("-- DBoW2 libs: ${DBoW2_LIBRARIES}")
 
+# Pangolin
 if (USE_PANGOLIN)
     find_package(Pangolin)
 endif (USE_PANGOLIN)
@@ -29,6 +33,7 @@ if (Pangolin_FOUND)
 #    message("-- ${Pangolin_LIBRARIES}")
 endif (Pangolin_FOUND)
 
+# Serial
 if (USE_SERIAL)
     find_package(serial)
 endif (USE_SERIAL)
@@ -36,20 +41,20 @@ if (serial_FOUND)
     add_compile_definitions(LIB_SERIAL_FOUND=1)
 endif (serial_FOUND)
 
-# Python Library
-if (USE_PYTHON)
-    find_package(Python COMPONENTS Interpreter Development)
-endif (USE_PYTHON)
-if (Python_FOUND)
-    add_compile_definitions(LIB_PYTHON_FOUND=1)
-endif (Python_FOUND)
-
+# ONNX RT
 if (USE_ONNX_RUNTIME)
     find_package(onnxruntime)
 endif (USE_ONNX_RUNTIME)
 if (onnxruntime_FOUND)
     add_compile_definitions(LIB_ONNX_RUNTIME_FOUND=1)
 endif (onnxruntime_FOUND)
+
+# AprilTag
+find_package(apriltag)
+if (apriltag_FOUND)
+    add_compile_definitions(LIB_APRILTAG_FOUND=1)
+    message("-- Found apriltag library")
+endif (apriltag_FOUND)
 
 
 include(ProjectFiles.cmake)
@@ -99,6 +104,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ${Python_LIBRARIES}
         ${onnxruntime_LIBRARIES}
         ${DBoW2_LIBRARIES}
+        apriltag::apriltag
         glog::glog
         g2o::core g2o::types_sba g2o::types_slam3d
         -lboost_system

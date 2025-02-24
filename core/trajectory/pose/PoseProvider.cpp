@@ -84,12 +84,27 @@ namespace NAV24 {
                 if (sender) {
 
                     string line = mpPoseDS->getNextLine();
+                    if (line.empty() || line[0] == '#') {
+                        DLOG(INFO) << "PoseProvider::getNext, empty line or comment: " << line << "\n";
+                        return;
+                    }
+
+                    // replace all ',' in case of csv files
+                    std::replace(line.begin(), line.end(), ',', ' ');
                     istringstream iss{line};
                     double ts = -1;
+//                    char c = ',';
                     double px = 0, py = 0, pz = 0;
                     double qw = 0, qx = 0, qy = 0, qz = 0;
 
                     iss >> ts >> px >> py >> pz >> qw >> qx >> qy >> qz;
+
+                    if (!mbQwFirst) {
+                        // swap qz and qw
+                        double qq = qz;
+                        qz = qw;
+                        qw = qq;
+                    }
 
                     if (ts >= 0) {
                         Eigen::Vector3d t_wc;

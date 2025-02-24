@@ -379,7 +379,7 @@ std::string Converter::toStringQuat(const g2o::Sim3& pose, const std::string& pr
         const string& pref = prefix;
 
         oss << pref << "[";
-        for (int i = 0; i < vData.size(); i++) {
+        for (size_t i = 0; i < vData.size(); i++) {
             oss << vData[i];
             string sep = (i == vData.size() - 1) ? "" : ", ";
             oss << sep;

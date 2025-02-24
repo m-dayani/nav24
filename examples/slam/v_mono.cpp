@@ -1,11 +1,11 @@
 //
 // Created by masoud on 8/29/24.
+// SLAM-based Nav: SLAM is the main pipeline and ML-inference is aux operation
 //
 
 #include <iostream>
 
 #include <glog/logging.h>
-#include <opencv2/core.hpp>
 
 #include "System.hpp"
 #include "FE_CalibCamCv.hpp"
@@ -14,24 +14,6 @@
 using namespace std;
 using namespace NAV24;
 
-
-class ParamReceiver : public MsgCallback {
-public:
-    void receive(const MsgPtr &msg) override {
-        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
-            mpParam = pMsgConfig->getConfig();
-        }
-    }
-
-protected:
-    void setup(const MsgPtr &configMsg) override {}
-    void handleRequest(const MsgPtr &reqMsg) override {}
-    void run() override {}
-
-public:
-    ParamPtr mpParam;
-};
 
 int main([[maybe_unused]] int argc, char** argv) {
 

@@ -50,16 +50,16 @@ namespace NAV24 {
 
         std::vector<float> computeImageBounds(const cv::Mat &image);
 
-        bool isCalibrated() const;
+        [[nodiscard]] bool isCalibrated() const;
 
         static bool isInImage(float x, float y, const cv::Scalar& imageSize);
         static bool isInImage(float x, float y, int imWidth, int imHeight);
-        bool isInImage(float x, float y) const;
+        [[nodiscard]] bool isInImage(float x, float y) const;
 
         static bool isDistorted(const cv::Mat& distCoefs);
 
-        bool isFishEye() const { return mCamType == FISHEYE; }
-        bool isPinhole() const { return mCamType == PINHOLE; }
+        [[nodiscard]] bool isFishEye() const { return mCamType == FISHEYE; }
+        [[nodiscard]] bool isPinhole() const { return mCamType == PINHOLE; }
 
 
         void generateUndistMaps();

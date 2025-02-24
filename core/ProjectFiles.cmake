@@ -105,18 +105,24 @@ set(ALL_H_FILES
         ${OBSERVATIONS_DIR}/Point2D.hpp
         ${OBSERVATIONS_DIR}/MatchedFeatures.hpp
         ${OBSERVATIONS_DIR}/FeatureGrid.hpp
+        ${OBSERVATIONS_DIR}/ObsMl.hpp
+        ${OBSERVATIONS_DIR}/ObsApriltag.hpp
         ${WORLD_OBJ_DIR}/WorldObject.hpp
         ${WORLD_OBJ_DIR}/Point3D.hpp
         ${FRONTEND_DIR}/FrontEnd.hpp
         ${FRONTEND_DIR}/FE_CalibCamCv.hpp
         ${FRONTEND_DIR}/FE_ObjTracking.hpp
         ${FRONTEND_DIR}/FE_SlamMonoV.hpp
+        ${FRONTEND_DIR}/FE_InferenceNav.hpp
         ${OPERATORS_DIR}/Operator.hpp
         ${MAP_INIT_DIR}/OP_MapInitialization.hpp
         ${MAP_INIT_DIR}/OP_2ViewReconstruction.hpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.hpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.hpp
         ${OBJ_DET_DIR}/OP_FtDt.hpp
+        ${OBJ_DET_DIR}/OP_ObjDet.hpp
+        ${OBJ_DET_DIR}/OP_ObjDetMl.hpp
+        ${OBJ_DET_DIR}/OP_ObjDetApriltag.hpp
         ${OBJ_ASSOC_DIR}/OP_FtAssoc.hpp
         ${OBJ_ASSOC_DIR}/OP_FtAssocOrbSlam.hpp
         ${OBJ_TRACK_DIR}/OP_ObjTracking.hpp
@@ -165,18 +171,24 @@ set(ALL_SRC_FILES
         ${OBSERVATIONS_DIR}/Point2D.cpp
         ${OBSERVATIONS_DIR}/MatchedFeatures.cpp
         ${OBSERVATIONS_DIR}/FeatureGrid.cpp
+        ${OBSERVATIONS_DIR}/ObsMl.cpp
+        ${OBSERVATIONS_DIR}/ObsApriltag.cpp
         ${WORLD_OBJ_DIR}/WorldObject.cpp
         ${WORLD_OBJ_DIR}/Point3D.cpp
         ${FRONTEND_DIR}/FrontEnd.cpp
         ${FRONTEND_DIR}/FE_CalibCamCv.cpp
         ${FRONTEND_DIR}/FE_ObjTracking.cpp
         ${FRONTEND_DIR}/FE_SlamMonoV.cpp
+        ${FRONTEND_DIR}/FE_InferenceNav.cpp
         ${OPERATORS_DIR}/Operator.cpp
         ${MAP_INIT_DIR}/OP_MapInitialization.cpp
         ${MAP_INIT_DIR}/OP_2ViewReconstruction.cpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.cpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.cpp
         ${OBJ_DET_DIR}/OP_FtDt.cpp
+        ${OBJ_DET_DIR}/OP_ObjDet.cpp
+        ${OBJ_DET_DIR}/OP_ObjDetMl.cpp
+        ${OBJ_DET_DIR}/OP_ObjDetApriltag.cpp
         ${OBJ_ASSOC_DIR}/OP_FtAssoc.cpp
         ${OBJ_ASSOC_DIR}/OP_FtAssocOrbSlam.cpp
         ${OBJ_TRACK_DIR}/OP_ObjTracking.cpp

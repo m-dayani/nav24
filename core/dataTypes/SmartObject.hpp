@@ -14,8 +14,9 @@
 namespace NAV24 {
     class SmartObject {
     public:
-        SmartObject() : mbValid(true), mbVisible(true), mbOptFixed(false), mbOptLockState(false), mbOptIgnore(false),
-            mMtxLockState(), mMtxOptFixed(), mMtxOptIgnore(), mMtxValid(), mMtxVisible() {}
+        SmartObject() : mbValid(true), mMtxValid(), mbVisible(true), mMtxVisible(),
+                        mbOptLockState(false), mMtxLockState(), mbOptFixed(false),
+                        mMtxOptFixed(), mbOptIgnore(false), mMtxOptIgnore() {}
 
         [[nodiscard]] virtual bool isValid() const {
             return mbValid;

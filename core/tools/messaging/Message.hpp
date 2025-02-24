@@ -76,7 +76,7 @@ namespace NAV24 {
 
     class MsgCallback {
     public:
-        MsgCallback() : mbStop(false), mMtxStop(), mpChannel() {}
+        MsgCallback() : mpChannel(), mbStop(false), mMtxStop() {}
         explicit MsgCallback(const ChannelPtr& pChannel) : MsgCallback() { mpChannel = pChannel; }
 
         virtual void receive(const MsgPtr& msg) = 0;
@@ -182,6 +182,33 @@ namespace NAV24 {
 
     protected:
         T mData;
+    };
+
+    /* -------------------------------------------------------------------------------------------------------------- */
+
+    class ParamReceiver : public MsgCallback {
+    public:
+        void receive(const MsgPtr &msg) override {
+
+            if (msg) {
+                if (dynamic_pointer_cast<MsgConfig>(msg)) {
+                    auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
+                    mpParam = pMsgConfig->getConfig();
+                }
+//                if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
+//                    mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+//                }
+            }
+        }
+
+    protected:
+        void setup(const MsgPtr &) override {}
+        void handleRequest(const MsgPtr &) override {}
+        void run() override {}
+
+    public:
+        ParamPtr mpParam;
+        //CalibPtrRO mpCalib;
     };
 }
 

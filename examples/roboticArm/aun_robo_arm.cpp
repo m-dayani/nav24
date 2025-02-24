@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include <glog/logging.h>
-#include <opencv2/core.hpp>
 
 #include "ParameterBlueprint.h"
 #include "System.hpp"
@@ -16,23 +15,6 @@
 using namespace std;
 using namespace NAV24;
 
-class ParamReceiver : public MsgCallback {
-public:
-    void receive(const MsgPtr &msg) override {
-        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto pMsgConfig = dynamic_pointer_cast<MsgConfig>(msg);
-            mpParam = pMsgConfig->getConfig();
-        }
-    }
-
-protected:
-    void setup(const MsgPtr &configMsg) override {}
-    void handleRequest(const MsgPtr &reqMsg) override {}
-    void run() override {}
-
-public:
-    ParamPtr mpParam;
-};
 
 void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = "") {
 
@@ -69,12 +51,17 @@ void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = 
     mpSystem->send(msgStartPlay);
 }
 
-int main([[maybe_unused]] int argc, char** argv) {
+int main(int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../../config/AUN_ARM1.yaml";
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " config_file.yaml\n";
+        return 1;
+    }
+
+    string confFile = argv[1];
     string defVideo = "robo-arm-cap.avi";
     shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 

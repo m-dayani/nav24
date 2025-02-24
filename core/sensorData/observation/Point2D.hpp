@@ -28,6 +28,9 @@ namespace NAV24::OB {
 
         static std::vector<cv::Point2f> toCvPoint(const std::vector<ObsPtr>& vpObs);
         static std::vector<cv::Point2f> toCvPointUd(const std::vector<ObsPtr>& vpObs);
+
+        void draw(cv::Mat &img) override;
+
     protected:
         bool mbIsDistorted;
         cv::Point2f mPoint;
@@ -82,6 +85,8 @@ namespace NAV24::OB {
         cv::Rect2f getBbox() { return bbox; }
 
         static cv::Point2f find_center(const cv::Rect2f& rect);
+
+        void draw(cv::Mat &img) override;
 
     protected:
         cv::Point2f pt2d;

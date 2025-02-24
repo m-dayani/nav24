@@ -30,7 +30,8 @@ configure_file(${PROJ_CORE_PATH}/GlobalConfig.h.in ${PROJ_CORE_PATH}/GlobalConfi
 
 option(USE_PANGOLIN "Required for 3D data visualization" OFF)
 option(USE_SERIAL "Required for RS232 serial communication (Arduino)" OFF)
-option(USE_PYTHON "Use python library to embed python in C++" OFF)
+# Use ROS utils instead of direct Python integration
+#option(USE_PYTHON "Use python library to embed python in C++" OFF)
 option(USE_ONNX_RUNTIME "Use ONNX Runtime to enable deep learning in C++" OFF)
 
 # External dependencies

@@ -2,6 +2,8 @@
 // Created by masoud on 2/11/24.
 //
 
+#include <opencv2/opencv.hpp>
+
 #include "Point2D.hpp"
 
 using namespace std;
@@ -65,6 +67,10 @@ namespace NAV24::OB {
         return {rect.x + rect.width * 0.5f, rect.y + rect.height * 0.5f};
     }
 
+    void BBox::draw(cv::Mat &img) {
+
+    }
+
     std::vector<cv::Point2f> Point2D::toCvPoint(const vector <ObsPtr> &vpObs) {
 
         vector<cv::Point2f> vPt2d;
@@ -87,6 +93,10 @@ namespace NAV24::OB {
             }
         }
         return vPt2d;
+    }
+
+    void Point2D::draw(cv::Mat &img) {
+        cv::drawMarker(img, mPoint, cv::Scalar(255, 0, 0));
     }
 
     std::vector<cv::KeyPoint> KeyPoint2D::toCvKeyPoint(const vector <ObsPtr> &vpObs) {

@@ -5,15 +5,15 @@
 #include "BackEnd.hpp"
 
 namespace NAV24::BE {
-    void BackEnd::receive(const MsgPtr &msg) {
+    void BackEnd::receive(const MsgPtr &) {
 
     }
 
-    void BackEnd::setup(const MsgPtr &configMsg) {
+    void BackEnd::setup(const MsgPtr &) {
 
     }
 
-    void BackEnd::handleRequest(const MsgPtr &reqMsg) {
+    void BackEnd::handleRequest(const MsgPtr &) {
 
     }
 

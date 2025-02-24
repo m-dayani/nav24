@@ -44,6 +44,9 @@ namespace NAV24::OP {
         void update(const FramePtr& pImage) override;
         //void run() override;
 
+        bool isTrInit();
+        void setTrInit(bool flag);
+
     private:
         std::size_t mTrIdx;
         std::string mTrName;
@@ -53,6 +56,8 @@ namespace NAV24::OP {
         bool mbManInit;
         double mInitTs;
         bool mbTrInit;
+
+        std::mutex mLockInit;
 
         //bool mbBboxInit;
     };

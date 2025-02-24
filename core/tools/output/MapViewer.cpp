@@ -15,11 +15,11 @@ using namespace std;
 namespace NAV24 {
 
     MapViewer::MapViewer(const ChannelPtr& pChannel) : Output(pChannel),
-        mbDisabled(false), mCameraLineWidth(3.f), mCameraSize(0.08f),
-        mFrameLineWidth(1.f), mFrameSize(0.05f),
-        mGraphLineWidth(0.9), mPointSize(2.f), mViewpointF(420.f),
-        mViewpointX(0.f), mViewpointY(-0.7f), mViewpointZ(-3.5f),
-        mMtxPoseQueue(), mMtxWoQueue() {}
+        mbDisabled(false), mFrameSize(0.05f), mFrameLineWidth(1.f),
+        mGraphLineWidth(0.9), mPointSize(2.f), mCameraSize(0.08f),
+        mCameraLineWidth(3.f), mViewpointX(0.f), mViewpointY(-0.7f), mViewpointZ(-3.5f),
+        mViewpointF(420.f), mMtxPoseQueue(), mMtxWoQueue(), mLastPose(),
+        mSetFirstPoseState(0) {}
 
     void MapViewer::drawPose(const PosePtr& pPose) const {
 
@@ -29,7 +29,9 @@ namespace NAV24 {
 
         Eigen::Matrix4f Twc = pPose->getPose().cast<float>();
         //unsigned int index_color = pKF->mnOriginMapId;
+
 #ifdef LIB_PANGOLIN_FOUND
+//        pangolin::glDrawColouredCube();
         glPushMatrix();
         glMultMatrixf((GLfloat*)Twc.data());
 
@@ -38,13 +40,13 @@ namespace NAV24 {
         glBegin(GL_LINES);
 
         glVertex3f(0,0,0);
-        glVertex3f(w,h,z);
+        glVertex3f(w,h, z);
         glVertex3f(0,0,0);
-        glVertex3f(w,-h,z);
+        glVertex3f(w,-h, z);
         glVertex3f(0,0,0);
-        glVertex3f(-w,-h,z);
+        glVertex3f(-w,-h, z);
         glVertex3f(0,0,0);
-        glVertex3f(-w,h,z);
+        glVertex3f(-w,h, z);
 
         glVertex3f(w,h,z);
         glVertex3f(w,-h,z);
@@ -63,8 +65,46 @@ namespace NAV24 {
 #endif
     }
 
+    void MapViewer::drawPoseFrame(const PosePtr &pPose) const {
+
+        const float &x = mCameraSize;
+        const float y = x*1.0f;
+        const float z = x*1.0f;
+
+        Eigen::Matrix4f Twc = pPose->getPose().cast<float>();
+
+#ifdef LIB_PANGOLIN_FOUND
+//        pangolin::glDrawColouredCube();
+        glPushMatrix();
+        glMultMatrixf((GLfloat*)Twc.data());
+
+        glLineWidth(mCameraLineWidth);
+        glBegin(GL_LINES);
+
+        // x-axis
+        glColor3f(1.0f,0.0f,0.0f);
+        glVertex3f(0,0,0);
+        glVertex3f(x,0,0);
+
+        // y-axis
+        glColor3f(0.0f,1.0f,0.0f);
+        glVertex3f(0,0,0);
+        glVertex3f(0,y,0);
+
+        // z-axis
+        glColor3f(0.0f,0.0f,1.0f);
+        glVertex3f(0,0,0);
+        glVertex3f(0,0,z);
+
+        glEnd();
+
+        glPopMatrix();
+#endif
+    }
+
     void MapViewer::drawWorldObject(const WO::WoPtr &pWo) const {
 #ifdef LIB_PANGOLIN_FOUND
+//        pangolin::glDrawColouredCube();
         glPointSize(mPointSize);
         glBegin(GL_POINTS);
         glColor3f(0.0, 0.0, 0.0);
@@ -79,8 +119,7 @@ namespace NAV24 {
 #endif
     }
 
-    void MapViewer::drawTrajectory(const vector <FramePtr> &vpFrame) {
-
+    void MapViewer::drawTrajectory(const vector <FramePtr> &) {
 
     }
 
@@ -131,17 +170,20 @@ namespace NAV24 {
 
         set<PosePtr> spPoseCopy;
         set<WO::WoPtr> spWoCopy;
+
 #ifdef LIB_PANGOLIN_FOUND
-        pangolin::CreateWindowAndBind("Main",640,480);
+
+        pangolin::OpenGlMatrix Twc;
+
+        pangolin::CreateWindowAndBind(mName, 640, 480);
         glEnable(GL_DEPTH_TEST);
 
         // Define Projection and initial ModelView matrix
-        pangolin::OpenGlRenderState s_cam(
-                pangolin::ProjectionMatrix(640,480,mViewpointF,mViewpointF,
-                                           320,240,0.2,100),
-                pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ,
-                                          0,0,0, 0.0, -1.0, 0.0)
-        );
+        auto defProjMat = pangolin::ProjectionMatrix(640,480,mViewpointF,mViewpointF,
+                                                     320,240,0.2,100);
+        auto defModelView = pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ,
+                                                      0,0,0, 0.0, -1.0, 0.0);
+        pangolin::OpenGlRenderState s_cam(defProjMat, defModelView);
 
         // Create Interactive View in window
         pangolin::Handler3D handler(s_cam);
@@ -161,13 +203,27 @@ namespace NAV24 {
             // Clear screen and activate view to render into
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             d_cam.Activate(s_cam);
-            glClearColor(1.0f,1.0f,1.0f,1.0f);
+            glClearColor(0.7f,0.7f,0.7f,1.0f);
+
             // Render OpenGL Cube
-            //pangolin::glDrawColouredCube();
+//            pangolin::glDrawColouredCube();
+//            drawTrajectory(vector<FramePtr>());
 
             // Draw visible poses
             for (const auto& pose : spPoseCopy) {
-                this->drawPose(pose);
+                this->drawPoseFrame(pose);
+                if (mLastPose == nullptr) {
+                    mLastPose = pose;
+                }
+            }
+
+            // set first camera view
+            if (mSetFirstPoseState < 2 && mLastPose != nullptr) {
+                getLastOpenGlCamera(Twc);
+                s_cam.SetProjectionMatrix(defProjMat);
+                s_cam.SetModelViewMatrix(defModelView);
+                s_cam.Follow(Twc);
+                mSetFirstPoseState++;
             }
 
             // Draw world objects
@@ -183,6 +239,9 @@ namespace NAV24 {
                 break;
             }
         }
+
+        // unset the current context from the main thread
+//        pangolin::GetBoundWindow()->RemoveCurrent();
 #endif
     }
 
@@ -226,6 +285,7 @@ namespace NAV24 {
 
                 auto pViewpointF = find_param<ParamType<double>>("viewpointF", pParam);
                 mViewpointF = static_cast<float>((pViewpointF) ? pViewpointF->getValue() : mViewpointF);
+
             }
         }
     }
@@ -234,7 +294,7 @@ namespace NAV24 {
         Output::handleRequest(msg);
     }
 
-    void MapViewer::requestStop(const string &channel) {
+    void MapViewer::requestStop(const string &) {
 
     }
 
@@ -248,5 +308,27 @@ namespace NAV24 {
     bool MapViewer::isStopped() {
         return MsgCallback::isStopped();
     }
+
+#ifdef LIB_PANGOLIN_FOUND
+    void MapViewer::getLastOpenGlCamera(pangolin::OpenGlMatrix &M) {
+
+        Eigen::Matrix4f Twc;
+
+        {
+            //unique_lock<mutex> lock(mMutexCamera);
+            Twc = mLastPose->getPose().cast<float>();
+        }
+
+        for (int i = 0; i<4; i++) {
+            M.m[4*i] = Twc(0,i);
+            M.m[4*i+1] = Twc(1,i);
+            M.m[4*i+2] = Twc(2,i);
+            M.m[4*i+3] = Twc(3,i);
+        }
+    }
+
+
+
+#endif
 
 } // NAV24

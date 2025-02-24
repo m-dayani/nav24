@@ -25,7 +25,8 @@ namespace NAV24 {
 #define PARAM_KEY_R "R"
 #define PARAM_KEY_P "P"
 
-    Calibration::Calibration(const ParamPtr& pParams) {
+    Calibration::Calibration(const ParamPtr& pParams) :
+            mCamType(CameraType::PINHOLE), mImWidth(0), mImHeight(0) {
         this->loadParams(pParams);
     }
 
@@ -191,7 +192,7 @@ namespace NAV24 {
     std::vector<OB::ObsPtr> Calibration::undistort(const vector <OB::ObsPtr> &vpObs) {
 
         vector<OB::ObsPtr> vpObsOut(vpObs.size());
-        for (int i = 0; i < vpObs.size(); i++) {
+        for (size_t i = 0; i < vpObs.size(); i++) {
             vpObsOut[i] = undistort(vpObs[i]);
         }
         return vpObsOut;
@@ -240,14 +241,14 @@ namespace NAV24 {
         if (mpCamModel) {
             return mpCamModel->project(pt3d);
         }
-        return Eigen::Vector2d();
+        return {};
     }
 
     Eigen::Matrix<double, 2, 3> Calibration::projectJac(const Eigen::Vector3d &pt3d) {
         if (mpCamModel) {
             return mpCamModel->projectJac(pt3d);
         }
-        return Eigen::Matrix<double, 2, 3>();
+        return {};
     }
 
 
@@ -295,7 +296,7 @@ namespace NAV24 {
         for (int x = 0; x < mImWidth; x++) {
             for (int y = 0; y < mImHeight; y++) {
 
-                cv::Point2f srcPt(x,y);
+                cv::Point2f srcPt((float) x, (float) y);
                 this->undistPointPinhole(srcPt, srcPt);
 
                 mUndistMapX.at<float>(y, x) = srcPt.x;
@@ -315,7 +316,7 @@ namespace NAV24 {
         for (int x = 0; x < mImWidth; x++) {
             for (int y = 0; y < mImHeight; y++) {
 
-                cv::Point2f srcPt(x,y);
+                cv::Point2f srcPt((float) x, (float) y);
                 this->undistPointFishEye(srcPt, srcPt);
 
                 mUndistMapX.at<float>(y, x) = srcPt.x;
@@ -436,7 +437,7 @@ namespace NAV24 {
             return;
         }
 
-        int nPts = vDistKPts.size();
+        int nPts = (int) vDistKPts.size();
         // Fill matrix with points
         cv::Mat mat(nPts,2, CV_32F);
 
@@ -483,7 +484,7 @@ namespace NAV24 {
             return;
         }
 
-        int nPts = vDistKPts.size();
+        int nPts = (int) vDistKPts.size();
         // Fill matrix with points
         cv::Mat mat(nPts,2, CV_32F);
 

@@ -18,13 +18,10 @@ using namespace std;
 
 namespace NAV24::OP {
 
-// Convert to string
-//#define SSTR( x ) static_cast< std::ostringstream & >( \
-//( std::ostringstream() << std::dec << x ) ).str()
 #define MAX_SIZE_BUFFER 1
 
     ObjTrackingCv::ObjTrackingCv(const ChannelPtr& pChannel) : ObjTracking(pChannel),
-        mTrIdx(DEF_TR_CV_OPT), mbTrInit(false), mbManInit(false), mInitTs(-1.0) {
+        mTrIdx(DEF_TR_CV_OPT), mbManInit(false), mInitTs(-1.0), mbTrInit(false), mLockInit() {
 
         mvTrOptions = {"BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN", "CSRT"};
         this->initTrackerObj();
@@ -113,7 +110,7 @@ namespace NAV24::OP {
         }
         else {
             // Tracking failure detected.
-            mbTrInit = false;
+            setTrInit(false);
             putText(image, "Tracking failure detected", Point(100,80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0,0,255),2);
         }
 
@@ -145,7 +142,7 @@ namespace NAV24::OP {
                 auto pImage = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
                 string msgStr = msg->getMessage();
                 bool isInitMsg = !msgStr.empty() && msgStr == "init";
-                if (!mbTrInit) {
+                if (!isTrInit()) {
                     // if tracker is not initialized, initialize it
                     this->init(msg);
                 }
@@ -171,7 +168,7 @@ namespace NAV24::OP {
 
     void ObjTrackingCv::initTrackerObj() {
 
-        if (mTrIdx < 0 || mTrIdx >= mvTrOptions.size()) {
+        if (mTrIdx >= mvTrOptions.size()) {
             mTrIdx = 2;
         }
         mTrName = mvTrOptions[mTrIdx];
@@ -205,7 +202,7 @@ namespace NAV24::OP {
     void ObjTrackingCv::init(const MsgPtr &msg) {
         ObjTracking::init(msg);
 
-        if (mbTrInit) {
+        if (isTrInit()) {
             DLOG(INFO) << "OP::ObjTrackingCv::init, tracker already initialized\n";
             return;
         }
@@ -232,9 +229,14 @@ namespace NAV24::OP {
         }
 
         if (mbManInit) {
-            bbox = selectROI(image, false);
+//            bbox = selectROI(image, false);
+            bbox.x = 95;
+            bbox.y = 320;
+            bbox.width = 40;
+            bbox.height = 40;
+            DLOG(INFO) << "OP::ObjTrackingCv::init, selected rectangle: " << bbox << "\n";
             mpTracker->init(image, bbox);
-            mbTrInit = true;
+            setTrInit(true);
         }
         else {
             // wait for the master tracker to select a bbox
@@ -243,17 +245,31 @@ namespace NAV24::OP {
                 DLOG(INFO) << "OP::ObjTrackingCv::init, received bbox: " << bbox << "\n";
                 if (!bbox.empty()) {
                     mpTracker->init(image, bbox);
-                    mbTrInit = true;
+                    setTrInit(true);
                 }
             }
         }
 
-        if (mbTrInit) {
+        if (isTrInit()) {
             mInitTs = ts;
             // add bbox
             this->updateLastObs(ts, bbox);
             DLOG(INFO) << "OP::ObjTrackingCv::init, initialized tracker at " << ts << "\n";
         }
+    }
+
+    bool ObjTrackingCv::isTrInit() {
+        bool flag;
+        mLockInit.lock();
+        flag = mbTrInit;
+        mLockInit.unlock();
+        return flag;
+    }
+
+    void ObjTrackingCv::setTrInit(bool flag) {
+        mLockInit.lock();
+        mbTrInit = flag;
+        mLockInit.unlock();
     }
 
     /*void ObjTrackingCv::run() {

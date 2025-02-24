@@ -23,8 +23,8 @@
 
 using namespace std;
 
-namespace NAV24 {
-namespace BE {
+
+namespace NAV24::BE {
 
     void GraphOptim::solve(const ProblemPtr &problem) {
 
@@ -35,26 +35,19 @@ namespace BE {
         auto pProblem = static_pointer_cast<PR_VBA>(problem);
         auto vpFrames = pProblem->mvpFrames;
 
-        //g2o::SparseOptimizer optimizer;
-        //g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
-        //std::unique_ptr<g2o::BlockSolver_6_3::LinearSolverType> linearSolver;
-
-        //linearSolver = std::make_unique<g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>>();
-
-        //std::unique_ptr<g2o::Solver> solver_ptr = std::make_unique<g2o::BlockSolver_6_3>(linearSolver);
-
-        //std::unique_ptr<g2o::OptimizationAlgorithm> solver = make_unique<g2o::OptimizationAlgorithmLevenberg>(solver_ptr);
-        //optimizer.setAlgorithm(solver.get());
-        //optimizer.setVerbose(false);
-
+        // Setup optimizer
         g2o::SparseOptimizer optimizer;
         optimizer.setVerbose(false);
-        string solverName = "lm_fix6_3";
+        std::unique_ptr<g2o::BlockSolver_6_3::LinearSolverType> linearSolver;
 
-        g2o::OptimizationAlgorithmProperty solverProperty;
-        optimizer.setAlgorithm(
-                g2o::OptimizationAlgorithmFactory::instance()->construct(solverName,
-                                                                         solverProperty));
+        linearSolver = std::make_unique<
+                g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>>();
+
+        g2o::OptimizationAlgorithmLevenberg* solver =
+                new g2o::OptimizationAlgorithmLevenberg(
+                        std::make_unique<g2o::BlockSolver_6_3>(std::move(linearSolver)));
+
+        optimizer.setAlgorithm(solver);
 
         // Set KeyFrame vertices
         TaggedVertexPose poseMap{};
@@ -188,10 +181,12 @@ namespace BE {
                 Eigen::Matrix<double, 2, 1> obs;
                 obs << kpUn.pt.x, kpUn.pt.y;
 
-                auto e = new ORB_SLAM3::EdgeSE3ProjectXYZ();
+                ORB_SLAM3::EdgeSE3ProjectXYZ *e = new ORB_SLAM3::EdgeSE3ProjectXYZ();
 
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex((int) id)));
+                //cout << dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex((int) id)) << "\n";
                 e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex((int)frameId)));
+                //cout << dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex((int)frameId)) << "\n";
                 e->setMeasurement(obs);
                 const float &invSigma2 = 1;//pPt2d->getUncertainty(); <- todo: implement
                 e->setInformation(Eigen::Matrix2d::Identity() * invSigma2);
@@ -250,4 +245,4 @@ namespace BE {
         }
     }
 } // BE
-} // NAV24
+// NAV24

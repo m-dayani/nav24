@@ -41,9 +41,13 @@ include_directories(${Python_INCLUDE_DIRS})
 # Tests
 
 if (USE_PANGOLIN)
-add_executable(world_viewer tests/world_viewer.cpp)
+add_executable(world_viewer tests/z_world_viewer.cpp)
 target_link_libraries(world_viewer LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE world_viewer)
+
+add_executable(t_pose_provider tests/t_pose_provider.cpp)
+target_link_libraries(t_pose_provider LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE t_pose_provider)
 endif (USE_PANGOLIN)
 
 if (USE_SERIAL)
@@ -64,11 +68,11 @@ add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)
 target_link_libraries(aun_robo_arm LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE aun_robo_arm)
 
-if (Python_FOUND)
-add_executable(aun_robo_arm_py roboticArm/aun_robo_arm_py.cpp)
-target_link_libraries(aun_robo_arm_py LINK_PUBLIC ${LIB_NAV_NAME})
-list(APPEND INSTALLABLE_EXE aun_robo_arm_py)
-endif(Python_FOUND)
+#if (Python_FOUND)
+#add_executable(aun_robo_arm_py roboticArm/aun_robo_arm_py.cpp)
+#target_link_libraries(aun_robo_arm_py LINK_PUBLIC ${LIB_NAV_NAME})
+#list(APPEND INSTALLABLE_EXE aun_robo_arm_py)
+#endif(Python_FOUND)
 
 add_executable(aun_cam_calib roboticArm/aun_cam_calib.cpp)
 target_link_libraries(aun_cam_calib LINK_PUBLIC ${LIB_NAV_NAME})
@@ -87,3 +91,8 @@ endif (USE_SERIAL)
 add_executable(v_mono slam/v_mono.cpp)
 target_link_libraries(v_mono LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE v_mono)
+
+add_executable(inf_nav slam/inf_nav.cpp)
+target_link_libraries(inf_nav LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE inf_nav)
+

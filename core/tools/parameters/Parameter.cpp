@@ -12,7 +12,7 @@ using namespace std;
 namespace NAV24 {
 
     Parameter::Parameter(const string &name_, const ParamPtr &parent_) :
-        parent(parent_), children(), vChildKeys(), type(NodeType::DEFAULT) {
+            type(NodeType::DEFAULT), parent(parent_), children(), vChildKeys() {
 
         this->setName(name_);
     }
@@ -171,7 +171,7 @@ namespace NAV24 {
             pref = " ";
         }
         oss << pref << "[";
-        for (int i = 0; i < mvData.size(); i++) {
+        for (size_t i = 0; i < mvData.size(); i++) {
             oss << mvData[i];
             string sep = (i == mvData.size() - 1) ? "]" : ", ";
             oss << sep;
