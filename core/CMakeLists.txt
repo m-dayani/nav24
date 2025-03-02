@@ -22,7 +22,10 @@ find_package(g2o CONFIG)
 
 # VPR
 find_package(DBoW2 CONFIG)
-#message("-- DBoW2 libs: ${DBoW2_LIBRARIES}")
+if (DBoW2_FOUND)
+    add_compile_definitions(LIB_DBOW2_FOUND=1)
+    #message("-- DBoW2 libs: ${DBoW2_LIBRARIES}")
+endif (DBoW2_FOUND)
 
 # Pangolin
 if (USE_PANGOLIN)
@@ -47,6 +50,7 @@ if (USE_ONNX_RUNTIME)
 endif (USE_ONNX_RUNTIME)
 if (onnxruntime_FOUND)
     add_compile_definitions(LIB_ONNX_RUNTIME_FOUND=1)
+    message("-- Found ONNX RT: ${onnxruntime_LIBRARIES}")
 endif (onnxruntime_FOUND)
 
 # AprilTag
@@ -101,9 +105,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ${OpenCV_LIBS}
         ${Pangolin_LIBRARIES}
         ${serial_LIBRARIES}
-        ${Python_LIBRARIES}
-        ${onnxruntime_LIBRARIES}
         ${DBoW2_LIBRARIES}
+        ${onnxruntime_LIBRARIES}
+        -lonnxruntime
         apriltag::apriltag
         glog::glog
         g2o::core g2o::types_sba g2o::types_slam3d

@@ -24,7 +24,17 @@ namespace NAV24::OP {
         enum ModelType {
             UNKNOWN,
             TENSORFLOW_PB,
-            TORCH_ONNX
+            TORCH_ONNX,
+
+            //FLOAT32 MODEL
+            YOLO_DETECT_V8,
+            YOLO_POSE,
+            YOLO_CLS,
+
+            //FLOAT16 MODEL
+            YOLO_DETECT_V8_HALF,
+            YOLO_POSE_V8_HALF,
+            YOLO_CLS_HALF
         };
 
         ModelInfo() : mModelType(UNKNOWN), mInputShape(INPUT_WIDTH, INPUT_HEIGHT) {}
@@ -44,21 +54,27 @@ namespace NAV24::OP {
         cv::Size mInputShape;
         float mInputScale = 1.f;
         float mInputMean = 0;
+
+        bool cudaEnable = false;
+        int logSeverityLevel = 3;
+        int intraOpNumThreads = 1;
+
+        std::string modelPath;
     };
 
     class ObjDetMlCv : public ObjDet {
     public:
         ObjDetMlCv(const std::string& pathModel, const std::string& pathDesc,
-                   const std::string& pathLabels, const ModelInfo& modelInfo);
+                   const std::string& pathLabels, ModelInfo  modelInfo);
 
         void detect(const ImagePtr& pImage, std::vector<OB::ObsPtr> &vpObs) override;
 
     private:
         void readLabels(const std::string& pathLabels);
-        void preProcess(const ImagePtr& pImage, cv::Mat& outBlob);
-        void postProcessTF(const std::vector<cv::Mat>& vDetections, const cv::Size &imgSize,
+        void preProcess(const ImagePtr& pImage, cv::Mat& outBlob) const;
+        void postProcessTF(const cv::Mat& detections, const cv::Size &imgSize,
                            std::vector<OB::ObsPtr> &vpObs);
-        void postProcessYolo(const std::vector<cv::Mat>& vDetections, const cv::Size &imgSize,
+        void postProcessYolo(const cv::Mat& detections, const cv::Size &imgSize,
                              std::vector<OB::ObsPtr> &vpObs);
 
     private:

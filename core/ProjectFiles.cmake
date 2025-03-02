@@ -23,8 +23,9 @@ set(OBJ_DET_DIR ${OPERATORS_DIR}/objDetection)
 list(APPEND LIST_INCLUDE_DIRS ${OBJ_DET_DIR})
 set(OBJ_ASSOC_DIR ${OPERATORS_DIR}/objAssoc)
 list(APPEND LIST_INCLUDE_DIRS ${OBJ_ASSOC_DIR})
-set(MAP_INIT_DIR ${OPERATORS_DIR}/mapInit)
-list(APPEND LIST_INCLUDE_DIRS ${MAP_INIT_DIR})
+set(OP_MAP_DIR ${OPERATORS_DIR}/map)
+list(APPEND LIST_INCLUDE_DIRS ${OP_MAP_DIR})
+list(APPEND LIST_INCLUDE_DIRS ${OPERATORS_DIR}/vpr)
 
 set(TRAJECTORY_DIR trajectory)
 list(APPEND LIST_INCLUDE_DIRS ${TRAJECTORY_DIR})
@@ -115,19 +116,20 @@ set(ALL_H_FILES
         ${FRONTEND_DIR}/FE_SlamMonoV.hpp
         ${FRONTEND_DIR}/FE_InferenceNav.hpp
         ${OPERATORS_DIR}/Operator.hpp
-        ${MAP_INIT_DIR}/OP_MapInitialization.hpp
-        ${MAP_INIT_DIR}/OP_2ViewReconstruction.hpp
+        ${OPERATORS_DIR}/vpr/OP_VPR_DBoW2.hpp
+        ${OP_MAP_DIR}/OP_MapInitialization.hpp
+        ${OP_MAP_DIR}/OP_2ViewReconstruction.hpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.hpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.hpp
         ${OBJ_DET_DIR}/OP_FtDt.hpp
         ${OBJ_DET_DIR}/OP_ObjDet.hpp
         ${OBJ_DET_DIR}/OP_ObjDetMl.hpp
         ${OBJ_DET_DIR}/OP_ObjDetApriltag.hpp
+        ${OBJ_DET_DIR}/OP_ObjDetOnnxRT.hpp
         ${OBJ_ASSOC_DIR}/OP_FtAssoc.hpp
         ${OBJ_ASSOC_DIR}/OP_FtAssocOrbSlam.hpp
         ${OBJ_TRACK_DIR}/OP_ObjTracking.hpp
-        ${OBJ_TRACK_DIR}/OP_ObjTrackingYolo.hpp
-        ${OBJ_TRACK_DIR}/OP_ObjTrackingYoloPy.hpp
+        ${OBJ_TRACK_DIR}/OP_ObjTrackingMl.hpp
         ${OBJ_TRACK_DIR}/OP_ObjTrackingCv.hpp
         ${TRAJECTORY_DIR}/Trajectory.hpp
         ${TRAJECTORY_DIR}/TrajManager.hpp
@@ -181,20 +183,21 @@ set(ALL_SRC_FILES
         ${FRONTEND_DIR}/FE_SlamMonoV.cpp
         ${FRONTEND_DIR}/FE_InferenceNav.cpp
         ${OPERATORS_DIR}/Operator.cpp
-        ${MAP_INIT_DIR}/OP_MapInitialization.cpp
-        ${MAP_INIT_DIR}/OP_2ViewReconstruction.cpp
+        ${OPERATORS_DIR}/vpr/OP_VPR_DBoW2.cpp
+        ${OP_MAP_DIR}/OP_MapInitialization.cpp
+        ${OP_MAP_DIR}/OP_2ViewReconstruction.cpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.cpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.cpp
         ${OBJ_DET_DIR}/OP_FtDt.cpp
         ${OBJ_DET_DIR}/OP_ObjDet.cpp
         ${OBJ_DET_DIR}/OP_ObjDetMl.cpp
         ${OBJ_DET_DIR}/OP_ObjDetApriltag.cpp
+        ${OBJ_DET_DIR}/OP_ObjDetOnnxRT.cpp
         ${OBJ_ASSOC_DIR}/OP_FtAssoc.cpp
         ${OBJ_ASSOC_DIR}/OP_FtAssocOrbSlam.cpp
         ${OBJ_TRACK_DIR}/OP_ObjTracking.cpp
-        ${OBJ_TRACK_DIR}/OP_ObjTrackingYolo.cpp
+        ${OBJ_TRACK_DIR}/OP_ObjTrackingMl.cpp
         ${OBJ_TRACK_DIR}/OP_ObjTrackingCv.cpp
-        ${OBJ_TRACK_DIR}/OP_ObjTrackingYoloPy.cpp
         ${TRAJECTORY_DIR}/Trajectory.cpp
         ${TRAJECTORY_DIR}/TrajManager.cpp
         ${FRAME_DIR}/Frame.cpp

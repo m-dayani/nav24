@@ -1166,7 +1166,7 @@ namespace NAV24 {
             auto path_sensor = boost::filesystem::path(mSensorFile);
             string imgExt = path_sensor.extension().string();
             if (imgExt.empty()) {
-                imgExt = ".png";
+                imgExt = ".jpg";
             }
 
             if (mSensorFile.empty()) {

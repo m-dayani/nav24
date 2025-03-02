@@ -5,6 +5,7 @@
 #include "OP_ObjDet.hpp"
 #include "OP_ObjDetApriltag.hpp"
 #include "OP_ObjDetMl.hpp"
+#include "OP_ObjDetOnnxRT.hpp"
 #include "ParameterBlueprint.h"
 
 using namespace std;
@@ -24,7 +25,7 @@ namespace NAV24::OP {
                 string tagFamily = (pTagFamily) ? pTagFamily->getValue() : "unknown";
                 pObjDet = make_shared<ObjDetApriltag>(tagFamily);
             }
-            else if (opName == OP_ODT_NAME_ML_CV || opName == OP_ODT_NAME_ML_ONNX) {
+            else if (opName == OP_ODT_NAME_ML_CV || opName == OP_ODT_NAME_ML_ONNX || opName == OP_ODT_NAME_ML_ONNX_RT) {
 
                 auto pPathModel = find_param<ParamType<string>>("model", pParam);
                 string pathModel = (pPathModel) ? pPathModel->getValue() : "unknown";
@@ -59,7 +60,12 @@ namespace NAV24::OP {
                 auto pThNms = find_param<ParamType<double>>("th_nms", pParam);
                 modelInfo.mThNms = (pThNms) ? pThNms->getValue() : modelInfo.mThNms;
 
-                pObjDet = make_shared<ObjDetMlCv>(pathModel, pathDesc, pathLabels, modelInfo);
+                if (opName == OP_ODT_NAME_ML_ONNX_RT) {
+                    pObjDet = make_shared<ObjDetOnnxRT>(pathModel, pathLabels, modelInfo);
+                }
+                else {
+                    pObjDet = make_shared<ObjDetMlCv>(pathModel, pathDesc, pathLabels, modelInfo);
+                }
             }
         }
         return pObjDet;

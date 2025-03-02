@@ -2,7 +2,9 @@
 // Created by masoud on 2/19/25.
 // Inference-based Nav: Inference & Perception is first and
 //                      Localization and Mapping comes next
-//
+// From OpenCV ONNX, OpenCV TF.pb, and onnxruntime, OpenCV TF.pb is the best
+// onnxruntime seems slightly faster than OpenCV ONNX but
+// it's sensitive to the choice of model and doesn't work properly???
 
 
 
@@ -49,17 +51,27 @@ int main(int argc, char** argv) {
     mpSystem->registerPublisher(ID_TP_OUTPUT, pFeObjTracking);
 
     // Initialize Frontend
-    //ParamPtr pYoloOnnx = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_YOLO_ONNX);
-    //ParamPtr pCvOnly = make_shared<ParamType<string>>(KEY_FE_TYPE, nullptr, FE_TR_TYPE_CV_ONLY);
     MsgPtr pMsgConfigFeOT = make_shared<MsgConfig>(ID_CH_FE, nullptr, FE::InferenceNav::TOPIC);
     pFeObjTracking->receive(pMsgConfigFeOT);
+
+    if (argc >= 3 && string(argv[2]) == "online_cam") {
+
+        // Set online camera
+        auto msgConfOnline = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
+                                                  FCN_SEN_CONFIG, TAG_SEN_MX_STREAM);
+        mpSystem->send(msgConfOnline);
+
+        // Load default video
+        if (!defVideo.empty()) {
+            msgConfOnline->setTargetId(FCN_CAM_LOAD_VIDEO);
+            msgConfOnline->setMessage(defVideo);
+            mpSystem->send(msgConfOnline);
+        }
+    }
 
     // Run online camera
     auto msgStartPlay = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
                                              FCN_SEN_START_PLAY, "start_play");
-    // Run camera in detached mode (so main thread is controlled by ROS)
-    auto msgRunCamera = make_shared<MsgRequest>(ID_CH_SENSORS,
-                                                mpSystem, Sensor::TOPIC, FCN_SYS_RUN);
     mpSystem->send(msgStartPlay);
 
     return 0;

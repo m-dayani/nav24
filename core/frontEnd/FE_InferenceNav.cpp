@@ -15,8 +15,6 @@
 #include "Serial.hpp"
 #include "ParameterBlueprint.h"
 #include "Camera.hpp"
-#include "OP_ObjTrackingCv.hpp"
-#include "OP_ObjTrackingYolo.hpp"
 #include "Point3D.hpp"
 
 using namespace std;
@@ -130,14 +128,14 @@ namespace NAV24::FE {
 
     void InferenceNav::stop() {
         MsgCallback::stop();
-        auto msgStop = make_shared<Message>(ID_CH_OP, OP::ObjTracking::TOPIC,
-                                            FCN_OBJ_TR_STOP);
-
-        for (const auto& pTh : mvpThTrackers) {
-            if (pTh) {
-                pTh->join();
-            }
-        }
+//        auto msgStop = make_shared<Message>(ID_CH_OP, FE::InferenceNav::TOPIC,
+//                                            FCN_OBJ_TR_STOP);
+//
+//        for (const auto& pTh : mvpThTrackers) {
+//            if (pTh) {
+//                pTh->join();
+//            }
+//        }
     }
 
     void InferenceNav::initOperators() {
@@ -185,6 +183,10 @@ namespace NAV24::FE {
         cv::Mat imgShow = img.clone();
         if (imgShow.channels() == 1) {
             cv::cvtColor(imgShow, imgShow, cv::COLOR_GRAY2BGR);
+        }
+        if (img.cols > 640) {
+            cv::Size newSize(640, (int) (640.f / (float) img.cols * (float) img.rows));
+            cv::resize(imgShow, imgShow, newSize);
         }
         auto pImgShow = make_shared<ImageTs>(imgShow, pImage->mTimeStamp, pImage->mPath);
         imgShow = pImgShow->mImage;

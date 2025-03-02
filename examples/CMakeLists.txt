@@ -62,6 +62,11 @@ target_link_libraries(python_api LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE python_api)
 endif(Python_FOUND)
 
+add_executable(t_vpr tests/t_vpr.cpp)
+target_link_libraries(t_vpr LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE t_vpr)
+
+
 # Robotic Arm
 
 add_executable(aun_robo_arm roboticArm/aun_robo_arm.cpp)

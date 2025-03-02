@@ -15,6 +15,9 @@ namespace NAV24::OB {
         ObsMl(const std::string& label, const float& conf, const cv::Rect& bbox);
         void draw(cv::Mat &img) override;
 
+        cv::Rect getBbox() { return mBbox; }
+        float getConf() { return mConf; }
+        std::string getName() { return mName; }
     private:
         std::string mName;
         float mConf;

@@ -17,6 +17,7 @@
 namespace NAV24::OP {
 
 #define OP_ODT_NAME_ML_ONNX "obj_det_ml_onnx"
+#define OP_ODT_NAME_ML_ONNX_RT "obj_det_ml_onnx_rt"
 #define OP_ODT_NAME_ML_CV "obj_det_ml_tf"
 #define OP_ODT_NAME_APRILTAG "obj_det_apriltag"
 

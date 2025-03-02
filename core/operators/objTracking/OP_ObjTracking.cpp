@@ -9,8 +9,7 @@
 #include "ParameterBlueprint.h"
 #include "ParameterServer.hpp"
 #include "DataStore.hpp"
-#include "OP_ObjTrackingYolo.hpp"
-#include "OP_ObjTrackingYoloPy.hpp"
+#include "OP_ObjTrackingMl.hpp"
 #include "OP_ObjTrackingCv.hpp"
 
 using namespace std;
@@ -69,7 +68,7 @@ namespace NAV24::OP {
                 string opName = pParamName->getValue();
 
                 if (opName == OP_OTR_NAME_YOLO_ONNX) {
-                    pTracker = make_shared<ObjTrYoloOnnx>(pChannel);
+                    pTracker = make_shared<ObjTrackingMl>(pChannel);
                     // Retrieve required parameters and configure YOLO detector
                     MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,
                                                                      FCN_PS_REQ, string(PARAM_OP) + '/' +pParam->getName());
@@ -79,16 +78,16 @@ namespace NAV24::OP {
                                                                       FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
                     pChannel->send(msgYoloModelPath);
                 }
-                else if (opName == OP_OTR_NAME_YOLO_PY) {
-                    pTracker = make_shared<OP::ObjTrYoloPy>(pChannel);
-                    MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, pTracker, DataStore::TOPIC,
-                                                                      FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
-                    pChannel->send(msgYoloModelPath);
-                    // Retrieve required parameters and configure YOLO detector
-                    MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,
-                                                                     FCN_PS_REQ, string(PARAM_OP) + '/' +pParam->getName());
-                    pChannel->send(msgYoloOpParams);
-                }
+//                else if (opName == OP_OTR_NAME_YOLO_PY) {
+//                    pTracker = make_shared<OP::ObjTrYoloPy>(pChannel);
+//                    MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, pTracker, DataStore::TOPIC,
+//                                                                      FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
+//                    pChannel->send(msgYoloModelPath);
+//                    // Retrieve required parameters and configure YOLO detector
+//                    MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,
+//                                                                     FCN_PS_REQ, string(PARAM_OP) + '/' +pParam->getName());
+//                    pChannel->send(msgYoloOpParams);
+//                }
                 else if (opName == OP_OTR_NAME_CV) {
                     pTracker = make_shared<ObjTrackingCv>(pChannel);
                     MsgPtr msgTrCvParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,

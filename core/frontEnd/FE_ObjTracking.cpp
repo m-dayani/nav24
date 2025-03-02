@@ -13,11 +13,9 @@
 #include "Atlas.hpp"
 #include "TrajManager.hpp"
 #include "Serial.hpp"
-#include "DataConversion.hpp"
 #include "ParameterBlueprint.h"
 #include "Camera.hpp"
 #include "OP_ObjTrackingCv.hpp"
-#include "OP_ObjTrackingYolo.hpp"
 #include "Point3D.hpp"
 
 using namespace std;
@@ -29,7 +27,7 @@ namespace NAV24::FE {
 
     ObjTracking::ObjTracking(const ChannelPtr &pChannel) : FrontEnd(pChannel), mbInitialized(false),
             mMapName(), mTrajectory(), mpTempParam(), mvpParamHolder(), mvpThTrackers(),
-            mmpFrameBuffer(), mbTrInit(false), mLockTrInit(), mTsYoloUpdate(-1) {
+            mmpFrameBuffer(), mbTrInit(false), mTsYoloUpdate(-1) {
 
         //mpYoloDetector = make_shared<OP::ObjTrYoloOnnx>(pChannel);
         //mpObjTracker = make_shared<OP::ObjTrackingCv>(pChannel);
