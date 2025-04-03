@@ -47,8 +47,10 @@ namespace NAV24::OP {
 
         vResult.reserve(nMatches);
         int cnt = 0;
-        for (const auto& res : vResult) {
-            vResult.push_back(mTsMap[res]);
+        for (const auto& res : ret) {
+            if (mTsMap.contains(res.Id)) {
+                vResult.push_back(mTsMap[res.Id]);
+            }
             cnt++;
             if (cnt >= nMatches) {
                 break;
@@ -109,6 +111,13 @@ namespace NAV24::OP {
         }
     }
 
+    void VPR_DBoW2::saveVocabulary() {
+
+        if (mpOrbVocabulary && !mPathVocab.empty()) {
+            mpOrbVocabulary->save(mPathVocab);
+        }
+    }
+
     void VPR_DBoW2::getDescriptors(const vector <OB::ObsPtr> &vpObs, vector <cv::Mat> &vDescriptors) {
 
         vDescriptors.reserve(vpObs.size());
@@ -121,6 +130,7 @@ namespace NAV24::OP {
         }
     }
 
+#ifdef LIB_DBOW2_FOUND
     void VPR_DBoW2::createVocab(const vector <FramePtr> &vpFrames, std::shared_ptr<OrbVocabulary>& pVoc) {
 
         vector<vector<cv::Mat>> features;
@@ -146,13 +156,6 @@ namespace NAV24::OP {
         DLOG(INFO) << "Vocabulary information: " << endl << *pVoc << endl << endl;
     }
 
-    void VPR_DBoW2::saveVocabulary() {
-
-        if (mpOrbVocabulary && !mPathVocab.empty()) {
-            mpOrbVocabulary->save(mPathVocab);
-        }
-    }
-
     void VPR_DBoW2::computeBoW(const vector <OB::ObsPtr> &vpObs, DBoW2::BowVector& v1) {
 
         vector<cv::Mat> vDescriptors;
@@ -165,6 +168,20 @@ namespace NAV24::OP {
         return mpOrbVocabulary->score(v1, v2);
     }
 
+    void VPR_DBoW2::setTsMap(vector<unsigned long> &vTsMap) {
+
+        for (size_t i = 0; i < vTsMap.size(); i++) {
+            mTsMap.insert(make_pair(i, vTsMap[i]));
+        }
+    }
+
+    void VPR_DBoW2::reloadDbWithVocab(const shared_ptr <OrbVocabulary> &pVoc) {
+
+        mpOrbVocabulary = pVoc;
+        mpOrbDatabase = make_shared<OrbDatabase>(*mpOrbVocabulary, false, 0);
+    }
+
+#endif
 
 } // NAV24::OP
 //

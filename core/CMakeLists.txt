@@ -107,7 +107,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ${serial_LIBRARIES}
         ${DBoW2_LIBRARIES}
         ${onnxruntime_LIBRARIES}
-        -lonnxruntime
+        -lonnxruntime       # this causes error if onnx is not installed
         apriltag::apriltag
         glog::glog
         g2o::core g2o::types_sba g2o::types_slam3d

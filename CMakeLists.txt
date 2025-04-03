@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28.3)
+cmake_minimum_required(VERSION 3.25.1)
 project(NAV24 VERSION 2.0)
 
 #include(GNUInstallDirs)

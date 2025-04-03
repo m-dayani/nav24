@@ -19,7 +19,7 @@
 
 #include "Frame.hpp"
 #ifdef LIB_DBOW2_FOUND
-#include "DBoW2.h"
+#include "DBoW2/DBoW2.h"
 #endif
 
 
@@ -27,13 +27,17 @@ namespace NAV24::OP {
 
     class VPR_DBoW2 {
     public:
-        VPR_DBoW2(std::string   pathVocab, std::string  pathDb, std::string  pathTsMap);
+        VPR_DBoW2(std::string pathVocab, std::string pathDb, std::string pathTsMap);
 
         void add(const FramePtr& pKF);
         void getBestMatches(const FramePtr &pKF, int nMatches,
                             std::vector<unsigned long>& vResult);
+        void setTsMap(std::vector<unsigned long>& vTsMap);
 
+#ifdef LIB_DBOW2_FOUND
         static void createVocab(const std::vector<FramePtr>& vpFrames, std::shared_ptr<OrbVocabulary>& pVoc);
+        void reloadDbWithVocab(const std::shared_ptr<OrbVocabulary>& pVoc);
+#endif
 
     private:
         void loadVocabulary();
@@ -43,8 +47,11 @@ namespace NAV24::OP {
         void loadTsMap();
 
         static void getDescriptors(const std::vector<OB::ObsPtr>& vpObs, std::vector<cv::Mat>& vDescriptors);
+
+#ifdef LIB_DBOW2_FOUND
         void computeBoW(const std::vector<OB::ObsPtr>& vpObs, DBoW2::BowVector& v1);
         double computeScore(const DBoW2::BowVector& v1, const DBoW2::BowVector& v2);
+#endif
 
     private:
         std::string mPathVocab;

@@ -9,6 +9,10 @@ endif (USE_PYTHON)
 if (Python_FOUND)
     add_compile_definitions(LIB_PYTHON_FOUND=1)
 endif (Python_FOUND)
+find_package(DBoW2 CONFIG)
+if (DBoW2_FOUND)
+    add_compile_definitions(LIB_DBOW2_FOUND=1)
+endif (DBoW2_FOUND)
 include_directories(${Python_INCLUDE_DIRS})
 #list(APPEND LINKLIBS ${Python_LIBRARIES})
 
@@ -62,10 +66,11 @@ target_link_libraries(python_api LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE python_api)
 endif(Python_FOUND)
 
+#if (DBoW2_FOUND)
 add_executable(t_vpr tests/t_vpr.cpp)
 target_link_libraries(t_vpr LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE t_vpr)
-
+#endif (DBoW2_FOUND)
 
 # Robotic Arm
 
