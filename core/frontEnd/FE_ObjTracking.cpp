@@ -445,11 +445,10 @@ namespace NAV24::FE {
             Eigen::Matrix3d Hcw = Eigen::Matrix3d::Identity();
             Hcw.block<3, 2>(0, 0) = Tcw.block<3, 2>(0, 0);
             Hcw.block<3, 1>(0, 2) = Tcw.block<3, 1>(0, 3);
-            mHwc = make_shared<TF::Trans2D>(pPose_cw->getRef(), pPose_cw->getTarget(),
-                                            pPose_cw->getTimestamp(), Hcw.inverse());
+            mHwc = make_shared<TF::Trans2D>(pPose_cw->getTimestamp(), Hcw.inverse());
         }
         else {
-            mHwc = make_shared<TF::Trans2D>("c", "w", -1, Eigen::Matrix3d::Identity());
+            mHwc = make_shared<TF::Trans2D>(-1, Eigen::Matrix3d::Identity());
         }
     }
 

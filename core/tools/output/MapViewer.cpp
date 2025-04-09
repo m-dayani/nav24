@@ -119,8 +119,27 @@ namespace NAV24 {
 #endif
     }
 
-    void MapViewer::drawTrajectory(const vector <FramePtr> &) {
+    void MapViewer::drawTrajectory(const set<PosePtr> &spPose) const {
 
+        glLineWidth(mGraphLineWidth);
+        glColor4f(1.0f,0.6f,0.0f,0.6f);
+        glBegin(GL_LINES);
+
+        //Draw inertial links
+        PosePtr prevPose = nullptr;
+        for(const auto& pPose : spPose) {
+
+            if (prevPose) {
+
+                Eigen::Vector3f Ow = prevPose->getPose().cast<float>().block<3, 1>(0, 3);
+                Eigen::Vector3f Owp = pPose->getPose().cast<float>().block<3, 1>(0, 3);
+                glVertex3f(Ow(0),Ow(1),Ow(2));
+                glVertex3f(Owp(0),Owp(1),Owp(2));
+            }
+            prevPose = pPose;
+        }
+
+        glEnd();
     }
 
     void MapViewer::receive(const MsgPtr &msg) {
@@ -191,6 +210,8 @@ namespace NAV24 {
                 .SetBounds(0.0, 1.0, 0.0, 1.0, -640.0f/480.0f)
                 .SetHandler(&handler);
 
+        DLOG(INFO) << "MapViewer::run, started\n";
+
         while(!pangolin::ShouldQuit()) {
 
             mMtxPoseQueue.lock();
@@ -211,11 +232,17 @@ namespace NAV24 {
 
             // Draw visible poses
             for (const auto& pose : spPoseCopy) {
-                this->drawPoseFrame(pose);
+                if (pose->getLevel() >= 1) {
+                    // draw only keyframes
+                    this->drawPoseFrame(pose);
+                }
                 if (mLastPose == nullptr) {
                     mLastPose = pose;
                 }
             }
+
+            // draw trajectory
+            this->drawTrajectory(spPoseCopy);
 
             // set first camera view
             if (mSetFirstPoseState < 2 && mLastPose != nullptr) {
@@ -239,6 +266,8 @@ namespace NAV24 {
                 break;
             }
         }
+
+        DLOG(INFO) << "MapViewer::run, stopped\n";
 
         // unset the current context from the main thread
 //        pangolin::GetBoundWindow()->RemoveCurrent();
@@ -317,6 +346,7 @@ namespace NAV24 {
         {
             //unique_lock<mutex> lock(mMutexCamera);
             Twc = mLastPose->getPose().cast<float>();
+//            Twc = Twc.inverse().eval();
         }
 
         for (int i = 0; i<4; i++) {

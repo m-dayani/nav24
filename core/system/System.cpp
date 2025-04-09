@@ -7,6 +7,7 @@
 #include "Camera.hpp"
 #include "FrontEnd.hpp"
 #include "ImageViewer.hpp"
+#include "PoseProvider.hpp"
 
 using namespace std;
 
@@ -135,6 +136,7 @@ namespace NAV24 {
     void System::loadSensors() {
 
         loadCameras();
+        loadPoseSensors();
 
         for (const auto& pSensor : mmpSensors) {
             this->registerChannel(ID_CH_SENSORS, pSensor.second);
@@ -162,6 +164,26 @@ namespace NAV24 {
         }
     }
 
+    void System::loadPoseSensors() {
+
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
+                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_POSE_SENSOR);
+        mpParamServer->receive(msgGetParams);
+        if (mpTempParam && mpTempParam->getName() == "Pose") {
+
+            map<string, ParamPtrW> mParams = mpTempParam->getAllChildren();
+            for (const auto& poseParam : mParams) {
+                auto pPoseParam = poseParam.second.lock();
+                if (pPoseParam) {
+                    auto pPoseProvider = PoseProvider::getPoseProvider(pPoseParam, shared_from_this());
+                    if (pPoseProvider) {
+                        mmpSensors.insert(make_pair(pPoseProvider->getName(), pPoseProvider));
+                    }
+                }
+            }
+        }
+    }
+
     void System::loadRelations() {
 
         auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
@@ -173,7 +195,7 @@ namespace NAV24 {
                 if (pRelParam) {
                     auto pTrans = TF::PoseSE3::getTrans(pRelParam);
                     if (pTrans) {
-                        mmpTrans.insert(make_pair(pTrans->getKey(), pTrans));
+                        mmpTrans.insert(make_pair(pTrans->getName(), pTrans));
                     }
                 }
             }
@@ -201,6 +223,7 @@ namespace NAV24 {
                         mmpOutputs.insert(make_pair(pOutput->getName(), pOutput));
                         this->registerChannel(ID_CH_OUTPUT, pOutput);
                         this->registerSubscriber(ID_TP_OUTPUT, pOutput);
+                        this->registerSubscriber(ID_TP_SDATA, pOutput);
 
                         auto msgRunOutput = make_shared<MsgRequest>(ID_CH_OUTPUT,
                                                                     pChannel, Output::TOPIC, FCN_SYS_RUN);
@@ -214,15 +237,25 @@ namespace NAV24 {
 
     void System::initComponents() {
 
+        auto pChannel = shared_from_this();
+
         // Initialize Atlas (Map/World Manager)
         if (!mpAtlas) {
-            mpAtlas = make_shared<Atlas>(shared_from_this());
+            mpAtlas = make_shared<Atlas>(pChannel);
             this->registerChannel(ID_CH_ATLAS, mpAtlas);
+            auto msgRunAtlas = make_shared<MsgRequest>(ID_CH_ATLAS,
+                                                      pChannel, Atlas::TOPIC, FCN_SYS_RUN);
+            mpAtlas->receive(msgRunAtlas);
         }
+
         // Initialize Trajectory Manager
         if (!mpTrajManager) {
-            mpTrajManager = make_shared<TrajManager>();
+            mpTrajManager = make_shared<TrajManager>(pChannel);
             this->registerChannel(ID_CH_TRAJECTORY, mpTrajManager);
+            this->registerSubscriber(ID_TP_SDATA, mpTrajManager);
+            auto msgRunTraj = make_shared<MsgRequest>(ID_CH_TRAJECTORY,
+                                                        pChannel, TrajManager::TOPIC, FCN_SYS_RUN);
+            mpTrajManager->receive(msgRunTraj);
         }
     }
 
@@ -317,9 +350,17 @@ namespace NAV24 {
                 }
                 if (pCh) {
                     pCh->receive(msgStop);
+                    // wait for the thread to be stopped
+                    this_thread::sleep_for(chrono::microseconds(100));
                 }
             }
         }
+
+//        for (const auto& th : mpThreads) {
+//            if (th->joinable()) {
+//                th->join();
+//            }
+//        }
     }
 
 

@@ -15,9 +15,12 @@ using namespace std;
 
 namespace NAV24 {
 
-    Sensor::Sensor() : mpInterface(), mbRunningInBg(false) {}
+    Sensor::Sensor() : mpInterface(), mbRunningInBg(false), mSensorType(DEFAULT),
+            mLastTs(), mLastTsSensor(), mbTimeInitialized(false) {}
 
-    Sensor::Sensor(const ChannelPtr &pChannel) : MsgCallback(pChannel), mpInterface(), mbRunningInBg(false) {
+    Sensor::Sensor(const ChannelPtr &pChannel) : MsgCallback(pChannel),
+            mpInterface(), mbRunningInBg(false), mSensorType(DEFAULT),
+            mLastTs(), mLastTsSensor(), mbTimeInitialized(false) {
         DLOG(INFO) << "Sensor::Sensor, Constructor\n";
     }
 
@@ -154,6 +157,28 @@ namespace NAV24 {
         oss << prefix << "Interface: \n" << mpInterface->printStr(pref);
 
         return oss.str();
+    }
+
+    void Sensor::runDelay(const long &tsSensor) {
+
+        chrono::nanoseconds tsSen(tsSensor);
+        chrono::time_point<chrono::system_clock> tss(tsSen);
+        auto ts = chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now());
+
+        if (mbTimeInitialized) {
+            auto diffTs = ts - mLastTs;
+            auto diffTsSensor = tss - mLastTsSensor;
+
+            if (diffTs < diffTsSensor) {
+                auto diff = diffTsSensor - diffTs;
+                this_thread::sleep_for(diff);
+            }
+        }
+
+        mLastTs = ts;
+        mLastTsSensor = tss;
+
+        if (!mbTimeInitialized) mbTimeInitialized = true;
     }
 
     /*void Sensor::handleRequest(const MsgPtr &reqMsg) {}

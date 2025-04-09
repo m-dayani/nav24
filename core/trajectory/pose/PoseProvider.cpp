@@ -7,15 +7,16 @@
 #include "PoseProvider.hpp"
 #include "DataStore.hpp"
 #include "ParameterBlueprint.h"
-#include "DataConversion.hpp"
+//#include "DataConversion.hpp"
 #include "Pose.hpp"
+#include "ParameterServer.hpp"
 
 using namespace std;
 
 namespace NAV24 {
 
     PoseProvider::PoseProvider(const ChannelPtr &pChannel) : Sensor(pChannel),
-        tsFactor(1.0), mbPosFirst(true), mbQwFirst(true) {}
+        tsFactor(1.0), mbPosFirst(true), mbQwFirst(true), mvpPoseHolder() {}
 
     void PoseProvider::receive(const MsgPtr &msg) {
         Sensor::receive(msg);
@@ -83,39 +84,9 @@ namespace NAV24 {
                 auto sender = pReq1->getCallback();
                 if (sender) {
 
-                    string line = mpPoseDS->getNextLine();
-                    if (line.empty() || line[0] == '#') {
-                        DLOG(INFO) << "PoseProvider::getNext, empty line or comment: " << line << "\n";
-                        return;
-                    }
-
-                    // replace all ',' in case of csv files
-                    std::replace(line.begin(), line.end(), ',', ' ');
-                    istringstream iss{line};
-                    double ts = -1;
-//                    char c = ',';
-                    double px = 0, py = 0, pz = 0;
-                    double qw = 0, qx = 0, qy = 0, qz = 0;
-
-                    iss >> ts >> px >> py >> pz >> qw >> qx >> qy >> qz;
-
-                    if (!mbQwFirst) {
-                        // swap qz and qw
-                        double qq = qz;
-                        qz = qw;
-                        qw = qq;
-                    }
-
-                    if (ts >= 0) {
-                        Eigen::Vector3d t_wc;
-                        t_wc << px, py, pz;
-
-                        Eigen::Quaterniond quat(qw, qx, qy, qz);
-                        Eigen::Matrix3d R_wc = quat.toRotationMatrix();
-
-                        auto pPose = make_shared<TF::PoseSE3>("w", "c", ts, R_wc, t_wc);
-
-                        auto msgPose = make_shared<MsgType<PosePtr>>(ID_CH_SENSORS, pPose);
+                    MsgPtr msgPose;
+                    this->createPoseMsg(msgPose);
+                    if (msgPose) {
                         sender->receive(msgPose);
                     }
                 }
@@ -123,7 +94,7 @@ namespace NAV24 {
         }
     }
 
-    void PoseProvider::getNextBr(MsgPtr msg) {
+    void PoseProvider::getNextBr(MsgPtr) {
 
     }
 
@@ -135,12 +106,31 @@ namespace NAV24 {
         return Sensor::printStr(prefix);
     }
 
-    void PoseProvider::handleRequest(const MsgPtr &reqMsg) {
+    void PoseProvider::handleRequest(const MsgPtr &) {
 
     }
 
     void PoseProvider::run() {
 
+        DLOG(INFO) << "PoseProvider::run, started\n";
+
+        while (!this->isStopped()) {
+
+            MsgPtr pPoseMsg;
+            this->createPoseMsg(pPoseMsg);
+
+            if (pPoseMsg) {
+                mpChannel->publish(pPoseMsg);
+
+                auto pPose = dynamic_pointer_cast<MsgType<PosePtr>>(pPoseMsg)->getData();
+                if (pPose) {
+//                    mvpPoseHolder.push_back(pPose);
+                    this->runDelay(static_cast<long>(pPose->getTimestamp()));
+                }
+            }
+        }
+
+        DLOG(INFO) << "PoseProvider::run, stopped\n";
     }
 
     ParamPtr PoseProvider::getPoseParams(const std::string& seqBase, const std::string& gtFile, double tsFact,
@@ -175,6 +165,62 @@ namespace NAV24 {
             mpPoseDS->close();
             mpPoseDS = nullptr;
         }
+    }
+
+    void PoseProvider::createPoseMsg(MsgPtr& pPoseMsg) {
+
+        string line = mpPoseDS->getNextLine();
+        if (line.empty() || line[0] == '#') {
+//            DLOG(INFO) << "PoseProvider::getNext, empty line or comment: " << line << "\n";
+            return;
+        }
+
+        // replace all ',' in case of csv files
+        std::replace(line.begin(), line.end(), ',', ' ');
+        istringstream iss{line};
+        double ts = -1;
+//                    char c = ',';
+        double px = 0, py = 0, pz = 0;
+        double qw = 0, qx = 0, qy = 0, qz = 0;
+
+        iss >> ts >> px >> py >> pz >> qw >> qx >> qy >> qz;
+
+        if (!mbQwFirst) {
+            // swap qz and qw
+            double qq = qz;
+            qz = qw;
+            qw = qq;
+        }
+
+        if (ts >= 0) {
+            Eigen::Vector3d t_wc;
+            t_wc << px, py, pz;
+
+            Eigen::Quaterniond quat(qw, qx, qy, qz);
+            Eigen::Matrix3d R_wc = quat.toRotationMatrix();
+
+            auto pPose = make_shared<TF::PoseSE3>(ts, R_wc, t_wc);
+
+            pPoseMsg = make_shared<MsgType<PosePtr>>(ID_TP_SDATA, pPose);
+        }
+    }
+
+    std::shared_ptr<Sensor>
+    PoseProvider::getPoseProvider(const ParamPtr &pParams, const ChannelPtr &pChannel) {
+
+        shared_ptr<PoseProvider> pPoseProvider = make_shared<PoseProvider>(pChannel);
+        pChannel->registerPublisher(ID_TP_OUTPUT, pPoseProvider);
+        pChannel->registerChannel(ID_CH_SENSORS, pPoseProvider);
+
+        // setup
+        auto pMsgConfig = make_shared<MsgConfig>(ID_CH_SENSORS, pParams, Sensor::TOPIC);
+        pPoseProvider->receive(pMsgConfig);
+
+        MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, pPoseProvider, DataStore::TOPIC,
+                                                      FCN_DS_REQ, TAG_DS_GET_PATH_GT);
+        pChannel->send(msgConfPaths);
+
+        return pPoseProvider;
     }
 } // NAV24
 

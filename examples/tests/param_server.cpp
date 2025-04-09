@@ -73,7 +73,7 @@ int main([[maybe_unused]] int argc, char** argv) {
     pParamServer->receive(msgGetFullStat);
 
     // Get required dataset parameters
-    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS0, FCN_PS_REQ, pSystem);
+    MsgPtr msgGetDsParams = make_shared<MsgRequest>(ParameterServer::TOPIC, PARAM_DS, FCN_PS_REQ, pSystem);
     pParamServer->receive(msgGetDsParams);
 
     // If you change parameters, ParamServer's parameters will change automatically

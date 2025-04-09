@@ -15,15 +15,15 @@
 
 namespace NAV24 {
 
-//    class Frame;
-//    typedef std::shared_ptr<Frame> FramePtr;
-//    typedef std::weak_ptr<Frame> FramePtrW;
+    class Frame;
+    typedef std::shared_ptr<Frame> FramePtr;
+    typedef std::weak_ptr<Frame> FramePtrW;
 
     namespace TF {
 
         class Transformation : public SensorData {
         public:
-            Transformation(std::string _ref, std::string _target, double _ts, const double &offset = 0);
+            explicit Transformation(double ts_, std::string name_ = "trans");
 
             virtual WO::WoPtr transform(const WO::WoPtr &pWo) = 0;
 
@@ -31,34 +31,34 @@ namespace NAV24 {
 
             virtual OB::ObsPtr transformObs(const OB::ObsPtr &pObs) = 0;
 
-            [[nodiscard]] std::string getKey() const { return key; }
+            [[nodiscard]] std::string getName() const { return name; }
+            void setName(const std::string& name_) { name = name_; }
 
-            [[nodiscard]] std::string getRef() const { return ref; }
+//            [[nodiscard]] std::string getRef() const { return ref; }
 
-            [[nodiscard]] std::string getTarget() const { return target; }
+//            [[nodiscard]] std::string getTarget() const { return target; }
+
+//            [[nodiscard]] ulong getId() const { return id; }
 
             [[nodiscard]] double getTimestamp() const { return ts; }
 
-            [[nodiscard]] double getOffset() const { return offset; }
-
-//            FramePtr getFrame() { return mpFrame.lock(); }
-//            void setFrame(const FramePtr& pFrame) { mpFrame = pFrame; }
+//            [[nodiscard]] double getOffset() const { return offset; }
 
         protected:
-//            FramePtrW mpFrame;
+//            static ulong idCounter;
 
-            std::string ref;
-            std::string target;
-            std::string key;
-
+            // runtime id? -> you can use ts as the id
+//            const ulong id;
             double ts;
-            double offset;
+            // find poses by name
+            std::string name;
+            // offset and ref/target names are defined for trajectories (groups of poses)
+//            double offset;
         };
 
         class Trans2D : public Transformation {
         public:
-            Trans2D(const std::string &ref_, const std::string &target_, double ts_, Eigen::Matrix3d T_rt_,
-                    const double &offset = 0);
+            Trans2D(double ts_, Eigen::Matrix3d T_rt_, const std::string &name = "trans");
 
             WO::WoPtr transform(const WO::WoPtr &pWo) override;
 
@@ -75,11 +75,10 @@ namespace NAV24 {
 
         class PoseSE3 : public Transformation {
         public:
-            PoseSE3(const std::string &ref_, const std::string &target_, double ts_, Eigen::Matrix4d T_rt_,
-                    const double &offset = 0);
+            PoseSE3(double ts_, Eigen::Matrix4d T_rt_, const std::string &name_ = "trans");
 
-            PoseSE3(const std::string &ref_, const std::string &target_, double ts_, const Eigen::Matrix3d &R_rt,
-                    const Eigen::Vector3d &t_rt, const double &offset = 0);
+            PoseSE3(double ts_, const Eigen::Matrix3d &R_rt, const Eigen::Vector3d &t_rt,
+                    const std::string &name_ = "trans");
 
             WO::WoPtr transform(const WO::WoPtr &worldObject) override;
 
@@ -95,14 +94,35 @@ namespace NAV24 {
             [[nodiscard]] Eigen::Matrix4d getPose() const { return T_rt; }
 
 
-            static ParamPtr getTransParam(const std::string &ref, const std::string &tar, double t_rt,
-                                          const std::shared_ptr<PoseSE3> &pPose, std::vector<ParamPtr> &vpParamHolder);
+            static ParamPtr getTransParam(double t_rt,
+                                          const std::shared_ptr<PoseSE3> &pPose,
+                                          std::vector<ParamPtr> &vpParamHolder);
 
             static std::shared_ptr<PoseSE3> getTrans(const ParamPtr &pParam);
 
+            FramePtr getFrame() { return mpFrame.lock(); }
+            void setFrame(const FramePtr& pFrame) { mpFrame = pFrame; }
+
+            void incLevel() { mLevel++; }
+            uint getLevel() const { return mLevel; }
+
+//            void setGlobalScale(const std::shared_ptr<float>& pSc) { mpGlobSc; }
+
         protected:
+            // Absolute pose of target (current pose) wrt reference pose (e.g. initial pose)
             Eigen::Matrix4d T_rt;
             Eigen::Matrix4d T_tr;
+
+            // doubly linked structure
+            std::weak_ptr<Transformation> mpPosePrev;
+            std::weak_ptr<Transformation> mpPoseNext;
+
+            FramePtrW mpFrame;
+
+            // Pose level (0, 1, ...) -> frame, keyframe, ...
+            uint mLevel;
+
+//            std::shared_ptr<float> mpGlobSc;
         };
 
         class PoseSim3 : public PoseSE3 {

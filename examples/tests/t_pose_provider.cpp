@@ -63,21 +63,10 @@ int main(int argc, char** argv) {
     MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_LD_PARAMS, confFile);
     mpSystem->receive(msgLoadSettings);
 
-    // Instantiate PoseProvider
-    auto pPoseProvider = make_shared<PoseProvider>(mpSystem);
-    mpSystem->registerPublisher(ID_TP_OUTPUT, pPoseProvider);
-    mpSystem->registerChannel(ID_CH_SENSORS, pPoseProvider);
-    // setup
-    auto msgPoseConfig = make_shared<MsgRequest>(ID_CH_PARAMS, pPoseProvider,
-                                                 ParameterServer::TOPIC, FCN_PS_REQ, "Input/Pose/0");
-    mpSystem->send(msgPoseConfig);
+    // Instantiate PoseProvider -> PoseProvider is loaded in the System like all other sensors now
 
-    MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, pPoseProvider, DataStore::TOPIC,
-                                                  FCN_DS_REQ, TAG_DS_GET_PATH_GT);
-    mpSystem->send(msgConfPaths);
+    // Map Viewer is loaded automatically by System
 
-    // Map Viewer
-    //auto pMapViewer = make_shared<MapViewer>(mpSystem);
     auto pPoseRec = make_shared<PoseReceiver>(mpSystem);
 
     auto msgGetNextPose = make_shared<MsgRequest>(ID_CH_SENSORS, pPoseRec,

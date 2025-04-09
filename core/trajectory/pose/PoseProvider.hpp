@@ -5,8 +5,11 @@
 #ifndef NAV24_POSEPROVIDER_HPP
 #define NAV24_POSEPROVIDER_HPP
 
+#include <vector>
+
 #include "Sensor.hpp"
 #include "TabularTextDS.hpp"
+#include "Pose.hpp"
 
 
 namespace NAV24 {
@@ -19,6 +22,8 @@ namespace NAV24 {
 
         static ParamPtr getPoseParams(const std::string& seqBase, const std::string& gtFile, double tsFact,
                                       bool posFirst, bool qwFirst, std::vector<ParamPtr>& vpParams);
+
+        static std::shared_ptr<Sensor> getPoseProvider(const ParamPtr &pParams, const ChannelPtr& pChannel);
 
     protected:
         void setup(const MsgPtr &msg) override;
@@ -35,6 +40,8 @@ namespace NAV24 {
 
         void run() override;
 
+        void createPoseMsg(MsgPtr& pPoseMsg);
+
     protected:
         std::string mSeqBase;
         std::string mPoseFile;
@@ -43,6 +50,8 @@ namespace NAV24 {
         bool mbQwFirst;
 
         std::shared_ptr<TabularTextDS> mpPoseDS;
+
+        std::vector<PosePtr> mvpPoseHolder;
     };
 } // NAV24
 

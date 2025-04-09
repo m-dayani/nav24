@@ -24,6 +24,9 @@ namespace NAV24 {
             if (dynamic_pointer_cast<MsgRequest>(msg)) {
                 this->handleRequest(msg);
             }
+            if (msg->getTargetId() == FCN_SYS_STOP) {
+                this->stop();
+            }
         }
     }
 

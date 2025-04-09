@@ -224,8 +224,7 @@ namespace NAV24::BE {
             PoseSE3.block<3, 3>(0, 0) = SE3quat.rotation().matrix();
             PoseSE3.block<3, 1>(0, 3) = SE3quat.translation();
             auto pLastPose = pFrame->getPose();
-            pFrame->setPose(make_shared<TF::PoseSE3>(pLastPose->getRef(), pLastPose->getTarget(),
-                                                     pLastPose->getTimestamp(), PoseSE3));
+            pFrame->setPose(make_shared<TF::PoseSE3>(pLastPose->getTimestamp(), PoseSE3));
             pFrame->setOptId(-1);
         }
     }

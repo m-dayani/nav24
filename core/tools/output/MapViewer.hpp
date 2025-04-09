@@ -41,7 +41,7 @@ namespace NAV24 {
         void drawPose(const PosePtr& pPose) const;
         void drawPoseFrame(const PosePtr& pPose) const;
         void drawWorldObject(const WO::WoPtr &pWo) const;
-        void drawTrajectory(const std::vector<FramePtr>& vpFrame);
+        void drawTrajectory(const std::set<PosePtr>& spPose) const;
 
 #ifdef LIB_PANGOLIN_FOUND
         void getLastOpenGlCamera(pangolin::OpenGlMatrix& Twc);

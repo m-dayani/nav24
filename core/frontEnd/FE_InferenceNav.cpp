@@ -190,7 +190,7 @@ namespace NAV24::FE {
         }
         auto pImgShow = make_shared<ImageTs>(imgShow, pImage->mTimeStamp, pImage->mPath);
         imgShow = pImgShow->mImage;
-        auto msgImShow = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImgShow,
+        auto msgImShow = make_shared<MsgSensorData>(ID_TP_SDATA, pImgShow,
                                                     Output::TOPIC);
 
         if (mImgSize.empty()) {

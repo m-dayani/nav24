@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 #include "Message.hpp"
 #include "Interface.hpp"
@@ -28,12 +29,15 @@ namespace NAV24 {
 #define TAG_SEN_MX_STREAM "stream"
 #define TAG_SEN_MX_BOTH "both"
 
+    typedef std::chrono::time_point<std::chrono::system_clock> MyTimePoint;
+
 
     class Sensor : public MsgCallback {
     public:
         inline static const std::string TOPIC = "Sensor";
 
         enum SensorType {
+            DEFAULT,
             CAMERA,
             IMU,
             POSE
@@ -58,6 +62,8 @@ namespace NAV24 {
 
         [[nodiscard]] virtual std::string printStr(const std::string& prefix) const;
 
+        void runDelay(const long& tsSensor);
+
     protected:
         // All sensors have a name and interface
         // All sensors have means of communication with other modules
@@ -70,6 +76,11 @@ namespace NAV24 {
         std::string mSeqPath;
 
         SensorType mSensorType;
+
+        // play timer
+        MyTimePoint mLastTs;
+        MyTimePoint mLastTsSensor;
+        bool mbTimeInitialized;
     };
 
 }   //NAV24

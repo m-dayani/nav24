@@ -21,7 +21,12 @@ namespace NAV24 {
 
     protected:
         std::string mName;
+        // todo: or use a ts map instead of vector?
         std::vector<PosePtr> mvpPoseChain;
+        PosePtr pFirstPose;
+        std::shared_ptr<float> mGlobalScale;
+
+        // relations between trajectories: t_offset, T_w1w0 (time, space)
     };
     typedef std::shared_ptr<Trajectory> TrajPtr;
 

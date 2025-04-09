@@ -26,6 +26,7 @@ list(APPEND LIST_INCLUDE_DIRS ${OBJ_ASSOC_DIR})
 set(OP_MAP_DIR ${OPERATORS_DIR}/map)
 list(APPEND LIST_INCLUDE_DIRS ${OP_MAP_DIR})
 list(APPEND LIST_INCLUDE_DIRS ${OPERATORS_DIR}/vpr)
+list(APPEND LIST_INCLUDE_DIRS ${OPERATORS_DIR}/trajectory)
 
 set(TRAJECTORY_DIR trajectory)
 list(APPEND LIST_INCLUDE_DIRS ${TRAJECTORY_DIR})
@@ -114,9 +115,11 @@ set(ALL_H_FILES
         ${FRONTEND_DIR}/FE_CalibCamCv.hpp
         ${FRONTEND_DIR}/FE_ObjTracking.hpp
         ${FRONTEND_DIR}/FE_SlamMonoV.hpp
+        ${FRONTEND_DIR}/FE_MappingMonoV.hpp
         ${FRONTEND_DIR}/FE_InferenceNav.hpp
         ${OPERATORS_DIR}/Operator.hpp
         ${OPERATORS_DIR}/vpr/OP_VPR_DBoW2.hpp
+        ${OPERATORS_DIR}/trajectory/OP_KfManagerSimple.hpp
         ${OP_MAP_DIR}/OP_MapInitialization.hpp
         ${OP_MAP_DIR}/OP_2ViewReconstruction.hpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.hpp
@@ -181,9 +184,11 @@ set(ALL_SRC_FILES
         ${FRONTEND_DIR}/FE_CalibCamCv.cpp
         ${FRONTEND_DIR}/FE_ObjTracking.cpp
         ${FRONTEND_DIR}/FE_SlamMonoV.cpp
+        ${FRONTEND_DIR}/FE_MappingMonoV.cpp
         ${FRONTEND_DIR}/FE_InferenceNav.cpp
         ${OPERATORS_DIR}/Operator.cpp
         ${OPERATORS_DIR}/vpr/OP_VPR_DBoW2.cpp
+        ${OPERATORS_DIR}/trajectory/OP_KfManagerSimple.cpp
         ${OP_MAP_DIR}/OP_MapInitialization.cpp
         ${OP_MAP_DIR}/OP_2ViewReconstruction.cpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.cpp

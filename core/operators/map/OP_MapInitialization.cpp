@@ -114,10 +114,10 @@ namespace NAV24::OP {
 
         //            cout << R21 << endl;
 //            cout << t21 << endl;
-        pFrame1->setPose(make_shared<TF::PoseSE3>("w0", "c0", pFrame1->getTs(), Eigen::Matrix4d::Identity()));
+        pFrame1->setPose(make_shared<TF::PoseSE3>(pFrame1->getTs(), Eigen::Matrix4d::Identity()));
         auto R21_ei = Converter::toMatrix3d(R21);
         auto t21_ei = Converter::toVector3d(t21);
-        pFrame2->setPose(make_shared<TF::PoseSE3>("c0", "c1", pFrame2->getTs(), R21_ei, t21_ei));
+        pFrame2->setPose(make_shared<TF::PoseSE3>(pFrame2->getTs(), R21_ei, t21_ei));
 
         assert(vP3D.size() == vbTriangulated.size() && vbTriangulated.size() == vpObs.size());
         vpPt3D.reserve(vP3D.size());
@@ -162,10 +162,10 @@ namespace NAV24::OP {
         }
         vector<int> vMatches12 = pMatches12->mvMatches12;
 
-        pFrame1->setPose(make_shared<TF::PoseSE3>("w0", "c0", pFrame1->getTs(), Eigen::Matrix4d::Identity()));
+        pFrame1->setPose(make_shared<TF::PoseSE3>(pFrame1->getTs(), Eigen::Matrix4d::Identity()));
         auto R21_ei = Converter::toMatrix3d(R21);
         auto t21_ei = Converter::toVector3d(t21);
-        pFrame2->setPose(make_shared<TF::PoseSE3>("c0", "c1", pFrame2->getTs(), R21_ei, t21_ei));
+        pFrame2->setPose(make_shared<TF::PoseSE3>(pFrame2->getTs(), R21_ei, t21_ei));
 
         assert(vP3D.size() == vbTriangulated.size() && vbTriangulated.size() == vMatches12.size());
 

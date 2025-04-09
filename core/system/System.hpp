@@ -52,6 +52,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         void loadOutputs();
         void loadSensors();
         void loadCameras();
+        void loadPoseSensors();
 
         void initComponents();
 

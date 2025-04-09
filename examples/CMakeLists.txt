@@ -52,6 +52,10 @@ list(APPEND INSTALLABLE_EXE world_viewer)
 add_executable(t_pose_provider tests/t_pose_provider.cpp)
 target_link_libraries(t_pose_provider LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE t_pose_provider)
+
+add_executable(traj_manager tests/traj_manager.cpp)
+target_link_libraries(traj_manager LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE traj_manager)
 endif (USE_PANGOLIN)
 
 if (USE_SERIAL)
@@ -105,4 +109,10 @@ list(APPEND INSTALLABLE_EXE v_mono)
 add_executable(inf_nav slam/inf_nav.cpp)
 target_link_libraries(inf_nav LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE inf_nav)
+
+if (USE_PANGOLIN)
+add_executable(t_mapping slam/t_mapping.cpp)
+target_link_libraries(t_mapping LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE t_mapping)
+endif (USE_PANGOLIN)
 

@@ -1050,7 +1050,7 @@ namespace NAV24 {
             this->getNextImageFile(nextFile, ts);
             while(!nextFile.empty()) {
 
-                auto t1 = chrono::high_resolution_clock::now();
+//                auto t1 = chrono::high_resolution_clock::now();
 
                 if (TabularTextDS::isComment(nextFile)) {
                     nextFile = string{};
@@ -1065,14 +1065,16 @@ namespace NAV24 {
                 nextFile = string{};
                 this->getNextImageFile(nextFile, ts);
 
-                auto t2 = chrono::high_resolution_clock::now();
+//                auto t2 = chrono::high_resolution_clock::now();
 
                 mpChannel->publish(msgSensor);
 
-                auto duration = duration_cast<chrono::milliseconds>(t2 - t1);
-                if (Ts > duration) {
-                    std::this_thread::sleep_for(Ts - duration);
-                }
+//                auto duration = duration_cast<chrono::milliseconds>(t2 - t1);
+//                if (Ts > duration) {
+//                    std::this_thread::sleep_for(Ts - duration);
+//                }
+
+                this->runDelay(static_cast<long>(ts));
 
                 if (this->isStopped()) {
                     break;

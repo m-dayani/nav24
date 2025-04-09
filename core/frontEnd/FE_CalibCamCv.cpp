@@ -174,7 +174,7 @@ namespace NAV24::FE {
         }
         cv::drawChessboardCorners(img, mGridSize, vCorners, res);
         auto pImage2Show = make_shared<ImageTs>(img.clone(), -1, pImage->mPath);
-        auto msgImage = make_shared<MsgSensorData>(ID_TP_OUTPUT, pImage2Show);
+        auto msgImage = make_shared<MsgSensorData>(ID_TP_SDATA, pImage2Show);
 
         //cv::imshow("ChessBoard", img);
         //cv::waitKey(0);
@@ -215,8 +215,7 @@ namespace NAV24::FE {
             mpChannel->send(msgCalibConf);
 
             // Update camera-world trans from last frame
-            auto pTransParam = TF::PoseSE3::getTransParam("world0", "cam0", 0.0,
-                                                             mvpFrames.back()->getPose(), mvpParamHolder);
+            auto pTransParam = TF::PoseSE3::getTransParam(0.0, mvpFrames.back()->getPose(), mvpParamHolder);
             auto msgTransConf = make_shared<MsgConfig>(ID_CH_PARAMS, pTransParam,
                                                        ParameterServer::TOPIC);
             msgTransConf->setMessage(string(PARAM_REL) + "/0");

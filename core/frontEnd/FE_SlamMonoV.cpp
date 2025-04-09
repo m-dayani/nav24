@@ -145,9 +145,7 @@ namespace NAV24::FE {
                     connectMatchedFrames(mvpTrackedFrames.back(), mpCurrFrame);
 
                     auto pLastPose = mpLastFrame->getPose();
-                    mpCurrFrame->setPose(make_shared<TF::PoseSE3>(pLastPose->getRef(),
-                                                                  pLastPose->getTarget(),
-                                                                  pLastPose->getTimestamp(),
+                    mpCurrFrame->setPose(make_shared<TF::PoseSE3>(pLastPose->getTimestamp(),
                                                                   pLastPose->getPose()));
                     // Optimize for pose
                     mvpTrackedFrames.push_back(mpCurrFrame);
