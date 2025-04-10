@@ -42,6 +42,7 @@ namespace NAV24 {
         inline static const std::string TOPIC{"DataStore"};
 
         explicit DataStore(const ChannelPtr&  server);
+        DataStore(const ChannelPtr&  server, const ParamPtr& pDsParams);
         //DataStore(const ChannelPtr& server, const MsgPtr& configMsg);
 
         void receive(const MsgPtr& msg) override;

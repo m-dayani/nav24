@@ -42,7 +42,9 @@ int main(int argc, char** argv) {
     mpSystem->receive(msgOpParams);
 
     // play the pose provider (and all other sensors) in the bg
-    auto fp1 = [mpSystem](auto && PH1) { mpSystem->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto fp1 = [mpSystem](auto && PH1) {
+        mpSystem->receive(std::forward<decltype(PH1)>(PH1));
+    };
     auto msgRun = make_shared<MsgRequest>(ID_CH_SENSORS, fp1, Sensor::TOPIC, FCN_SYS_RUN);
     mpSystem->send(msgRun);
 

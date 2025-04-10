@@ -32,7 +32,16 @@ namespace NAV24 {
 
         // We only need to load image path params here
         if (msg->getTopic() != DataStore::TOPIC) {
-            DLOG(INFO) << "PoseProvider::setup, No image paths message, abort\n";
+
+            // Request important paths
+            auto fp = [this](auto && PH1) {
+                receive(std::forward<decltype(PH1)>(PH1));
+            };
+            MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
+                                                          FCN_DS_REQ, TAG_DS_GET_PATH_GT);
+            mpChannel->send(msgConfPaths);
+
+            DLOG(INFO) << "PoseProvider::setup, No pose paths message, continue\n";
             return;
         }
 
@@ -206,20 +215,15 @@ namespace NAV24 {
     }
 
     std::shared_ptr<Sensor>
-    PoseProvider::getPoseProvider(const ParamPtr &pParams, const ChannelPtr &pChannel) {
+    PoseProvider::getPoseProvider(const ChannelPtr& pChannel, const ParamPtr &pParams) {
 
         shared_ptr<PoseProvider> pPoseProvider = make_shared<PoseProvider>(pChannel);
-        pChannel->registerPublisher(ID_TP_OUTPUT, pPoseProvider);
-        pChannel->registerChannel(ID_CH_SENSORS, pPoseProvider);
+//        pChannel->registerPublisher(ID_TP_OUTPUT, pPoseProvider);
+//        pChannel->registerChannel(ID_CH_SENSORS, pPoseProvider);
 
         // setup
         auto pMsgConfig = make_shared<MsgConfig>(ID_CH_SENSORS, pParams, Sensor::TOPIC);
         pPoseProvider->receive(pMsgConfig);
-
-        auto fp = [pPoseProvider](auto && PH1) { pPoseProvider->receive(std::forward<decltype(PH1)>(PH1)); };
-        MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
-                                                      FCN_DS_REQ, TAG_DS_GET_PATH_GT);
-        pChannel->send(msgConfPaths);
 
         return pPoseProvider;
     }

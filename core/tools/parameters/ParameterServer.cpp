@@ -16,6 +16,11 @@ namespace NAV24 {
     ParameterServer::ParameterServer(const ChannelPtr& server) :
         MsgCallback(server), mpParamRoot(), mvpAllParams() {}
 
+    ParameterServer::ParameterServer(const ChannelPtr &server, const string &settings) : ParameterServer(server) {
+
+        this->load(settings);
+    }
+
     void ParameterServer::load(const string &settingsFile) {
 
         if (mpParamRoot || !mvpAllParams.empty()) {

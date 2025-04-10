@@ -16,6 +16,8 @@ namespace NAV24::FE {
     MappingMonoV::MappingMonoV(const ChannelPtr &pChannel) : FrontEnd(pChannel),
             mmPose(), mPoseMapLock(), mmImage(), mImageMapLock() {
 
+        // initialize all required operators
+//        mpOrbDetector = make_shared<OP::FtDtOrbSlam>(mpChannel);
         mpOrbMatcher = make_shared<OP::FtAssocOrbSlam>();
     }
 

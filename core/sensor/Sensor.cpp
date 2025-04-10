@@ -8,6 +8,7 @@
 #include "Sensor.hpp"
 #include "System.hpp"
 #include "ParameterBlueprint.h"
+#include "Interface.hpp"
 
 
 using namespace std;
@@ -109,38 +110,7 @@ namespace NAV24 {
             }
 
             // Sensor interface
-            auto pSensorInterface = pSensorParams->read(PKEY_INTERFACE);
-            if (pSensorInterface) {
-                SensorInterface::InterfaceType ifType = SensorInterface::DEFAULT;
-                string ifTarget;
-                int ifPort = 0;
-
-                auto pSensorIfType = find_param<ParamType<string>>(PKEY_IF_TYPE, pSensorInterface);
-                if (pSensorIfType) {
-                    string sensorType = pSensorIfType->getValue();
-                    if (sensorType == "mixed") {
-                        ifType = SensorInterface::MIXED;
-                    }
-                    else if (sensorType == "offline") {
-                        ifType = SensorInterface::OFFLINE;
-                    }
-                    else if (sensorType == "stream") {
-                        ifType = SensorInterface::STREAM;
-                    }
-                }
-
-                auto pSensorIfTarget = find_param<ParamType<string>>(PKEY_IF_TARGET, pSensorInterface);
-                if (pSensorIfTarget) {
-                    ifTarget = pSensorIfTarget->getValue();
-                }
-
-                auto pSensorIfPort = find_param<ParamType<int>>(PKEY_IF_PORT, pSensorInterface);
-                if (pSensorIfPort) {
-                    ifPort = pSensorIfPort->getValue();
-                }
-
-                mpInterface = make_shared<SensorInterface>(ifType, ifTarget, ifPort);
-            }
+            mpInterface = make_shared<SensorInterface>(pSensorParams);
         }
     }
 

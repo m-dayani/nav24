@@ -23,15 +23,17 @@ namespace NAV24 {
             MIXED
         };
 
-        SensorInterface() : interfaceType(DEFAULT), target(), port(IC_DEF_PORT) {}
+        SensorInterface() : interfaceType(DEFAULT), target(), port(IC_DEF_PORT), typeStr() {}
         SensorInterface(InterfaceType intType, std::string target_, int port_) :
-                interfaceType(intType), target(std::move(target_)), port(port_) {}
+                interfaceType(intType), target(std::move(target_)), port(port_), typeStr() {}
+        explicit SensorInterface(const ParamPtr& pParams);
 
         [[nodiscard]] std::string printStr(const std::string& prefix = "") const;
 
         InterfaceType interfaceType;
         std::string target;
         int port;
+        std::string typeStr;
     };
 } // NAV24
 

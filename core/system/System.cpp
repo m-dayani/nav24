@@ -109,34 +109,40 @@ namespace NAV24 {
 
     void System::loadParameters(const std::string &settings) {
 
-        MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_PARAMS, ParameterServer::TOPIC, FCN_PS_LOAD, settings);
-        mpParamServer = make_shared<ParameterServer>(shared_from_this());
-        mpParamServer->receive(msgLoadSettings);
+        mpParamServer = make_shared<ParameterServer>(shared_from_this(), settings);
         this->registerChannel(ID_CH_PARAMS, mpParamServer);
+//        MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_PARAMS, ParameterServer::TOPIC, FCN_PS_LOAD, settings);
+//        mpParamServer->receive(msgLoadSettings);
     }
 
     void System::loadDatasets() {
 
         auto pCh = shared_from_this();
-        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
 
         auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC,FCN_PS_REQ, PARAM_DS);
         mpParamServer->receive(msgGetParams);
-        if (mpTempParam && mpTempParam->getName() == "DS") {
+        if (mpTempParam) {
 
-            size_t nDs = mpTempParam->getAllChildKeys().size();
-            for (size_t i = 0; i < nDs; i++) {
-                shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(pCh);
-                string currIdxStr = to_string(i);
-                string msgTarget = string(PARAM_DS) + "/" + currIdxStr;
-                auto fp1 = [pDataProvider](auto && PH1) { pDataProvider->receive(std::forward<decltype(PH1)>(PH1)); };
-                msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp1,
-                                                       ParameterServer::TOPIC, FCN_PS_REQ, msgTarget);
-                mpParamServer->receive(msgGetParams);
+//            size_t nDs = mpTempParam->getAllChildKeys().size();
+            for (const auto& dsInfo : mpTempParam->getAllChildren()) {
 
-                mmpDataStores.insert(make_pair(pDataProvider->getName(), pDataProvider));
-                this->registerChannel(ID_CH_DS, pDataProvider);
+                auto pParamDs = dsInfo.second.lock();
+                if (pParamDs) {
+                    shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(pCh, pParamDs);
+                    mmpDataStores.insert(make_pair(pDataProvider->getName(), pDataProvider));
+                    this->registerChannel(ID_CH_DS, pDataProvider);
+                }
+
+//                string currIdxStr = to_string(i);
+//                string msgTarget = string(PARAM_DS) + "/" + currIdxStr;
+//                auto fp1 = [pDataProvider](auto && PH1) { pDataProvider->receive(std::forward<decltype(PH1)>(PH1)); };
+//                msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp1,
+//                                                       ParameterServer::TOPIC, FCN_PS_REQ, msgTarget);
+//                mpParamServer->receive(msgGetParams);
             }
         }
     }
@@ -154,17 +160,19 @@ namespace NAV24 {
 
     void System::loadCameras() {
 
-        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto pCh = shared_from_this();
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
         auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_CAM);
         mpParamServer->receive(msgGetParams);
-        if (mpTempParam && mpTempParam->getName() == "Camera") {
+        if (mpTempParam) {
 
-            map<string, ParamPtrW> mParams = mpTempParam->getAllChildren();
-            for (const auto& camParam : mParams) {
+            for (const auto& camParam : mpTempParam->getAllChildren()) {
                 auto pCamParam = camParam.second.lock();
                 if (pCamParam) {
-                    auto pCamera = Camera::getCamera(pCamParam, shared_from_this(), camParam.first);
+                    auto pCamera = Camera::getCamera(pCh, pCamParam);
                     if (pCamera) {
                         mmpSensors.insert(make_pair(pCamera->getName(), pCamera));
                     }
@@ -175,17 +183,20 @@ namespace NAV24 {
 
     void System::loadPoseSensors() {
 
-        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto pCh = shared_from_this();
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
         auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_POSE_SENSOR);
         mpParamServer->receive(msgGetParams);
-        if (mpTempParam && mpTempParam->getName() == "Pose") {
+        if (mpTempParam) {
 
             map<string, ParamPtrW> mParams = mpTempParam->getAllChildren();
             for (const auto& poseParam : mParams) {
                 auto pPoseParam = poseParam.second.lock();
                 if (pPoseParam) {
-                    auto pPoseProvider = PoseProvider::getPoseProvider(pPoseParam, shared_from_this());
+                    auto pPoseProvider = PoseProvider::getPoseProvider(pCh, pPoseParam);
                     if (pPoseProvider) {
                         mmpSensors.insert(make_pair(pPoseProvider->getName(), pPoseProvider));
                     }
@@ -196,7 +207,9 @@ namespace NAV24 {
 
     void System::loadRelations() {
 
-        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
         auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_REL);
         mpParamServer->receive(msgGetParams);
@@ -216,22 +229,18 @@ namespace NAV24 {
     void System::loadOutputs() {
 
         auto pChannel = shared_from_this();
-        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
         auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_OUT);
         mpParamServer->receive(msgGetParams);
-        if (mpTempParam && mpTempParam->getName() == PARAM_OUT) {
+        if (mpTempParam) {
             for (const auto& outParamPair : mpTempParam->getAllChildren()) {
                 auto pParam = outParamPair.second.lock();
                 if (pParam) {
-                    OutputPtr pOutput = Output::getNewInstance(pParam, pChannel);
+                    OutputPtr pOutput = Output::getNewInstance(pChannel, pParam);
                     if (pOutput) {
-                        // load output params
-                        string paramKey = string(PARAM_OUT) + "/" + outParamPair.first;
-                        auto fp1 = [pOutput](auto && PH1) { pOutput->receive(std::forward<decltype(PH1)>(PH1)); };
-                        msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp1, ParameterServer::TOPIC,
-                                                               FCN_PS_REQ, paramKey);
-                        mpParamServer->receive(msgGetParams);
 
                         mmpOutputs.insert(make_pair(pOutput->getName(), pOutput));
                         this->registerChannel(ID_CH_OUTPUT, pOutput);
@@ -270,6 +279,30 @@ namespace NAV24 {
             auto msgRunTraj = make_shared<MsgRequest>(ID_CH_TRAJECTORY,
                                                         fp, TrajManager::TOPIC, FCN_SYS_RUN);
             mpTrajManager->receive(msgRunTraj);
+        }
+    }
+
+    void System::loadOperators() {
+
+        // Load all registered operators (do it after all essential components are initialized)
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
+                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_OP);
+        mpParamServer->receive(msgGetParams);
+        if (mpTempParam) {
+            auto vpOperators = mmChannels[ID_CH_OP];
+            for (const auto& pParamInfo : mpTempParam->getAllChildren()) {
+
+                auto pParam = pParamInfo.second.lock();
+                if (pParam) {
+                    auto msgConf = make_shared<MsgConfig>(ID_CH_PARAMS, pParam);
+                    for (const auto& op : vpOperators) {
+                        op->receive(msgConf);
+                    }
+                }
+            }
         }
     }
 
@@ -376,6 +409,5 @@ namespace NAV24 {
 //            }
 //        }
     }
-
 
 }

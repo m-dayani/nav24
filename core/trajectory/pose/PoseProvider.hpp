@@ -23,7 +23,7 @@ namespace NAV24 {
         static ParamPtr getPoseParams(const std::string& seqBase, const std::string& gtFile, double tsFact,
                                       bool posFirst, bool qwFirst, std::vector<ParamPtr>& vpParams);
 
-        static std::shared_ptr<Sensor> getPoseProvider(const ParamPtr &pParams, const ChannelPtr& pChannel);
+        static std::shared_ptr<Sensor> getPoseProvider(const ChannelPtr& pChannel, const ParamPtr &pParams);
 
     protected:
         void setup(const MsgPtr &msg) override;

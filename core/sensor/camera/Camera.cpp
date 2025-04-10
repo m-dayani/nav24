@@ -13,7 +13,6 @@
 #include "Image.hpp"
 #include "FrontEnd.hpp"
 #include "ParameterBlueprint.h"
-#include "ParameterServer.hpp"
 #include "Point2D.hpp"
 #include "Point3D.hpp"
 
@@ -22,9 +21,9 @@ using namespace std;
 
 namespace NAV24 {
 
-#define DEF_CAM_NAME "cam"
+//#define DEF_CAM_NAME "cam"
 
-    int Camera::camIdx = 0;
+//    int Camera::camIdx = 0;
 
     Camera::Camera(const ChannelPtr& pChannel) : Sensor(pChannel), mCamOp(OFFLINE),
                                                  mImgSz(DEF_IMG_WIDTH, DEF_IMG_HEIGHT),
@@ -60,7 +59,9 @@ namespace NAV24 {
         }
 
         auto pParamCam = pConfig->getConfig();
-        if (pParamCam) {
+        if (pParamCam && msg->getTopic() != DataStore::TOPIC) {
+            // The parent (Sensor) class loads the interface, so you don't have to do it again
+
             // Image size
             auto pImgSize = find_param<ParamSeq<int>>(PKEY_IMG_SIZE, pParamCam);
             if (pImgSize) {
@@ -84,6 +85,19 @@ namespace NAV24 {
 
             // Calib
             mpCalib = make_shared<Calibration>(pParamCam->read(PKEY_CAM_CALIB));
+
+            // Load important paths
+            auto fp = [this](auto && PH1) {
+                receive(std::forward<decltype(PH1)>(PH1));
+            };
+            MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
+                                                          FCN_DS_REQ, TAG_DS_GET_PATH_IMG);
+
+            auto interfaceType = mpInterface->interfaceType;
+            if (interfaceType == SensorInterface::STREAM || interfaceType == SensorInterface::MIXED) {
+                msgConfPaths->setMessage(TAG_DS_GET_PATH_VIDEO);
+            }
+            mpChannel->send(msgConfPaths);
         }
     }
 
@@ -121,55 +135,11 @@ namespace NAV24 {
         return oss.str();
     }
 
-    std::shared_ptr<Sensor> Camera::getCamera(const ParamPtr &pCamParams, const ChannelPtr& pChannel, const std::string& stdIdx) {
+    std::shared_ptr<Sensor> Camera::getCamera(const ChannelPtr& pChannel, const ParamPtr &pCamParams) {
 
-        auto camName = find_param<ParamType<string>>(PKEY_NAME, pCamParams);
-        string camNameStr = (camName) ? camName->getValue() : DEF_CAM_NAME + to_string(camIdx++);
-        shared_ptr<Camera> pCamera{};
-
-        string keyIfType = string(PKEY_INTERFACE) + "/" + string(PKEY_IF_TYPE);
-        auto ifType = find_param<ParamType<string>>(keyIfType, pCamParams);
-        if (ifType) {
-            string interfaceType = ifType->getValue();
-
-            MsgReqPtr msgGetCamParams{};
-
-            auto camOp = OFFLINE;
-            if (interfaceType == "stream") {
-                camOp = STREAM;
-            }
-            else if (interfaceType == "mixed") {
-                camOp = BOTH;
-            }
-
-            pCamera = make_shared<CameraMono>(pChannel);
-
-            if (pCamera) {
-                // todo: make this target based
-                string keyIfTarget = string(PKEY_INTERFACE) + "/" + string(PKEY_IF_TARGET);
-                auto ifTarget = find_param<ParamType<string>>(keyIfTarget, pCamParams);
-                string ifTargetStr = (ifTarget) ? ifTarget->getValue() : "";
-
-                auto fp = [pCamera](auto && PH1) { pCamera->receive(std::forward<decltype(PH1)>(PH1)); };
-                MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
-                                                               FCN_DS_REQ, TAG_DS_GET_PATH_IMG);
-
-                if (interfaceType == "offline" || interfaceType == "mixed") {
-                    pChannel->send(msgConfPaths);
-                }
-                if (interfaceType == "stream" || interfaceType == "mixed") {
-                    msgConfPaths->setMessage(TAG_DS_GET_PATH_VIDEO);
-                    pChannel->send(msgConfPaths);
-                }
-//            }
-//            if (pCamera) {
-                // todo: I think it is loaded twice -> check again
-                string keyParam = string(PARAM_CAM) + "/" + stdIdx;
-                msgGetCamParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
-                                                          ParameterServer::TOPIC,FCN_PS_REQ, keyParam);
-                pChannel->send(msgGetCamParams);
-            }
-        }
+        auto pCamera = make_shared<CameraMono>(pChannel);
+        auto msgConfig = make_shared<MsgConfig>(ID_CH_PARAMS, pCamParams);
+        pCamera->receive(msgConfig);
 
         return pCamera;
     }
@@ -1046,7 +1016,7 @@ namespace NAV24 {
 
             double ts = -1.0;
             string nextFile{};
-            auto Ts = std::chrono::milliseconds(static_cast<int>(mTs * 1000.f));
+//            auto Ts = std::chrono::milliseconds(static_cast<int>(mTs * 1000.f));
 
             this->getNextImageFile(nextFile, ts);
             while(!nextFile.empty()) {

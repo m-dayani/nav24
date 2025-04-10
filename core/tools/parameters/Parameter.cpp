@@ -30,7 +30,7 @@ namespace NAV24 {
         }
         else {
             DLOG(WARNING) << "Parameter::getChild, Parameter node contains no child with key: " << key << "\n";
-            return {};
+            return nullptr;
         }
     }
 

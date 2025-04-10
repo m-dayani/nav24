@@ -31,6 +31,13 @@ namespace NAV24 {
         mName = mDsName;
     }
 
+    DataStore::DataStore(const ChannelPtr &server, const ParamPtr &pDsParams) : DataStore(server) {
+
+        // setup the data store
+        auto msgConfig = make_shared<MsgConfig>(ID_CH_PARAMS, pDsParams);
+        this->setup(msgConfig);
+    }
+
     void DataStore::notifyChange() {
 
         // todo: generalize

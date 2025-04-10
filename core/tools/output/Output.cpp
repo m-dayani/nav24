@@ -46,28 +46,27 @@ namespace NAV24 {
         }
     }
 
-    std::shared_ptr<Output> Output::getNewInstance(const ParamPtr &pParam, const ChannelPtr& pChannel) {
+    std::shared_ptr<Output> Output::getNewInstance(const ChannelPtr& pChannel, const ParamPtr &pParam) {
 
-        // todo: optimize parameter retrieval
-        auto pOutName = find_param<ParamType<string>>("name", pParam);
-        string outName = (pOutName) ? pOutName->getValue() : "Output0";
-        auto pIfType = find_param<ParamType<string>>("interface/type", pParam);
-        string ifType = (pIfType) ? pIfType->getValue() : "";
-        auto pIfTarget = find_param<ParamType<string>>("interface/target", pParam);
-        string ifTarget = (pIfTarget) ? pIfTarget->getValue() : "";
+        SensorInterface ifDummy(pParam);
 
+        // Unlike the camera sensors, the creation of outputs requires fetching some params
         OutputPtr pOutput;
-        if (ifType == "screen") {
-            if (ifTarget == "image") {
+        if (ifDummy.typeStr == "screen") {
+            if (ifDummy.target == "image") {
                 pOutput = make_shared<ImageViewer>(pChannel);
             }
-            else if (ifTarget == "3d-graphics") {
+            else if (ifDummy.target == "3d-graphics") {
                 pOutput = make_shared<MapViewer>(pChannel);
             }
         }
-        else if (ifType == "serial") {
+        else if (ifDummy.typeStr == "serial") {
             pOutput = make_shared<Serial>(pChannel);
         }
+
+        // load output params
+        auto msgConfig = make_shared<MsgConfig>(ID_CH_PARAMS, pParam);
+        pOutput->receive(msgConfig);
 
         return pOutput;
     }
@@ -79,17 +78,9 @@ namespace NAV24 {
             auto pParam = msgConfig->getConfig();
             if (pParam) {
                 auto pOutName = find_param<ParamType<string>>("name", pParam);
-                mName = (pOutName) ? pOutName->getValue() : "name";
-                auto pIcType = find_param<ParamType<string>>("interface/type", pParam);
-                string icType = (pIcType) ? pIcType->getValue() : "type";
-                auto pIcTarget = find_param<ParamType<string>>("interface/target", pParam);
-                string icTarget = (pIcTarget) ? pIcTarget->getValue() : "target";
-                auto pIcPort = find_param<ParamType<int>>("interface/port", pParam);
-                int icPort = (pIcPort) ? pIcPort->getValue() : 0;
+                mName = (pOutName) ? pOutName->getValue() : "Output";
 
-                // todo: make interface type consistent
-                mpInterface = make_shared<SensorInterface>(SensorInterface::InterfaceType::DEFAULT,
-                                                           icTarget, icPort);
+                mpInterface = make_shared<SensorInterface>(pParam);
             }
         }
     }

@@ -19,7 +19,7 @@ namespace NAV24 {
 
         void receive(const MsgPtr &msg) override;
 
-        static std::shared_ptr<Output> getNewInstance(const ParamPtr& pParam, const ChannelPtr& pChannel);
+        static std::shared_ptr<Output> getNewInstance(const ChannelPtr& pChannel, const ParamPtr& pParam);
     protected:
         void setup(const MsgPtr& msg) override;
         void handleRequest(const MsgPtr& msg) override;
