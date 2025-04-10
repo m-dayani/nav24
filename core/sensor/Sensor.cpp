@@ -74,14 +74,14 @@ namespace NAV24 {
             // run in background
             if (dynamic_pointer_cast<MsgRequest>(msg)) {
                 auto msgReq = dynamic_pointer_cast<MsgRequest>(msg);
-                auto sender = msgReq->getCallback();
-                if (sender && !mbRunningInBg) {
+                auto senderCb = msgReq->getCallbackFun();
+                if (senderCb && !mbRunningInBg) {
                     DLOG(INFO) << "Sensor::receive, Running camera in background\n";
                     mbRunningInBg = true;
                     auto pThread = make_shared<thread>(&Sensor::run, this);
                     auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThread,
                                                                            System::TOPIC);
-                    sender->receive(msgRes);
+                    senderCb(msgRes);
                 }
             }
         }

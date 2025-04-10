@@ -20,6 +20,11 @@ namespace NAV24 {
         mName = "System";
     }
 
+    System::System(const string &settings) : System() {
+
+        this->loadSettings(settings);
+    }
+
     /* -------------------------------------------------------------------------------------------------------------- */
 
     void System::send(const MsgPtr &message) {
@@ -113,7 +118,9 @@ namespace NAV24 {
     void System::loadDatasets() {
 
         auto pCh = shared_from_this();
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pCh,
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC,FCN_PS_REQ, PARAM_DS);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "DS") {
@@ -123,7 +130,8 @@ namespace NAV24 {
                 shared_ptr<DataStore> pDataProvider = make_shared<DataStore>(pCh);
                 string currIdxStr = to_string(i);
                 string msgTarget = string(PARAM_DS) + "/" + currIdxStr;
-                msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pDataProvider,
+                auto fp1 = [pDataProvider](auto && PH1) { pDataProvider->receive(std::forward<decltype(PH1)>(PH1)); };
+                msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp1,
                                                        ParameterServer::TOPIC, FCN_PS_REQ, msgTarget);
                 mpParamServer->receive(msgGetParams);
 
@@ -146,7 +154,8 @@ namespace NAV24 {
 
     void System::loadCameras() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_CAM);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Camera") {
@@ -166,7 +175,8 @@ namespace NAV24 {
 
     void System::loadPoseSensors() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_POSE_SENSOR);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Pose") {
@@ -186,7 +196,8 @@ namespace NAV24 {
 
     void System::loadRelations() {
 
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(),
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_REL);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == "Relations") {
@@ -205,7 +216,8 @@ namespace NAV24 {
     void System::loadOutputs() {
 
         auto pChannel = shared_from_this();
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pChannel,
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                     ParameterServer::TOPIC, FCN_PS_REQ, PARAM_OUT);
         mpParamServer->receive(msgGetParams);
         if (mpTempParam && mpTempParam->getName() == PARAM_OUT) {
@@ -216,7 +228,8 @@ namespace NAV24 {
                     if (pOutput) {
                         // load output params
                         string paramKey = string(PARAM_OUT) + "/" + outParamPair.first;
-                        msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, pOutput, ParameterServer::TOPIC,
+                        auto fp1 = [pOutput](auto && PH1) { pOutput->receive(std::forward<decltype(PH1)>(PH1)); };
+                        msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp1, ParameterServer::TOPIC,
                                                                FCN_PS_REQ, paramKey);
                         mpParamServer->receive(msgGetParams);
 
@@ -226,7 +239,7 @@ namespace NAV24 {
                         this->registerSubscriber(ID_TP_SDATA, pOutput);
 
                         auto msgRunOutput = make_shared<MsgRequest>(ID_CH_OUTPUT,
-                                                                    pChannel, Output::TOPIC, FCN_SYS_RUN);
+                                                                    fp, Output::TOPIC, FCN_SYS_RUN);
                         pOutput->receive(msgRunOutput);
                         //mpThreads.push_back(thread(&Output::run, pOutput));
                     }
@@ -238,13 +251,14 @@ namespace NAV24 {
     void System::initComponents() {
 
         auto pChannel = shared_from_this();
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
 
         // Initialize Atlas (Map/World Manager)
         if (!mpAtlas) {
             mpAtlas = make_shared<Atlas>(pChannel);
             this->registerChannel(ID_CH_ATLAS, mpAtlas);
             auto msgRunAtlas = make_shared<MsgRequest>(ID_CH_ATLAS,
-                                                      pChannel, Atlas::TOPIC, FCN_SYS_RUN);
+                                                      fp, Atlas::TOPIC, FCN_SYS_RUN);
             mpAtlas->receive(msgRunAtlas);
         }
 
@@ -254,7 +268,7 @@ namespace NAV24 {
             this->registerChannel(ID_CH_TRAJECTORY, mpTrajManager);
             this->registerSubscriber(ID_TP_SDATA, mpTrajManager);
             auto msgRunTraj = make_shared<MsgRequest>(ID_CH_TRAJECTORY,
-                                                        pChannel, TrajManager::TOPIC, FCN_SYS_RUN);
+                                                        fp, TrajManager::TOPIC, FCN_SYS_RUN);
             mpTrajManager->receive(msgRunTraj);
         }
     }
@@ -309,9 +323,9 @@ namespace NAV24 {
         }
 
         auto msgReq = dynamic_pointer_cast<MsgRequest>(msg);
-        auto sender = msgReq->getCallback();
+        auto senderCb = msgReq->getCallbackFun();
 
-        if (!sender) {
+        if (!senderCb) {
             DLOG(WARNING) << "System::handleRequests, bad sender\n";
             return;
         }
@@ -324,7 +338,7 @@ namespace NAV24 {
 
                 auto pTrans = mmpTrans[msgStr];
                 auto msgTrans = make_shared<MsgType<PosePtr>>(DEF_CAT, pTrans, msg->getTopic());
-                sender->receive(msgTrans);
+                senderCb(msgTrans);
             }
         }
     }
@@ -342,9 +356,9 @@ namespace NAV24 {
 
         auto msgStop = make_shared<Message>(ID_CH_SYS, TOPIC, FCN_SYS_STOP);
 
-        for (const auto& pChPair : mmChannels) {
+        for (const auto &pChPair: mmChannels) {
             auto pChannels = pChPair.second;
-            for (const auto& pCh : pChannels) {
+            for (const auto &pCh: pChannels) {
                 if (pCh == shared_from_this()) {
                     continue;
                 }

@@ -56,14 +56,14 @@ namespace NAV24::OP {
         if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
 
             auto pReqMsg = dynamic_pointer_cast<MsgRequest>(msg);
-            auto sender = pReqMsg->getCallback();
-            if (sender) {
+            auto senderCb = pReqMsg->getCallbackFun();
+            if (senderCb) {
                 int action = msg->getTargetId();
                 if (action == FCN_OBJ_TR_RUN) {
                     auto pThRun = make_shared<thread>(&ObjTrackingCv::run, this);
                     auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThRun,
                                                                            msg->getTopic());
-                    sender->receive(msgRes);
+                    senderCb(msgRes);
                 }
             }
         }

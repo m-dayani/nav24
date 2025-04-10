@@ -93,8 +93,8 @@ namespace NAV24 {
             return;
         }
 
-        MsgCbPtr sender = request->getCallback();
-        if (!sender) {
+        auto senderCb = request->getCallbackFun();
+        if (!senderCb) {
             DLOG(WARNING) << "DataStore::handleRequest, Null sender detected\n";
             return;
         }
@@ -103,7 +103,7 @@ namespace NAV24 {
         string tag = request->getMessage();
 
         if (tag == TAG_DS_GET_STAT) {
-            sender->receive(make_shared<Message>(DEF_CAT, DEF_TOPIC, FCN_DS_PRINT, this->printLoaderStateStr()));
+            senderCb(make_shared<Message>(DEF_CAT, DEF_TOPIC, FCN_DS_PRINT, this->printLoaderStateStr()));
             return;
         }
 
@@ -143,7 +143,7 @@ namespace NAV24 {
         MsgPtr response = make_shared<MsgConfig>(DEF_CAT, pParam, TOPIC);
 
         // send back to the caller
-        sender->receive(response);
+        senderCb(response);
     }
 
     void DataStore::handleChangeRequest(const MsgPtr &msg) {

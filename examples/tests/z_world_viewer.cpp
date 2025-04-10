@@ -69,17 +69,19 @@ int main([[maybe_unused]] int argc, char** argv) {
     mpSystem->registerPublisher(ID_TP_OUTPUT, pPoseProvider);
     mpSystem->registerChannel(ID_CH_SENSORS, pPoseProvider);
     // setup
-    auto msgPoseConfig = make_shared<MsgRequest>(ID_CH_PARAMS, pPoseProvider,
+    auto fp = [pPoseProvider](auto && PH1) { pPoseProvider->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto msgPoseConfig = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                  ParameterServer::TOPIC, FCN_PS_REQ, "Input/Pose/0");
     mpSystem->send(msgPoseConfig);
 
-    MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, pPoseProvider, DataStore::TOPIC,
+    MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
                                                   FCN_DS_REQ, TAG_DS_GET_PATH_GT);
     mpSystem->send(msgConfPaths);
 
     auto pPoseRec = make_shared<PoseReceiver>(mpSystem);
 
-    auto msgGetNextPose = make_shared<MsgRequest>(ID_CH_SENSORS, pPoseRec,
+    auto fp1 = [pPoseRec](auto && PH1) { pPoseRec->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto msgGetNextPose = make_shared<MsgRequest>(ID_CH_SENSORS, fp1,
                                                   Sensor::TOPIC, FCN_SEN_GET_NEXT, "");
 
     // Give viewer some time to draw objects

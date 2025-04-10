@@ -223,7 +223,8 @@ namespace NAV24::FE {
         this->initOperators();
 
         // Load camera's calib parameters
-        auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, shared_from_this(),
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, fp,
                                                    Sensor::TOPIC, FCN_CAM_GET_CALIB);
         mpChannel->send(msgReqCalib);
 
@@ -233,7 +234,8 @@ namespace NAV24::FE {
     void SlamMonoV::initOperators() {
 
         // Get operator parameters
-        MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(), ParameterServer::TOPIC,
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
                                                      FCN_PS_REQ, string(PARAM_OP));
         mpChannel->send(msgOpParams);
         if (mpTempParam && mpTempParam->getName() == "OP") {

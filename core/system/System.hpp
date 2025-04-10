@@ -33,6 +33,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         inline static const std::string TOPIC{"System"};
 
         System();
+        explicit System(const std::string& settings);
 
         void send(const MsgPtr &message) override;
         void publish(const MsgPtr &message) override;

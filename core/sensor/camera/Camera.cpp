@@ -94,10 +94,10 @@ namespace NAV24 {
             if (action == FCN_CAM_GET_CALIB) {
                 auto pMsgReq = dynamic_pointer_cast<MsgRequest>(msg);
                 if (pMsgReq) {
-                    auto sender = pMsgReq->getCallback();
-                    if (sender) {
+                    auto senderCb = pMsgReq->getCallbackFun();
+                    if (senderCb) {
                         auto pMsgCalib = make_shared<MsgType<CalibPtr>>(DEF_CAT, mpCalib);
-                        sender->receive(pMsgCalib);
+                        senderCb(pMsgCalib);
                     }
                 }
             }
@@ -150,7 +150,8 @@ namespace NAV24 {
                 auto ifTarget = find_param<ParamType<string>>(keyIfTarget, pCamParams);
                 string ifTargetStr = (ifTarget) ? ifTarget->getValue() : "";
 
-                MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, pCamera, DataStore::TOPIC,
+                auto fp = [pCamera](auto && PH1) { pCamera->receive(std::forward<decltype(PH1)>(PH1)); };
+                MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
                                                                FCN_DS_REQ, TAG_DS_GET_PATH_IMG);
 
                 if (interfaceType == "offline" || interfaceType == "mixed") {
@@ -160,11 +161,11 @@ namespace NAV24 {
                     msgConfPaths->setMessage(TAG_DS_GET_PATH_VIDEO);
                     pChannel->send(msgConfPaths);
                 }
-            }
-            if (pCamera) {
+//            }
+//            if (pCamera) {
                 // todo: I think it is loaded twice -> check again
                 string keyParam = string(PARAM_CAM) + "/" + stdIdx;
-                msgGetCamParams = make_shared<MsgRequest>(ID_CH_PARAMS, pCamera,
+                msgGetCamParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
                                                           ParameterServer::TOPIC,FCN_PS_REQ, keyParam);
                 pChannel->send(msgGetCamParams);
             }
@@ -834,8 +835,8 @@ namespace NAV24 {
             return;
         }
 
-        MsgCbPtr sender = request->getCallback();
-        if (!sender) {
+        auto senderCb = request->getCallbackFun();
+        if (!senderCb) {
             DLOG(WARNING) << "CameraMono::getNext, Null sender detected\n";
             return;
         }
@@ -858,9 +859,9 @@ namespace NAV24 {
                 break;
         }
 
-        sender->receive(pMsg);
+        senderCb(pMsg);
         if (pMsg2) {
-            sender->receive(pMsg2);
+            senderCb(pMsg2);
         }
     }
 

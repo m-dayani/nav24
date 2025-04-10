@@ -46,8 +46,9 @@ void exec_tracking(const shared_ptr<System>& mpSystem, const string& defVideo = 
     auto msgStartPlay = make_shared<Message>(ID_CH_SENSORS, Sensor::TOPIC,
                                              FCN_SEN_START_PLAY, "start_play");
     // Run camera in detached mode (so main thread is controlled by ROS)
+    auto fp = [mpSystem](auto && PH1) { mpSystem->receive(std::forward<decltype(PH1)>(PH1)); };
     auto msgRunCamera = make_shared<MsgRequest>(ID_CH_SENSORS,
-                                                mpSystem, Sensor::TOPIC, FCN_SYS_RUN);
+                                                fp, Sensor::TOPIC, FCN_SYS_RUN);
     mpSystem->send(msgStartPlay);
 }
 
@@ -76,7 +77,8 @@ int main(int argc, char** argv) {
     // Check camera calibration
     bool isCamCalibrated = false;
     // todo: avoid hard-wired strings
-    MsgReqPtr msgGetCamParams = make_shared<MsgRequest>(ID_CH_PARAMS, pParamRec, ParameterServer::TOPIC,
+    auto fp = [pParamRec](auto && PH1) { pParamRec->receive(std::forward<decltype(PH1)>(PH1)); };
+    MsgReqPtr msgGetCamParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
                                                         FCN_PS_REQ, string(PARAM_CAM) + "/0/calib");
     mpSystem->send(msgGetCamParams);
     if (pParamRec->mpParam && pParamRec->mpParam->getAllChildren().count("intrinsics") > 0) {

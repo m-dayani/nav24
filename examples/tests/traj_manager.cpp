@@ -40,7 +40,8 @@ int main(int argc, char** argv) {
     mpSystem->send(msgCreateTraj);
 
     // play the pose provider (and all other sensors)
-    auto msgRun = make_shared<MsgRequest>(ID_CH_SENSORS, mpSystem, Sensor::TOPIC, FCN_SYS_RUN);
+    auto fp = [mpSystem](auto && PH1) { mpSystem->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto msgRun = make_shared<MsgRequest>(ID_CH_SENSORS, fp, Sensor::TOPIC, FCN_SYS_RUN);
     mpSystem->send(msgRun);
 
     cout << "Press a key to finish execution:\n";

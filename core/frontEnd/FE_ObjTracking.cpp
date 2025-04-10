@@ -107,7 +107,8 @@ namespace NAV24::FE {
         mpChannel->send(msgCreateTraj);
 
         // Request world0:cam0 relation from system
-        auto msgGetRel = make_shared<MsgRequest>(ID_CH_SYS, shared_from_this(),
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgGetRel = make_shared<MsgRequest>(ID_CH_SYS, fp,
                                                  System::TOPIC,FCN_GET_TRANS, "world0:cam0");
         mpChannel->send(msgGetRel);
 
@@ -120,7 +121,7 @@ namespace NAV24::FE {
         this->initOperators();
 
         // Load camera's calib parameters
-        auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, shared_from_this(),
+        auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, fp,
                                                    Sensor::TOPIC,FCN_CAM_GET_CALIB);
         mpChannel->send(msgReqCalib);
 
@@ -147,7 +148,8 @@ namespace NAV24::FE {
     void ObjTracking::initOperators() {
 
         // Get operator parameters
-        MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, shared_from_this(), ParameterServer::TOPIC,
+        auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
+        MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
                                                          FCN_PS_REQ, string(PARAM_OP));
         mpChannel->send(msgOpParams);
         if (mpTempParam && mpTempParam->getName() == "OP") {
@@ -163,14 +165,14 @@ namespace NAV24::FE {
                         // Register
                         mpChannel->registerPublisher(ID_TP_FE, mpYoloDetector);
                         // Run ObjTracking operator in background
-                        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, shared_from_this(),
+                        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, fp,
                                                                  TOPIC, FCN_OBJ_TR_RUN);
                         mpYoloDetector->receive(msgReqRun);
                     }
                     if (trackerName == OP_OTR_NAME_CV) {
                         mpObjTracker = pTracker;
                         mpChannel->registerPublisher(ID_TP_OUTPUT, mpObjTracker);
-                        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, shared_from_this(),
+                        auto msgReqRun = make_shared<MsgRequest>(ID_CH_OP, fp,
                                                                  TOPIC, FCN_OBJ_TR_RUN);
                         mpObjTracker->receive(msgReqRun);
                     }

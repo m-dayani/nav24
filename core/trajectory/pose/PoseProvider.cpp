@@ -81,13 +81,13 @@ namespace NAV24 {
         if (pReq && mpPoseDS) {
             auto pReq1 = dynamic_pointer_cast<MsgRequest>(pReq);
             if (pReq1) {
-                auto sender = pReq1->getCallback();
-                if (sender) {
+                auto senderCb = pReq1->getCallbackFun();
+                if (senderCb) {
 
                     MsgPtr msgPose;
                     this->createPoseMsg(msgPose);
                     if (msgPose) {
-                        sender->receive(msgPose);
+                        senderCb(msgPose);
                     }
                 }
             }
@@ -216,7 +216,8 @@ namespace NAV24 {
         auto pMsgConfig = make_shared<MsgConfig>(ID_CH_SENSORS, pParams, Sensor::TOPIC);
         pPoseProvider->receive(pMsgConfig);
 
-        MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, pPoseProvider, DataStore::TOPIC,
+        auto fp = [pPoseProvider](auto && PH1) { pPoseProvider->receive(std::forward<decltype(PH1)>(PH1)); };
+        MsgPtr msgConfPaths = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
                                                       FCN_DS_REQ, TAG_DS_GET_PATH_GT);
         pChannel->send(msgConfPaths);
 

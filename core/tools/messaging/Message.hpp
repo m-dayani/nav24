@@ -127,23 +127,23 @@ namespace NAV24 {
 
     class MsgRequest : public Message {
     public:
-        MsgRequest(const int catId, MsgCbPtr  callback, const std::string& topic = DEF_TOPIC,
-                   const int targetId = DEF_ACTION, const std::string& msg = DEF_MSG) :
-            Message(catId, topic, targetId, msg), mpCallback(std::move(callback)), mCb(nullptr) {}
+//        MsgRequest(const int catId, MsgCbPtr  callback, const std::string& topic = DEF_TOPIC,
+//                   const int targetId = DEF_ACTION, const std::string& msg = DEF_MSG) :
+//            Message(catId, topic, targetId, msg), mpCallback(std::move(callback)), mCb(nullptr) {}
 
         // When you need to use this within a MsgCallback instance
         // but don't use enable_shared_from_this
         MsgRequest(const int catId, MsgCbFun callback, const std::string& topic = DEF_TOPIC,
                    const int targetId = DEF_ACTION, const std::string& msg = DEF_MSG) :
-                Message(catId, topic, targetId, msg), mpCallback(nullptr), mCb(std::move(callback)) {}
+                Message(catId, topic, targetId, msg), mCb(std::move(callback)) {}
 
-        MsgCbPtr getCallback() { return mpCallback; }
-        void setCallback(const MsgCbPtr& callback) { mpCallback = callback; }
+//        MsgCbPtr getCallback() { return mpCallback; }
+//        void setCallback(const MsgCbPtr& callback) { mpCallback = callback; }
 
         MsgCbFun getCallbackFun() { return mCb; }
 
     protected:
-        MsgCbPtr mpCallback;
+//        MsgCbPtr mpCallback;
         MsgCbFun mCb;
     };
     typedef std::shared_ptr<MsgRequest> MsgReqPtr;

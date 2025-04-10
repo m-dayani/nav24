@@ -87,8 +87,8 @@ namespace NAV24 {
             return;
         }
 
-        MsgCbPtr sender = request->getCallback();
-        if (!sender) {
+        auto senderCb = request->getCallbackFun();
+        if (!senderCb) {
             DLOG(WARNING) << "ParameterServer::handleRequest, Null sender detected\n";
             return;
         }
@@ -97,7 +97,7 @@ namespace NAV24 {
         string tag = request->getMessage();
 
         if (tag == TAG_PS_GET_STAT) {
-            sender->receive(make_shared<Message>(DEF_CAT, DEF_TOPIC, FCN_PS_PRINT,
+            senderCb(make_shared<Message>(DEF_CAT, DEF_TOPIC, FCN_PS_PRINT,
                                                  mpParamRoot->printStr("")));
             return;
         }
@@ -109,7 +109,7 @@ namespace NAV24 {
         MsgPtr response = make_shared<MsgConfig>(DEF_CAT, pParam, TOPIC);
 
         // send back to the caller
-        sender->receive(response);
+        senderCb(response);
     }
 
     void ParameterServer::changeParams(const MsgPtr &msg) {

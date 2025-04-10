@@ -34,13 +34,13 @@ namespace NAV24 {
 
         if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
             auto msgReq = dynamic_pointer_cast<MsgRequest>(msg);
-            auto sender = msgReq->getCallback();
-            if (sender) {
+            auto senderCb = msgReq->getCallbackFun();
+            if (senderCb) {
                 if (msg->getTargetId() == FCN_SYS_RUN) {
                     auto pThread = make_shared<thread>(&Output::run, this);
                     auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThread,
                                                                            System::TOPIC);
-                    sender->receive(msgRes);
+                    senderCb(msgRes);
                 }
             }
         }

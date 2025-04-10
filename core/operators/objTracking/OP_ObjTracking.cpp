@@ -70,11 +70,12 @@ namespace NAV24::OP {
                 if (opName == OP_OTR_NAME_YOLO_ONNX) {
                     pTracker = make_shared<ObjTrackingMl>(pChannel);
                     // Retrieve required parameters and configure YOLO detector
-                    MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,
+                    auto fp = [pTracker](auto && PH1) { pTracker->receive(std::forward<decltype(PH1)>(PH1)); };
+                    MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
                                                                      FCN_PS_REQ, string(PARAM_OP) + '/' +pParam->getName());
                     pChannel->send(msgYoloOpParams);
                     // todo: you normally want to address a dataset by the name in a component's interface
-                    MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, pTracker, DataStore::TOPIC,
+                    MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, fp, DataStore::TOPIC,
                                                                       FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
                     pChannel->send(msgYoloModelPath);
                 }
@@ -90,7 +91,8 @@ namespace NAV24::OP {
 //                }
                 else if (opName == OP_OTR_NAME_CV) {
                     pTracker = make_shared<ObjTrackingCv>(pChannel);
-                    MsgPtr msgTrCvParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,
+                    auto fp = [pTracker](auto && PH1) { pTracker->receive(std::forward<decltype(PH1)>(PH1)); };
+                    MsgPtr msgTrCvParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
                                                                    FCN_PS_REQ, string(PARAM_OP) + '/' + pParam->getName());
                     pChannel->send(msgTrCvParams);
                 }

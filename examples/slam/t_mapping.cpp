@@ -26,33 +26,24 @@ int main(int argc, char** argv) {
     }
 
     string confFile = argv[1];
-    //string defVideo = "robo-arm-cap.avi";
-    //shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
 
     // Create the system
-    shared_ptr<System> mpSystem = make_shared<System>();
-    //mpSystem->registerChannel(ID_CH_SYS, mpSystem);
-
-    // Load settings
-    MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_LD_PARAMS, confFile);
-    mpSystem->receive(msgLoadSettings);
-
-    // Create a new trajectory
-    MsgPtr msgCreateTraj = make_shared<Message>(ID_CH_TRAJECTORY, TrajManager::TOPIC, FCN_TRJ_CREATE, "world0");
-    mpSystem->send(msgCreateTraj);
+    shared_ptr<System> mpSystem = make_shared<System>(confFile);
 
     // Create a Mapping FrontEnd
     auto pMappingFE = make_shared<FE::MappingMonoV>(mpSystem);
     mpSystem->registerSubscriber(ID_TP_SDATA, pMappingFE);
     mpSystem->registerChannel(ID_CH_FE, pMappingFE);
 
-    // setup the frontend
-    MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, pMappingFE, ParameterServer::TOPIC,
+    // when all the components are registered, send a setup command to config every thing
+    auto fp = [pMappingFE](auto && PH1) { pMappingFE->receive(std::forward<decltype(PH1)>(PH1)); };
+    MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
                                                  FCN_PS_REQ, string(PARAM_OP));
     mpSystem->receive(msgOpParams);
 
-    // play the pose provider (and all other sensors)
-    auto msgRun = make_shared<MsgRequest>(ID_CH_SENSORS, mpSystem, Sensor::TOPIC, FCN_SYS_RUN);
+    // play the pose provider (and all other sensors) in the bg
+    auto fp1 = [mpSystem](auto && PH1) { mpSystem->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto msgRun = make_shared<MsgRequest>(ID_CH_SENSORS, fp1, Sensor::TOPIC, FCN_SYS_RUN);
     mpSystem->send(msgRun);
 
     cout << "Press a key to finish execution:\n";

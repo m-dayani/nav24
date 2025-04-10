@@ -69,7 +69,8 @@ int main(int argc, char** argv) {
 
     auto pPoseRec = make_shared<PoseReceiver>(mpSystem);
 
-    auto msgGetNextPose = make_shared<MsgRequest>(ID_CH_SENSORS, pPoseRec,
+    auto fp = [pPoseRec](auto && PH1) { pPoseRec->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto msgGetNextPose = make_shared<MsgRequest>(ID_CH_SENSORS, fp,
                                                   Sensor::TOPIC, FCN_SEN_GET_NEXT, "");
 
     // Give viewer some time to draw objects

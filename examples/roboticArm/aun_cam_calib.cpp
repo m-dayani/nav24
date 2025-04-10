@@ -64,7 +64,8 @@ void exec_calib(const shared_ptr<System>& mpSystem, const string& saveFile, bool
         msgConfOffline->setMessage(TAG_SEN_MX_STREAM);
         mpSystem->send(msgConfOffline);
         // Get the most current pattern
-        auto msgGetNext = make_shared<MsgRequest>(ID_CH_SENSORS, pFeCamCalib,
+        auto fp = [pFeCamCalib](auto && PH1) { pFeCamCalib->receive(std::forward<decltype(PH1)>(PH1)); };
+        auto msgGetNext = make_shared<MsgRequest>(ID_CH_SENSORS, fp,
                                                   Sensor::TOPIC,FCN_SEN_GET_NEXT, "get_next");
         mpSystem->send(msgGetNext);
     }
@@ -105,7 +106,8 @@ int main([[maybe_unused]] int argc, char** argv) {
     mpSystem->receive(msgLoadSettings);
 
     // Check camera calibration
-    auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, pParamRec,
+    auto fp = [pParamRec](auto && PH1) { pParamRec->receive(std::forward<decltype(PH1)>(PH1)); };
+    auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, fp,
                                                Sensor::TOPIC, FCN_CAM_GET_CALIB);
     mpSystem->send(msgReqCalib);
 
