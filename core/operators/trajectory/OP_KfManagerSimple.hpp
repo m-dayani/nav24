@@ -22,13 +22,15 @@ namespace NAV24::OP {
 #define DEF_KFMS_TH_N_TMPS 50
 #define DEF_KFMS_TH_MED_PXD 20
 
-    class KfManagerSimple : public Operator, public MsgCallback {
+    class KfManagerSimple : public Operator {
     public:
         KfManagerSimple();
+        explicit KfManagerSimple(const ChannelPtr& pChannel);
 
         void checkPose(PosePtr& pPose);
 
-        static std::shared_ptr<KfManagerSimple> getInstance(const ParamPtr& pParams);
+        static std::shared_ptr<KfManagerSimple> getInstance(const ChannelPtr& pChannel,
+                                                            const ParamPtr& pParams);
 
         void receive(const MsgPtr &msg) override;
 

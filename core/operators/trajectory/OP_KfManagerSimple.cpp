@@ -9,7 +9,12 @@ using namespace std;
 
 namespace NAV24::OP {
 
-    KfManagerSimple::KfManagerSimple() :
+    KfManagerSimple::KfManagerSimple() : Operator(),
+            mThDistPose(DEF_KFMS_TH_DIST_POSE), mThTime(DEF_KFMS_TH_TIME),
+            mThNumTrackedMps(DEF_KFMS_TH_N_TMPS), mMedPxd(DEF_KFMS_TH_MED_PXD),
+            mLastPoseTable() {}
+
+    KfManagerSimple::KfManagerSimple(const ChannelPtr &pChannel) : Operator(pChannel),
             mThDistPose(DEF_KFMS_TH_DIST_POSE), mThTime(DEF_KFMS_TH_TIME),
             mThNumTrackedMps(DEF_KFMS_TH_N_TMPS), mMedPxd(DEF_KFMS_TH_MED_PXD),
             mLastPoseTable() {}
@@ -52,21 +57,12 @@ namespace NAV24::OP {
         }
     }
 
-    std::shared_ptr<KfManagerSimple> KfManagerSimple::getInstance(const ParamPtr &pParams) {
+    std::shared_ptr<KfManagerSimple> KfManagerSimple::getInstance(const ChannelPtr& pChannel,
+                                                                  const ParamPtr &pParams) {
 
-        shared_ptr<KfManagerSimple> pKfManagerSimple = make_shared<KfManagerSimple>();
-
-        auto ppName = find_param<ParamType<string>>("name", pParams);
-        pKfManagerSimple->mName = (ppName) ? ppName->getValue() : DEF_KFMS_NAME;
-
-        auto ppThDistPose = find_param<ParamType<double>>("th_dist_pose", pParams);
-        pKfManagerSimple->mThDistPose = (ppThDistPose) ? (float) ppThDistPose->getValue() : DEF_KFMS_TH_DIST_POSE;
-        auto ppThTime = find_param<ParamType<double>>("th_time", pParams);
-        pKfManagerSimple->mThTime = (ppThTime) ? (float) ppThTime->getValue() : DEF_KFMS_TH_TIME;
-        auto ppNumTrackedMps = find_param<ParamType<int>>("th_n_tracked_mps", pParams);
-        pKfManagerSimple->mThNumTrackedMps = (ppNumTrackedMps) ? ppNumTrackedMps->getValue() : DEF_KFMS_TH_N_TMPS;
-        auto ppMedPxd = find_param<ParamType<int>>("th_med_pxd", pParams);
-        pKfManagerSimple->mMedPxd = (ppMedPxd) ? ppMedPxd->getValue() : DEF_KFMS_TH_MED_PXD;
+        shared_ptr<KfManagerSimple> pKfManagerSimple = make_shared<KfManagerSimple>(pChannel);
+        auto msgConfig = make_shared<MsgConfig>(ID_CH_PARAMS, pParams);
+        pKfManagerSimple->receive(msgConfig);
 
         return pKfManagerSimple;
     }
@@ -74,7 +70,6 @@ namespace NAV24::OP {
     void KfManagerSimple::receive(const MsgPtr &msg) {
 
         if (msg) {
-
             if (dynamic_pointer_cast<MsgConfig>(msg)) {
                 this->setup(msg);
             }
@@ -86,9 +81,13 @@ namespace NAV24::OP {
         if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
             auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
 
-            // todo: these are repeated -> unify
             auto ppName = find_param<ParamType<string>>("name", pParam);
-            mName = (ppName) ? ppName->getValue() : "kfms0";
+            mName = (ppName) ? ppName->getValue() : DEF_KFMS_NAME;
+
+            // checking the operator's name
+            if (mName != DEF_KFMS_NAME) {
+                return;
+            }
 
             auto ppThDistPose = find_param<ParamType<double>>("th_dist_pose", pParam);
             mThDistPose = (ppThDistPose) ? (float) ppThDistPose->getValue() : DEF_KFMS_TH_DIST_POSE;
@@ -101,7 +100,7 @@ namespace NAV24::OP {
         }
     }
 
-    void KfManagerSimple::handleRequest(const MsgPtr &reqMsg) {
+    void KfManagerSimple::handleRequest(const MsgPtr &) {
 
     }
 

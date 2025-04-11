@@ -45,6 +45,8 @@ namespace NAV24::OP {
                   float thScore=SCORE_THRESHOLD,
                   float thNms=NMS_THRESHOLD);
 
+        static void getModelInfo(const ParamPtr& pParam, ModelInfo& modelInfo);
+
         ModelType mModelType;
 
         float mThConf = CONFIDENCE_THRESHOLD;
@@ -59,15 +61,21 @@ namespace NAV24::OP {
         int logSeverityLevel = 3;
         int intraOpNumThreads = 1;
 
-        std::string modelPath;
+        std::string modelPath{};
+        std::string labelsPath{};
+        std::string descPath{};
     };
 
     class ObjDetMlCv : public ObjDet {
     public:
-        ObjDetMlCv(const std::string& pathModel, const std::string& pathDesc,
-                   const std::string& pathLabels, ModelInfo  modelInfo);
+        /*ObjDetMlCv(const std::string& pathModel, const std::string& pathDesc,
+                   const std::string& pathLabels, ModelInfo  modelInfo);*/
+        explicit ObjDetMlCv(const ChannelPtr& pChannel) : ObjDet(pChannel), mModelInfo() {}
 
         void detect(const ImagePtr& pImage, std::vector<OB::ObsPtr> &vpObs) override;
+
+    protected:
+        void setup(const MsgPtr &configMsg) override;
 
     private:
         void readLabels(const std::string& pathLabels);

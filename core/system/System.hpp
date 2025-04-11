@@ -27,6 +27,7 @@ namespace NAV24 {
 #define FCN_GET_TRANS 7
 #define FCN_SYS_RUN 8
 #define FCN_SYS_STOP 10
+#define FCN_SYS_INIT_OP 21
 
 class System : public Channel, public MsgCallback, public std::enable_shared_from_this<System> {
     public:

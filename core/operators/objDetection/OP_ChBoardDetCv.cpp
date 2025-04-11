@@ -5,7 +5,6 @@
 #include "OP_ChBoardDetCv.hpp"
 #include "Point2D.hpp"
 
-#include <utility>
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
@@ -15,14 +14,13 @@ using namespace std;
 
 namespace NAV24::OP {
 
-    OP_ChBoardDetCv::OP_ChBoardDetCv(cv::Size gridSz, const cv::TermCriteria &criteria) :
-        mGridSize(std::move(gridSz)), mCriteria(criteria),
-        mWinSize(11, 11), mZeroZone(-1, -1) {
+    ChBoardDetCv::ChBoardDetCv(cv::Size gridSz, const cv::TermCriteria &criteria) : Operator(),
+            mCriteria(criteria), mGridSize(gridSz),
+            mWinSize(11, 11), mZeroZone(-1, -1) {}
 
+    ChBoardDetCv::ChBoardDetCv(const NAV24::ChannelPtr &pChannel) : Operator(pChannel) {}
 
-    }
-
-    bool OP_ChBoardDetCv::process(const cv::Mat &img, std::vector<OB::ObsPtr> &vpCorners) {
+    bool ChBoardDetCv::process(const cv::Mat &img, std::vector<OB::ObsPtr> &vpCorners) {
 
         vector<cv::Point2f> vCorners;
         bool res = cv::findChessboardCorners(img, mGridSize, vCorners,

@@ -21,7 +21,7 @@ using namespace std;
 
 namespace NAV24::OP {
 
-    ObjDetOnnxRT::ObjDetOnnxRT(const std::string &pathModel, const std::string &pathLabels,
+    /*ObjDetOnnxRT::ObjDetOnnxRT(const std::string &pathModel, const std::string &pathLabels,
                                ModelInfo modelInfo) :
             mPathModel(pathModel), mPathLabels(pathLabels), mModelInfo(std::move(modelInfo)) {
 
@@ -81,7 +81,7 @@ namespace NAV24::OP {
         }
 
         readLabels(pathLabels);
-    }
+    }*/
 
     void ObjDetOnnxRT::readLabels(const std::string &pathLabels) {
 
@@ -172,6 +172,77 @@ namespace NAV24::OP {
         cv::Scalar meanRGB = cv::Scalar(mean, mean, mean);
         cv::Mat nchw = cv::dnn::blobFromImage(pImage->mImage, scale, mModelInfo.mInputShape, meanRGB, true, false);
         blob = Array(nchw.ptr<float>(), nchw.ptr<float>() + nchw.total());
+    }
+
+    void ObjDetOnnxRT::setup(const MsgPtr &configMsg) {
+//        Operator::setup(configMsg);
+
+        if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
+            auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
+            if (pParam) {
+                // Model info:
+                ModelInfo::getModelInfo(pParam, mModelInfo);
+
+                mPathModel = mModelInfo.modelPath;
+//                mPathDesc = mModelInfo.descPath;
+                mPathLabels = mModelInfo.labelsPath;
+
+                boost::filesystem::path pModel(mPathModel);
+                if (!boost::filesystem::exists(pModel) || pModel.extension().string() != ".onnx") {
+                    DLOG(WARNING) << "ObjDetOnnxRT::ObjDetOnnxRT, Bad model path: " << mPathModel << "\n";
+                    return;
+                }
+
+                try {
+#ifdef LIB_ONNX_RUNTIME_FOUND
+                    env = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "Yolo");
+                    Ort::SessionOptions sessionOption;
+                    if (mModelInfo.cudaEnable) {
+
+                        cudaEnable = mModelInfo.cudaEnable;
+                        OrtCUDAProviderOptions cudaOption;
+                        cudaOption.device_id = 0;
+                        sessionOption.AppendExecutionProvider_CUDA(cudaOption);
+                    }
+                    sessionOption.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+                    sessionOption.SetIntraOpNumThreads(mModelInfo.intraOpNumThreads);
+                    sessionOption.SetLogSeverityLevel(mModelInfo.logSeverityLevel);
+
+                    session = make_unique<Ort::Session>(env, mPathModel.c_str(), sessionOption);
+                    Ort::AllocatorWithDefaultOptions allocator;
+                    size_t inputNodesNum = session->GetInputCount();
+                    for (size_t i = 0; i < inputNodesNum; i++) {
+                        Ort::AllocatedStringPtr input_node_name = session->GetInputNameAllocated(i, allocator);
+                        char *temp_buf = new char[50];
+                        strcpy(temp_buf, input_node_name.get());
+                        inputNodeNames.push_back(temp_buf);
+                    }
+                    size_t OutputNodesNum = session->GetOutputCount();
+                    for (size_t i = 0; i < OutputNodesNum; i++) {
+                        Ort::AllocatedStringPtr output_node_name = session->GetOutputNameAllocated(i, allocator);
+                        char *temp_buf = new char[10];
+                        strcpy(temp_buf, output_node_name.get());
+                        outputNodeNames.push_back(temp_buf);
+                    }
+                    options = Ort::RunOptions{nullptr};
+                    //WarmUpSession();
+#endif
+                }
+                catch (const std::exception &e) {
+
+                    const char *str1 = "[YOLO_V8]:";
+                    const char *str2 = e.what();
+                    std::string resultStr = std::string(str1) + std::string(str2);
+                    char *merged = new char[resultStr.length() + 1];
+                    std::strcpy(merged, resultStr.c_str());
+                    std::cout << merged << std::endl;
+                    delete[] merged;
+//            return "[YOLO_V8]:Create session failed.";
+                }
+
+                readLabels(mPathLabels);
+            }
+        }
     }
 
 

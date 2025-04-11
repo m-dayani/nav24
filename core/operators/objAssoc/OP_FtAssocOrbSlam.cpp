@@ -17,6 +17,9 @@ namespace NAV24::OP {
     FtAssocOrbSlam::FtAssocOrbSlam(float nnratio, bool checkOri):
         mfNNratio(nnratio), mbCheckOrientation(checkOri), windowSize(100.f) {}
 
+    FtAssocOrbSlam::FtAssocOrbSlam(const ChannelPtr& pChannel) : FtAssoc(pChannel),
+            mfNNratio(0.6), mbCheckOrientation(false), windowSize(100.f) {}
+
     float FtAssocOrbSlam::RadiusByViewingCos(const float &viewCos)
     {
         if(viewCos>0.998)

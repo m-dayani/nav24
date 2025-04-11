@@ -20,9 +20,42 @@ namespace NAV24::OP {
             mModelType(modelType), mThConf(thConf), mThScore(thScore), mThNms(thNms),
             mInputShape(inputShape), mInputScale(inputScale), mInputMean(inputMean) {}
 
+    void ModelInfo::getModelInfo(const NAV24::ParamPtr &pParam, ModelInfo& modelInfo) {
+
+        auto pPathModel = find_param<ParamType<string>>("model", pParam);
+        modelInfo.modelPath = (pPathModel) ? pPathModel->getValue() : "unknown";
+
+        auto pPathDesc = find_param<ParamType<string>>("config", pParam);
+        modelInfo.descPath = (pPathDesc) ? pPathDesc->getValue() : "unknown";
+
+        auto pPathLabels = find_param<ParamType<string>>("labels", pParam);
+        modelInfo.labelsPath = (pPathLabels) ? pPathLabels->getValue() : "unknown";
+
+        auto pInputShape = find_param<ParamSeq<int>>("input_shape", pParam);
+        vector<int> vInputShape = (pInputShape) ? pInputShape->getValue() : vector<int>();
+        if (vInputShape.size() == 2) {
+            modelInfo.mInputShape = cv::Size(vInputShape[0], vInputShape[1]);
+        }
+
+        auto pInputScale = find_param<ParamType<double>>("input_scale", pParam);
+        modelInfo.mInputScale = (pInputScale) ? pInputScale->getValue() : modelInfo.mInputScale;
+
+        auto pInputMean = find_param<ParamType<double>>("input_mean", pParam);
+        modelInfo.mInputMean = (pInputMean) ? pInputMean->getValue() : modelInfo.mInputMean;
+
+        auto pThConf = find_param<ParamType<double>>("th_conf", pParam);
+        modelInfo.mThConf = (pThConf) ? pThConf->getValue() : modelInfo.mThConf;
+
+        auto pThScore = find_param<ParamType<double>>("th_score", pParam);
+        modelInfo.mThScore = (pThScore) ? pThScore->getValue() : modelInfo.mThScore;
+
+        auto pThNms = find_param<ParamType<double>>("th_nms", pParam);
+        modelInfo.mThNms = (pThNms) ? pThNms->getValue() : modelInfo.mThNms;
+    }
+
     /* ============================================================================================================== */
 
-    ObjDetMlCv::ObjDetMlCv(const std::string &pathModel, const std::string &pathDesc,
+    /*ObjDetMlCv::ObjDetMlCv(const std::string &pathModel, const std::string &pathDesc,
                            const std::string &pathLabels, ModelInfo  modelInfo) :
             mPathModel(pathModel), mPathDesc(pathDesc), mModel(), mModelInfo(std::move(modelInfo)) {
 
@@ -52,7 +85,7 @@ namespace NAV24::OP {
         }
 
         readLabels(pathLabels);
-    }
+    }*/
 
     void ObjDetMlCv::detect(const ImagePtr& pImage, std::vector<OB::ObsPtr> &vpObs) {
 
@@ -202,6 +235,48 @@ namespace NAV24::OP {
 //            draw_label(image, label, left, top);
         }
 //        return image;
+    }
+
+    void ObjDetMlCv::setup(const MsgPtr &configMsg) {
+//        Operator::setup(configMsg);
+        if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
+            auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
+            if (pParam) {
+                // Model info:
+                ModelInfo::getModelInfo(pParam, mModelInfo);
+
+                mPathModel = mModelInfo.modelPath;
+                mPathDesc = mModelInfo.descPath;
+//                mPathLabels = mModelInfo.labelsPath;
+
+                auto pModel = boost::filesystem::path(mPathModel);
+                if (!boost::filesystem::exists(pModel)) {
+                    DLOG(WARNING) << "Unable to find model: " << mPathModel << ", abort\n";
+                    return;
+                }
+
+                string modelExt = pModel.extension().string();
+                if (modelExt == ".pb") {
+                    // TensorFlow model
+                    mModelInfo.mModelType = ModelInfo::TENSORFLOW_PB;
+                    auto pDesc = boost::filesystem::path(mPathDesc);
+                    string ext = pDesc.extension().string();
+                    if (!boost::filesystem::exists(pDesc) || ext != ".pbtxt") {
+                        DLOG(WARNING) << "TensorFlow models require a config file: " << mPathDesc << ", abort\n";
+                        return;
+                    }
+                    // Tensorflow model: pathModel.pb nad pathDesc.pbtxt[.txt] (config)
+                    mModel = cv::dnn::readNet(mPathModel, mPathDesc, "TensorFlow");
+                }
+                else if (modelExt == ".onnx") {
+                    mModelInfo.mModelType = ModelInfo::TORCH_ONNX;
+                    // ONNX model (PyTorch, YOLOvX)
+                    mModel = cv::dnn::readNet(mPathModel);
+                }
+
+                readLabels(mModelInfo.labelsPath);
+            }
+        }
     }
 
 }   // NAV24::OP

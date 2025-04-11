@@ -85,6 +85,10 @@ int main(int argc, char** argv) {
     // VPR using bag of binary words
     auto pVprDbow2 = make_shared<OP::VPR_DBoW2>(pathOrbVoc, "", "");
     pVprDbow2->setTsMap(tsMap1);
+    // todo: implement this way
+//    auto pVprDbow2 = make_shared<OP::VPR_DBoW2>(mpSystem);
+//    mpSystem->registerChannel(pVprDbow2);
+    // init mpSystem operators
 
     // create a vocab from the first set of frames
     shared_ptr<OrbVocabulary> pOrbVoc;

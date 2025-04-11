@@ -29,33 +29,16 @@ namespace NAV24::OP {
                     if (pType) {
                         string detectorType = pType->getValue();
                         if (detectorType == OP_FT_DT_TYPE_ORB) {
-                            // todo: add these parsing inside the OrbSlam detector
-                            auto pNft = find_param<ParamType<int>>("nFeatures", pParam);
-                            int nFeatures = (pNft) ? pNft->getValue() : 1000;
-
-                            auto pNl = find_param<ParamType<int>>("nLevels", pParam);
-                            int nLevels = (pNl) ? pNl->getValue() : 8;
-
-                            auto pIniThFast = find_param<ParamType<int>>("iniThFast", pParam);
-                            int iniThFast = (pIniThFast) ? pIniThFast->getValue() : 20;
-
-                            auto pMinThFast = find_param<ParamType<int>>("minThFast", pParam);
-                            int minThFast = (pMinThFast) ? pMinThFast->getValue() : 7;
-
-                            auto pScaleFactor = find_param<ParamType<double>>("nFeatures", pParam);
-                            float scaleFactor = (pScaleFactor) ? (float) pScaleFactor->getValue() : 1.2f;
-
-                            pDetector = make_shared<FtDtOrbSlam>(nFeatures, scaleFactor, nLevels, iniThFast, minThFast);
+                            pDetector = make_shared<FtDtOrbSlam>(pChannel);
                         }
                         else if (detectorType == OP_FT_DT_TYPE_ORB_CV) {
-                            auto pNft = find_param<ParamType<int>>("nFeatures", pParam);
-                            int nFeatures = (pNft) ? pNft->getValue() : 1000;
-
-                            pDetector = make_shared<FtDtOCV>(nFeatures);
+                            pDetector = make_shared<FtDtOCV>(pChannel);
                         }
                     }
                 }
             }
+
+            pChannel->registerChannel(ID_CH_OP, pDetector);
         }
 
         return pDetector;
@@ -78,7 +61,7 @@ namespace NAV24::OP {
         assert(nPoints == descriptors.rows);
 
         vector<OB::ObsPtr> vpObs(nPoints);
-        for (int i = 0; i < nPoints; i++) {
+        for (size_t i = 0; i < nPoints; i++) {
             auto pObs = make_shared<OB::KeyPoint2D>(keyPoints[i], descriptors.row(i).clone());
             pObs->setFrame(pFrame);
             vpObs[i] = pObs;
@@ -88,9 +71,22 @@ namespace NAV24::OP {
         return nPoints;
     }
 
-    FtDtOCV::FtDtOCV(int nFt) : FtDt(nFt) {
+    FtDtOCV::FtDtOCV(const ChannelPtr& pChannel, int nFt) : FtDt(pChannel, nFt) {
 
         mpDetector = cv::ORB::create(mnFeatures);
+    }
+
+    void FtDtOCV::setup(const MsgPtr &configMsg) {
+//        Operator::setup(configMsg);
+
+        if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
+
+            auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
+            if (pParam) {
+                auto pNft = find_param<ParamType<int>>("nFeatures", pParam);
+                mnFeatures = (pNft) ? pNft->getValue() : 1000;
+            }
+        }
     }
 } // NAV24::OP
 

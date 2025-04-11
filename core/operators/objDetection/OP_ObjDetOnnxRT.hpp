@@ -23,7 +23,8 @@ namespace NAV24::OP {
     public:
         inline static const std::string TOPIC = "OP::ObjDetOnnxRT";
 
-        ObjDetOnnxRT(const std::string& pathModel, const std::string& pathLabels, ModelInfo  modelInfo);
+//        ObjDetOnnxRT(const std::string& pathModel, const std::string& pathLabels, ModelInfo  modelInfo);
+        explicit ObjDetOnnxRT(const ChannelPtr& pChannel) : ObjDet(pChannel) {}
 
 //        explicit ObjDetOnnxRT(const ChannelPtr&  pChannel);
 //        void receive(const MsgPtr &msg) override;
@@ -36,6 +37,7 @@ namespace NAV24::OP {
         //void stop() override;
 
 //        [[nodiscard]] int64_t image_size() const;
+        void setup(const MsgPtr &configMsg) override;
 
         void readLabels(const std::string &pathLabels);
         void preProcess(const ImagePtr& pImage, Array& blob);

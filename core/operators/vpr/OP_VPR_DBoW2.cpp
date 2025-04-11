@@ -20,13 +20,15 @@ using namespace std;
 namespace NAV24::OP {
 
 
-    VPR_DBoW2::VPR_DBoW2(string pathVocab, string pathDb, string pathTsMap) :
+    VPR_DBoW2::VPR_DBoW2(string pathVocab, string pathDb, string pathTsMap) : Operator(),
             mPathVocab(std::move(pathVocab)), mPathDb(std::move(pathDb)), mPathTsMap(std::move(pathTsMap)) {
 
         loadVocabulary();
         loadDatabase();
         loadTsMap();
     }
+
+    VPR_DBoW2::VPR_DBoW2(const ChannelPtr &pChannel) : Operator(pChannel) {}
 
     void VPR_DBoW2::add(const FramePtr &pKF) {
 
@@ -182,6 +184,8 @@ namespace NAV24::OP {
     }
 
 #endif
+
+    // todo: implement MsgCallback's methods
 
 } // NAV24::OP
 //

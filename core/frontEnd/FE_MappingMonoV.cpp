@@ -17,7 +17,7 @@ namespace NAV24::FE {
             mmPose(), mPoseMapLock(), mmImage(), mImageMapLock() {
 
         // initialize all required operators
-//        mpOrbDetector = make_shared<OP::FtDtOrbSlam>(mpChannel);
+        mpOrbDetector = make_shared<OP::FtDtOrbSlam>(mpChannel);
         mpOrbMatcher = make_shared<OP::FtAssocOrbSlam>();
     }
 

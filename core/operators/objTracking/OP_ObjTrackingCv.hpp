@@ -17,6 +17,8 @@
 
 namespace NAV24::OP {
 
+#define DEF_TR_CV_NAME "ObjTrackerCV"
+
 #define DEF_TR_CV_OPT 2
 
 #define FCN_TR_CV_INIT_OBJ 28

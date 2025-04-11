@@ -9,13 +9,15 @@
 
 #include "Observation.hpp"
 #include "Point3D.hpp"
+#include "Operator.hpp"
 
 
 namespace NAV24::OP {
 
-    class OP_ChBoardDetCv {
+    class ChBoardDetCv : public Operator {
     public:
-        OP_ChBoardDetCv(cv::Size  gridSz, const cv::TermCriteria& criteria);
+        ChBoardDetCv(cv::Size gridSz, const cv::TermCriteria& criteria);
+        explicit ChBoardDetCv(const ChannelPtr& pChannel);
 
         bool process(const cv::Mat& image, std::vector<OB::ObsPtr>& vpCorners);
 

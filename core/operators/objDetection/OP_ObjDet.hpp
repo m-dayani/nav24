@@ -23,9 +23,12 @@ namespace NAV24::OP {
 
     class ObjDet : public Operator {
     public:
+        ObjDet() : Operator() {}
+        explicit ObjDet(const ChannelPtr& pChannel) : Operator(pChannel) {}
+
         virtual void detect(const ImagePtr& pImage, std::vector<OB::ObsPtr>& vpObs) = 0;
 
-        static std::shared_ptr<ObjDet> createDetector(const ParamPtr& pParam, const ChannelPtr& pChannel);
+        static std::shared_ptr<ObjDet> createDetector(const ChannelPtr &pChannel, const ParamPtr& pParam);
 
     };
 }   // NAV24::OP

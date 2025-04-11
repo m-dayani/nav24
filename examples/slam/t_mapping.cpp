@@ -8,7 +8,7 @@
 
 #include "System.hpp"
 #include "FE_MappingMonoV.hpp"
-#include "ParameterBlueprint.h"
+//#include "ParameterBlueprint.h"
 
 
 using namespace std;
@@ -36,10 +36,8 @@ int main(int argc, char** argv) {
     mpSystem->registerChannel(ID_CH_FE, pMappingFE);
 
     // when all the components are registered, send a setup command to config every thing
-    auto fp = [pMappingFE](auto && PH1) { pMappingFE->receive(std::forward<decltype(PH1)>(PH1)); };
-    MsgPtr msgOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp, ParameterServer::TOPIC,
-                                                 FCN_PS_REQ, string(PARAM_OP));
-    mpSystem->receive(msgOpParams);
+    auto msgSetupOp = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_SYS_INIT_OP);
+    mpSystem->receive(msgSetupOp);
 
     // play the pose provider (and all other sensors) in the bg
     auto fp1 = [mpSystem](auto && PH1) {

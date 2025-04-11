@@ -49,7 +49,7 @@ namespace NAV24::FE {
         std::string mTrajectory;
         std::vector<FramePtr> mvpFrames;
 
-        std::shared_ptr<OP::OP_ChBoardDetCv> mpOpChBoardDetCv;
+        std::shared_ptr<OP::ChBoardDetCv> mpOpChBoardDetCv;
 
         std::vector<ParamPtr> mvpParamHolder;
 

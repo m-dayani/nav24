@@ -153,7 +153,7 @@ namespace NAV24::FE {
                 string key = pOpParamPair.first;
                 auto pOpParam = pOpParamPair.second.lock();
 
-                auto pTracker = OP::ObjDet::createDetector(pOpParam, mpChannel);
+                auto pTracker = OP::ObjDet::createDetector(mpChannel, pOpParam);
                 if (pTracker) {
                     mvpObjDetectors.push_back(pTracker);
                 }

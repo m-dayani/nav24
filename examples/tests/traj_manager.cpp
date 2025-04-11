@@ -35,6 +35,10 @@ int main(int argc, char** argv) {
     MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_LD_PARAMS, confFile);
     mpSystem->receive(msgLoadSettings);
 
+    // Setup operators
+    auto msgSetupOp = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_SYS_INIT_OP);
+    mpSystem->receive(msgSetupOp);
+
     // Create a new trajectory
     MsgPtr msgCreateTraj = make_shared<Message>(ID_CH_TRAJECTORY, TrajManager::TOPIC, FCN_TRJ_CREATE, "world0");
     mpSystem->send(msgCreateTraj);

@@ -24,8 +24,7 @@ namespace NAV24::OP {
 #define MAX_SIZE_BUFFER 1
 
 
-    ObjTrackingMl::ObjTrackingMl(const ChannelPtr& pChannel) :
-        ObjTracking(pChannel) {}
+    ObjTrackingMl::ObjTrackingMl(const ChannelPtr& pChannel) : ObjTracking(pChannel) {}
 
     void ObjTrackingMl::receive(const MsgPtr &msg) {
 
@@ -88,7 +87,7 @@ namespace NAV24::OP {
                 return;
             }
 
-            mpObjDetector = ObjDet::createDetector(pParam, mpChannel);
+            mpObjDetector = ObjDet::createDetector(mpChannel, pParam);
         }
     }
 

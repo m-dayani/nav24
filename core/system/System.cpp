@@ -321,6 +321,9 @@ namespace NAV24 {
                     case FCN_GET_TRANS:
                         this->handleRequest(msg);
                         break;
+                    case FCN_SYS_INIT_OP:
+                        this->loadOperators();
+                        break;
                     default:
                         DLOG(WARNING) << "System::receive: Action is not supported\n";
                         break;

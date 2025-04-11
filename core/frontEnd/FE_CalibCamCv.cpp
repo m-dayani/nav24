@@ -38,7 +38,7 @@ namespace NAV24::FE {
             mImageSize(), mvpParamHolder() {
 
         cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.0001);
-        mpOpChBoardDetCv = make_shared<OP::OP_ChBoardDetCv>(mGridSize, criteria);
+        mpOpChBoardDetCv = make_shared<OP::ChBoardDetCv>(mGridSize, criteria);
     }
 
     void CalibCamCv::receive(const MsgPtr &msg) {

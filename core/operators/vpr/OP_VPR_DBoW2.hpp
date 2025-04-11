@@ -18,6 +18,8 @@
 #include <boost/serialization/list.hpp>
 
 #include "Frame.hpp"
+#include "Message.hpp"
+#include "Operator.hpp"
 #ifdef LIB_DBOW2_FOUND
 #include "DBoW2/DBoW2.h"
 #endif
@@ -25,9 +27,10 @@
 
 namespace NAV24::OP {
 
-    class VPR_DBoW2 {
+    class VPR_DBoW2 : public Operator {
     public:
         VPR_DBoW2(std::string pathVocab, std::string pathDb, std::string pathTsMap);
+        explicit VPR_DBoW2(const ChannelPtr& pChannel);
 
         void add(const FramePtr& pKF);
         void getBestMatches(const FramePtr &pKF, int nMatches,

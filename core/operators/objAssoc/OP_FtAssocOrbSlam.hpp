@@ -13,6 +13,7 @@ namespace NAV24::OP {
     class FtAssocOrbSlam : public FtAssoc {
     public:
         explicit FtAssocOrbSlam(float nnratio=0.6, bool checkOri=true);
+        explicit FtAssocOrbSlam(const ChannelPtr& pChannel);
 
         std::vector<int> matchV(const FramePtr& pFrame1, const FramePtr& pFrame2) override;//, MatchedObs<OB::ObsPtr>& pMatchedObs);
         int match(const FramePtr &pFrame1, const FramePtr &pFrame2, OB::FtTracksPtr &pTracks) override;

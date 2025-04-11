@@ -28,7 +28,7 @@ namespace NAV24::OP {
 #define FCN_OBJ_TR_RUN 4
 #define FCN_OBJ_TR_STOP 6
 
-    class ObjTracking : public MsgCallback, public Operator {
+    class ObjTracking : public Operator {
     public:
         inline static const std::string TOPIC = "ObjTracking";
 

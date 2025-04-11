@@ -17,10 +17,14 @@
 namespace NAV24::OP  {
     class ObjDetApriltag : public ObjDet {
     public:
+        explicit ObjDetApriltag(const ChannelPtr& pChannel) : ObjDet(pChannel) {}
         explicit ObjDetApriltag(const std::string& family);
         ~ObjDetApriltag();
 
         void detect(const ImagePtr& pImage, std::vector<OB::ObsPtr> &vpObs) override;
+
+    protected:
+        void setup(const MsgPtr &configMsg) override;
 
     private:
         std::string mTagFamily;

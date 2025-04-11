@@ -21,6 +21,15 @@ namespace NAV24::OP {
 //        mpMatcher = cv::makePtr<cv::BFMatcher>(cv::NORM_HAMMING, true);
     }
 
+    FtAssocOCV::FtAssocOCV(const NAV24::ChannelPtr &pChannel) : FtAssoc(pChannel) {
+
+        auto indexParams = cv::makePtr<cv::flann::KDTreeIndexParams>(5);
+        auto searchParams = cv::makePtr<cv::flann::SearchParams>(50);
+//        mpMatcher = cv::makePtr<cv::FlannBasedMatcher>(indexParams, searchParams);
+        mpMatcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
+//        mpMatcher = cv::makePtr<cv::BFMatcher>(cv::NORM_HAMMING, true);
+    }
+
     cv::Mat FtAssocOCV::getAllDescriptors(const FramePtr &pFrame) {
 
         cv::Mat descriptors;

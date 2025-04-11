@@ -14,7 +14,8 @@
 namespace NAV24::OP {
     class FtAssoc : public Operator {
     public:
-        FtAssoc() = default;
+        FtAssoc() : Operator() {}
+        explicit FtAssoc(const ChannelPtr& pChannel) : Operator(pChannel) {}
 
         virtual void match(const FramePtr& pFrame1, const FramePtr& pFrame2) = 0;
         virtual std::vector<int> matchV(const FramePtr& pFrame1, const FramePtr& pFrame2) = 0;
@@ -24,6 +25,7 @@ namespace NAV24::OP {
     class FtAssocOCV : public FtAssoc {
     public:
         FtAssocOCV();
+        explicit FtAssocOCV(const ChannelPtr& pChannel);
 
         std::vector<int> matchV(const FramePtr &pFrame1, const FramePtr &pFrame2) override;
 
@@ -32,6 +34,7 @@ namespace NAV24::OP {
     protected:
         static cv::Mat getAllDescriptors(const FramePtr& pFrame);
         static std::vector<cv::KeyPoint> getAllKeyPoints(const FramePtr& pFrame);
+
     protected:
         cv::Ptr<cv::DescriptorMatcher> mpMatcher;
     };

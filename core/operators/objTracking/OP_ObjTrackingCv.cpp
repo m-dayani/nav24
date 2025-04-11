@@ -37,7 +37,11 @@ namespace NAV24::OP {
             auto pParams = pMsgConf->getConfig();
             if (pParams) {
                 auto pParamName = find_param<ParamType<string>>(PKEY_NAME, pParams);
-                mName = (pParamName) ? pParamName->getValue() : "ObjTrackerCV";
+                mName = (pParamName) ? pParamName->getValue() : "";
+
+                if (mName != DEF_TR_CV_NAME) {
+                    return;
+                }
 
                 auto pParamManInit = find_param<ParamType<int>>("manInit", pParams);
                 mbManInit = (pParamManInit) ? pParamManInit->getValue() != 0 : false;

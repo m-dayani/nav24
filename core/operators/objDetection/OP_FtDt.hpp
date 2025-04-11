@@ -11,9 +11,15 @@
 #include "Message.hpp"
 
 namespace NAV24::OP {
+
+#define OP_DEF_N_FT 400
+
     class FtDt : public Operator {
     public:
-        explicit FtDt(int nFt) : mnFeatures(nFt), mnIniNumFts(nFt) {}
+        FtDt(const ChannelPtr& pChannel, int nFt) : Operator(pChannel), mnFeatures(nFt), mnIniNumFts(nFt) {}
+        explicit FtDt(const ChannelPtr& pChannel) : Operator(pChannel),
+                mnFeatures(OP_DEF_N_FT), mnIniNumFts(OP_DEF_N_FT) {}
+
         static std::shared_ptr<FtDt> create(const ParamPtr& pParam, ChannelPtr& pChannel);
         virtual int detect(FramePtr& pFrame) = 0;
 
@@ -29,11 +35,16 @@ namespace NAV24::OP {
     };
     typedef std::shared_ptr<FtDt> FtDtPtr;
 
+
     class FtDtOCV : public FtDt {
     public:
-        explicit FtDtOCV(int nFt = 0);
+        explicit FtDtOCV(const ChannelPtr& pChannel, int nFt = 0);
 
         int detect(FramePtr &pFrame) override;
+
+    protected:
+        void setup(const MsgPtr &configMsg) override;
+
     protected:
         cv::Ptr<cv::FeatureDetector> mpDetector;
     };

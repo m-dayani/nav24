@@ -9,7 +9,7 @@ using namespace std;
 
 namespace NAV24::OP {
 
-    ObjDetApriltag::ObjDetApriltag(const std::string &family) : mTagFamily(family) {
+    ObjDetApriltag::ObjDetApriltag(const std::string &family) : ObjDet(), mTagFamily(family) {
 
 #ifdef LIB_APRILTAG_FOUND
         // Initialize tag detector with options
@@ -58,6 +58,19 @@ namespace NAV24::OP {
             vpObs.push_back(pObs);
         }
 #endif
+    }
+
+    void ObjDetApriltag::setup(const MsgPtr &configMsg) {
+//        Operator::setup(configMsg);
+
+        if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
+
+            auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
+            if (pParam) {
+                auto pTagFamily = find_param<ParamType<string>>("family", pParam);
+                string tagFamily = (pTagFamily) ? pTagFamily->getValue() : "unknown";
+            }
+        }
     }
 
 

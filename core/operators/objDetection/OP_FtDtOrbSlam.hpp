@@ -28,12 +28,13 @@ namespace NAV24::OP {
     public:
         enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
-        FtDtOrbSlam(int nfeatures, float scaleFactor, int nlevels, int iniThFAST, int minThFAST);
+//        FtDtOrbSlam(int nfeatures, float scaleFactor, int nLevels, int iniThFAST, int minThFAST);
+        explicit FtDtOrbSlam(const ChannelPtr& pChannel);
 
         int detect(FramePtr& pFrame) override;
 
         int inline GetLevels(){
-            return nlevels;}
+            return nLevels;}
 
         float inline GetScaleFactor(){
             return scaleFactor;}
@@ -54,22 +55,24 @@ namespace NAV24::OP {
             return mvInvLevelSigma2;
         }
 
-        void setNumFeatures(const int nFt) override;
+        void setNumFeatures(int nFt) override;
 
     protected:
+        void setup(const MsgPtr &configMsg) override;
+
         void ComputePyramid(cv::Mat image);
         void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint>>& allKeypoints);
-        std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
+        [[nodiscard]] std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                                     const int &maxX, const int &minY, const int &maxY, const int &nFeatures,
                                                     const int &level) const;
 
     protected:
         std::vector<cv::Point> pattern;
 
-        double scaleFactor;
-        int nlevels;
-        int iniThFAST;
-        int minThFAST;
+        double scaleFactor{};
+        int nLevels{};
+        int iniThFAST{};
+        int minThFAST{};
 
         std::vector<int> mnFeaturesPerLevel;
 

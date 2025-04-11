@@ -18,12 +18,13 @@ namespace NAV24 {
             mPoseQueue(), mPoseQueueLock(), mmpTrajectory(), mpKfManager(nullptr) {
 
         // load and setup keyframe manager
-        auto pKfManager = make_shared<OP::KfManagerSimple>();
-        string msgKey = string(PARAM_OP) + string(DEF_KFMS_NAME);
-        auto fp = [pKfManager](auto && PH1) { pKfManager->receive(std::forward<decltype(PH1)>(PH1)); };
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
-                                                    ParameterServer::TOPIC, FCN_PS_REQ, msgKey);
-        mpChannel->send(msgGetParams);
+        auto pKfManager = make_shared<OP::KfManagerSimple>(mpChannel);
+        mpChannel->registerChannel(ID_CH_OP, pKfManager);
+//        string msgKey = string(PARAM_OP) + string(DEF_KFMS_NAME);
+//        auto fp = [pKfManager](auto && PH1) { pKfManager->receive(std::forward<decltype(PH1)>(PH1)); };
+//        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
+//                                                    ParameterServer::TOPIC, FCN_PS_REQ, msgKey);
+//        mpChannel->send(msgGetParams);
 
         mpKfManager = pKfManager;
     }

@@ -16,10 +16,10 @@ using namespace std;
 
 namespace NAV24::OP {
 
-    ObjTracking::ObjTracking() : MsgCallback(), Operator(),
+    ObjTracking::ObjTracking() : Operator(),
         mqpImages(), mMtxImgQ(), mbInitialized(false) {}
 
-    ObjTracking::ObjTracking(const ChannelPtr& pChannel) : MsgCallback(pChannel), Operator(),
+    ObjTracking::ObjTracking(const ChannelPtr& pChannel) : Operator(pChannel),
         mqpImages(), mMtxImgQ(), mbInitialized(false) {}
 
     void ObjTracking::setup(const MsgPtr &) {
@@ -79,16 +79,6 @@ namespace NAV24::OP {
                                                                       FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
                     pChannel->send(msgYoloModelPath);
                 }
-//                else if (opName == OP_OTR_NAME_YOLO_PY) {
-//                    pTracker = make_shared<OP::ObjTrYoloPy>(pChannel);
-//                    MsgPtr msgYoloModelPath = make_shared<MsgRequest>(ID_CH_DS, pTracker, DataStore::TOPIC,
-//                                                                      FCN_DS_REQ, TAG_DS_GET_PATH_MODEL);
-//                    pChannel->send(msgYoloModelPath);
-//                    // Retrieve required parameters and configure YOLO detector
-//                    MsgPtr msgYoloOpParams = make_shared<MsgRequest>(ID_CH_PARAMS, pTracker, ParameterServer::TOPIC,
-//                                                                     FCN_PS_REQ, string(PARAM_OP) + '/' +pParam->getName());
-//                    pChannel->send(msgYoloOpParams);
-//                }
                 else if (opName == OP_OTR_NAME_CV) {
                     pTracker = make_shared<ObjTrackingCv>(pChannel);
                     auto fp = [pTracker](auto && PH1) { pTracker->receive(std::forward<decltype(PH1)>(PH1)); };
