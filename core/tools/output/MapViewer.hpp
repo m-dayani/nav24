@@ -21,6 +21,8 @@
 
 namespace NAV24 {
 
+    typedef std::map<std::string, std::vector<PosePtr>> MapNamedPose;
+
     class MapViewer : public Output {
     public:
         explicit MapViewer(const ChannelPtr& pChannel);
@@ -32,6 +34,9 @@ namespace NAV24 {
         bool isStopped() override;
         void setup(const MsgPtr &msg) override;
 
+        void insertPoses(const std::vector<PosePtr>& vpPose);
+        void retrievePoses(MapNamedPose& poseTable);
+
         void handleRequest(const MsgPtr &msg) override;
 
         void requestStop(const std::string &channel) override;
@@ -41,7 +46,8 @@ namespace NAV24 {
         void drawPose(const PosePtr& pPose) const;
         void drawPoseFrame(const PosePtr& pPose) const;
         void drawWorldObject(const WO::WoPtr &pWo) const;
-        void drawTrajectory(const std::set<PosePtr>& spPose) const;
+        void drawTrajectory(const std::vector<PosePtr>& spPose, const std::vector<float> &color) const;
+        void drawTrajectories(const MapNamedPose& poseTable) const;
 
 #ifdef LIB_PANGOLIN_FOUND
         void getLastOpenGlCamera(pangolin::OpenGlMatrix& Twc);
@@ -61,7 +67,7 @@ namespace NAV24 {
         float mViewpointF;
 
         std::mutex mMtxPoseQueue;
-        std::set<PosePtr> mspPose;
+        MapNamedPose mPoseTable;
         std::mutex mMtxWoQueue;
         std::set<WO::WoPtr> mspWorldObjects;
 
@@ -69,6 +75,8 @@ namespace NAV24 {
 
         PosePtr mLastPose;
         int mSetFirstPoseState;
+
+        std::map<std::string, std::vector<float>> mmTrajColors;
     };
 } // NAV24
 

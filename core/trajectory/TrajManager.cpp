@@ -15,7 +15,7 @@ using namespace std;
 namespace NAV24 {
 
     TrajManager::TrajManager(const ChannelPtr &pChannel) : MsgCallback(pChannel),
-            mPoseQueue(), mPoseQueueLock(), mmpTrajectory(), mpKfManager(nullptr) {
+            mPoseQueue(), mPoseQueueLock(), mmpTrajectory(), mpKfManager(nullptr), mmpTrans() {
 
         // load and setup keyframe manager
         auto pKfManager = make_shared<OP::KfManagerSimple>(mpChannel);
@@ -27,6 +27,8 @@ namespace NAV24 {
 //        mpChannel->send(msgGetParams);
 
         mpKfManager = pKfManager;
+
+        this->loadRelations();
     }
 
     void TrajManager::receive(const MsgPtr &msg) {
@@ -75,22 +77,37 @@ namespace NAV24 {
 
         if (pPose) {
             string trajName = pPose->getName();
+            if (trajName.empty()) {
+                trajName = DEF_TRJ_NAME;
+            }
             shared_ptr<Trajectory> pTraj;
-            if (trajName.empty() || !mmpTrajectory.contains(trajName)) {
-                pPose->setName(mActiveTraj);
-                pTraj = mmpTrajectory[mActiveTraj];
+            if (!mmpTrajectory.contains(trajName)) {
+                this->createTrajectory(trajName);
             }
-            else {
-                pTraj = mmpTrajectory[trajName];
-            }
+            pTraj = mmpTrajectory[trajName];
             if (pTraj) {
                 pTraj->addPose(pPose);
             }
         }
     }
 
-    void TrajManager::setup(const MsgPtr &) {
+    void TrajManager::setup(const MsgPtr &msg) {
 
+        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
+
+            auto pParam = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
+            if (pParam && pParam->getName() == PARAM_REL) {
+                for (const auto& relParamPair : pParam->getAllChildren()) {
+                    auto pRelParam = relParamPair.second.lock();
+                    if (pRelParam) {
+                        auto pTrans = TF::PoseSE3::getTrans(pRelParam);
+                        if (pTrans) {
+                            mmpTrans.insert(make_pair(pTrans->getName(), pTrans));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void TrajManager::handleRequest(const MsgPtr &msg) {
@@ -105,9 +122,19 @@ namespace NAV24 {
                                                                            System::TOPIC);
                     senderCb(msgRes);
                 }
+
+                int action = msg->getTargetId();
+                string msgStr = msg->getMessage();
+                if (action == FCN_GET_TRANS) {
+                    if (mmpTrans.count(msgStr) > 0) {
+
+                        auto pTrans = mmpTrans[msgStr];
+                        auto msgTrans = make_shared<MsgType<PosePtr>>(DEF_CAT, pTrans, msg->getTopic());
+                        senderCb(msgTrans);
+                    }
+                }
             }
         }
-
     }
 
     void TrajManager::run() {
@@ -142,11 +169,27 @@ namespace NAV24 {
                 // ...
             }
 
+            // Pose cleanup
+            for (const auto& pTrajInfo : mmpTrajectory) {
+                if (pTrajInfo.second) {
+                    pTrajInfo.second->cleanup();
+                }
+            }
+
             mPoseQueueLock.lock();
             if (!mPoseQueue.empty() && mPoseQueue.front() == pPose) {
                 mPoseQueue.pop_front();
             }
             mPoseQueueLock.unlock();
+
+            stringstream trajInfo;
+            for (const auto& traj : mmpTrajectory) {
+                if (traj.second) {
+                    trajInfo << "(" << traj.first << ", " << traj.second->getNumPose() << "), ";
+                }
+            }
+            DLOG_EVERY_N(INFO, 1000) << "TrajManager::run, Trajectory Info, (name, num poses): "
+                                     << trajInfo.str() << "\n";
         }
 
         DLOG(INFO) << "TrajManager::run, stopped\n";
@@ -161,6 +204,16 @@ namespace NAV24 {
             }
         }
         mPoseQueueLock.unlock();
+    }
+
+    void TrajManager::loadRelations() {
+
+        auto fp = [this](auto && PH1) {
+            receive(std::forward<decltype(PH1)>(PH1));
+        };
+        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
+                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_REL);
+        mpChannel->send(msgGetParams);
     }
 
 } // NAV24

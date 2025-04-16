@@ -34,19 +34,25 @@ namespace NAV24 {
         void addPosesToQueue(const std::vector<PosePtr>& vpPose);
 
         void setup(const MsgPtr &configMsg) override;
+        void loadRelations();
 
         void handleRequest(const MsgPtr &reqMsg) override;
 
         void run() override;
 
     protected:
+        // Pose Queue (pose entry point)
         std::list<PosePtr> mPoseQueue;
         std::mutex mPoseQueueLock;
 
+        // Group of all trajectories
         std::map<std::string, TrajPtr> mmpTrajectory;
         std::string mActiveTraj;
 
         std::shared_ptr<OP::KfManagerSimple> mpKfManager;
+
+        // Pose relations
+        std::map<std::string, PosePtr> mmpTrans;
     };
     typedef std::shared_ptr<TrajManager> TrajManagerPtr;
 

@@ -34,7 +34,7 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         inline static const std::string TOPIC{"System"};
 
         System();
-        explicit System(const std::string& settings);
+//        explicit System(const std::string& settings);
 
         void send(const MsgPtr &message) override;
         void publish(const MsgPtr &message) override;
@@ -50,7 +50,6 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
         void loadSettings(const std::string& settings);
         void loadParameters(const std::string& settings);
         void loadDatasets();
-        void loadRelations();
         void loadOutputs();
         void loadSensors();
         void loadCameras();
@@ -70,17 +69,16 @@ class System : public Channel, public MsgCallback, public std::enable_shared_fro
 
     protected:
         // This is the preferred change
-        std::map<int, std::vector<MsgCbPtr>> mmChannels;
-        std::map<int, std::vector<MsgCbPtr>> mmPublishers;
-        std::map<int, std::vector<MsgCbPtr>> mmSubscribers;
+        std::map<int, std::set<MsgCbPtr>> mmChannels;
+        std::map<int, std::set<MsgCbPtr>> mmPublishers;
+        std::map<int, std::set<MsgCbPtr>> mmSubscribers;
 
         std::shared_ptr<ParameterServer> mpParamServer;
         std::map<std::string, std::shared_ptr<DataStore>> mmpDataStores;
         std::map<std::string, std::shared_ptr<Sensor>> mmpSensors;
-        std::map<std::string, PosePtr> mmpTrans;
         std::map<std::string, OutputPtr> mmpOutputs;
 
-        std::vector<std::shared_ptr<std::thread>> mpThreads;
+        std::set<std::shared_ptr<std::thread>> mpThreads;
 
         ParamPtr mpTempParam;
 

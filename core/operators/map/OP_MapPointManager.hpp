@@ -6,14 +6,26 @@
 #ifndef NAV24_OP_MAPPOINTMANAGER_HPP
 #define NAV24_OP_MAPPOINTMANAGER_HPP
 
-namespace NAV24 {
-    namespace OP {
+#include <Eigen/Eigen>
 
-        class OP_MapPointManager {
+#include "Operator.hpp"
 
-        };
 
-    } // OP
-} // NAV24
+namespace NAV24::OP {
+
+    class MapPointManager : public Operator {
+    public:
+        explicit MapPointManager(const ChannelPtr& pChannel) : Operator(pChannel) {}
+
+    private:
+        static bool triangulate(Eigen::Vector3f &x_c1, Eigen::Vector3f &x_c2, Eigen::Matrix<float,3,4> &Tc1w,
+                                Eigen::Matrix<float,3,4> &Tc2w, Eigen::Vector3f &x3D);
+        void createMapPoints();
+        void mapPointCulling();
+//        void updateCovisibilityGraph();
+
+    };
+
+} // NAV24::OP
 
 #endif //NAV24_OP_MAPPOINTMANAGER_HPP

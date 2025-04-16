@@ -18,51 +18,39 @@ namespace NAV24::FE {
 
         // initialize all required operators
         mpOrbDetector = make_shared<OP::FtDtOrbSlam>(mpChannel);
-        mpOrbMatcher = make_shared<OP::FtAssocOrbSlam>();
+        mpChannel->registerChannel(ID_CH_OP, mpOrbDetector);
+        mpOrbMatcher = make_shared<OP::FtAssocOrbSlam>(mpChannel);
+        mpChannel->registerChannel(ID_CH_OP, mpOrbMatcher);
     }
 
     void MappingMonoV::run() {
 
         while (!this->isStopped()) {
 
-            this->createNewFrame();
-
-            // extract features and match them
-            // triangulate map points
+            this->processImage();
         }
     }
 
-    void MappingMonoV::setup(const MsgPtr &msg) {
-
+    void MappingMonoV::setup(const MsgPtr &) {
         // Get operator parameters
-        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
-            auto mpTempParam = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
-            if (mpTempParam && mpTempParam->getName() == "OP") {
-                for (const auto &pOpParamPair: mpTempParam->getAllChildren()) {
-                    string key = pOpParamPair.first;
-                    auto pOpParam = pOpParamPair.second.lock();
-
-                    mpOrbDetector = OP::FtDt::create(pOpParam, mpChannel);
-                    mpOrbDetector->scaleNumFeatures(5.f);
-                }
-            }
-        }
     }
 
     void MappingMonoV::receive(const MsgPtr &msg) {
 
         if (msg) {
 
-            if (dynamic_pointer_cast<MsgType<ImagePtr>>(msg)) {
-                auto pImage = dynamic_pointer_cast<MsgType<ImagePtr>>(msg)->getData();
+            if (dynamic_pointer_cast<MsgSensorData>(msg)) {
+                auto pImage = dynamic_pointer_cast<MsgSensorData>(msg)->getData();
                 auto pImageTs = dynamic_pointer_cast<ImageTs>(pImage);
                 if (pImageTs) {
                     mImageMapLock.lock();
                     mmImage.insert(make_pair(pImageTs->mTimeStamp, pImageTs));
                     mImageMapLock.unlock();
+
+                    this->processImage();
                 }
             }
-            if (dynamic_pointer_cast<MsgType<PosePtr>>(msg)) {
+            if (dynamic_pointer_cast<MsgType<PosePtr>>(msg) && msg->getTopic() != FrontEnd::TOPIC) {
                 auto pPose = dynamic_pointer_cast<MsgType<PosePtr>>(msg)->getData();
                 mPoseMapLock.lock();
                 mmPose.insert(make_pair(pPose->getTimestamp(), pPose));
@@ -70,6 +58,14 @@ namespace NAV24::FE {
             }
         }
 
+    }
+
+    void MappingMonoV::processImage() {
+
+        this->createNewFrame();
+
+        // extract features and match them
+        // triangulate map points
     }
 
     void MappingMonoV::createNewFrame() {
@@ -114,7 +110,11 @@ namespace NAV24::FE {
 
         // link them to create a full MonoV frame
         if (pPose && pImage) {
-            FramePtr pFrame = make_shared<FrameImgMono>(imgTs, pPose, vector<OB::ObsPtr>(), pImage);
+            auto pNewPose = make_shared<TF::PoseSE3>(pPose->getTimestamp(), pPose->getPose(), "world0");
+            FramePtr pFrame = make_shared<FrameImgMono>(imgTs, pNewPose, vector<OB::ObsPtr>(), pImage);
+            // publish the new pose
+            auto pPoseMsg = make_shared<MsgType<PosePtr>>(ID_TP_SDATA, pNewPose, FrontEnd::TOPIC);
+            mpChannel->publish(pPoseMsg);
         }
 
         // clean up
@@ -123,8 +123,12 @@ namespace NAV24::FE {
             mmImage.erase(imgTs);
             mImageMapLock.unlock();
             mPoseMapLock.lock();
-            auto iter = mmPose.find(poseTs);
-            mmPose.erase(mmPose.begin(), iter);
+            auto iter = mmPose.begin(), iter_end = mmPose.find(poseTs);
+            for (; iter != iter_end; iter++) {
+                iter->second->setValid(false);
+//                mmPose.erase(iter);
+            }
+            mmPose.erase(mmPose.begin(), iter_end);
             mPoseMapLock.unlock();
         }
     }

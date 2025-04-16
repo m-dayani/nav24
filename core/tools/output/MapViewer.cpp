@@ -19,7 +19,10 @@ namespace NAV24 {
         mGraphLineWidth(0.9), mPointSize(2.f), mCameraSize(0.08f),
         mCameraLineWidth(3.f), mViewpointX(0.f), mViewpointY(-0.7f), mViewpointZ(-3.5f),
         mViewpointF(420.f), mMtxPoseQueue(), mMtxWoQueue(), mLastPose(),
-        mSetFirstPoseState(0) {}
+        mSetFirstPoseState(0), mmTrajColors() {
+
+        srand (static_cast <unsigned> (time(0)));
+    }
 
     void MapViewer::drawPose(const PosePtr& pPose) const {
 
@@ -119,22 +122,26 @@ namespace NAV24 {
 #endif
     }
 
-    void MapViewer::drawTrajectory(const set<PosePtr> &spPose) const {
+    void MapViewer::drawTrajectory(const std::vector<PosePtr>& spPose, const std::vector<float> &color) const {
 
         glLineWidth(mGraphLineWidth);
-        glColor4f(1.0f,0.6f,0.0f,0.6f);
+        if (color.size() == 4) {
+            glColor4f(color[0], color[1], color[2], color[3]);
+        }
+        else {
+            glColor4f(1.0f, 0.6f, 0.0f, 0.6f);
+        }
         glBegin(GL_LINES);
 
         //Draw inertial links
         PosePtr prevPose = nullptr;
         for(const auto& pPose : spPose) {
-
             if (prevPose) {
 
                 Eigen::Vector3f Ow = prevPose->getPose().cast<float>().block<3, 1>(0, 3);
                 Eigen::Vector3f Owp = pPose->getPose().cast<float>().block<3, 1>(0, 3);
-                glVertex3f(Ow(0),Ow(1),Ow(2));
-                glVertex3f(Owp(0),Owp(1),Owp(2));
+                glVertex3f(Ow(0), Ow(1), Ow(2));
+                glVertex3f(Owp(0), Owp(1), Owp(2));
             }
             prevPose = pPose;
         }
@@ -142,25 +149,30 @@ namespace NAV24 {
         glEnd();
     }
 
+    void MapViewer::drawTrajectories(const MapNamedPose &poseTable) const {
+
+        for(const auto& poseInfo : poseTable) {
+
+            string trajName = poseInfo.first;
+            vector<float> color{};
+            if (mmTrajColors.contains(trajName)) {
+                color = mmTrajColors.at(trajName);
+            }
+            this->drawTrajectory(poseInfo.second, color);
+        }
+    }
+
     void MapViewer::receive(const MsgPtr &msg) {
         Output::receive(msg);
 
         if (msg) {
             if (dynamic_pointer_cast<MsgType<PosePtr>>(msg)) {
-                mMtxPoseQueue.lock();
                 auto pPose = dynamic_pointer_cast<MsgType<PosePtr>>(msg)->getData();
-                mspPose.insert(pPose);
-                mMtxPoseQueue.unlock();
+                this->insertPoses({pPose});
             }
-            if (dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)) {
-                auto vpFrames = dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)->getData();
-                mMtxPoseQueue.lock();
-                for (const auto& pFrame : vpFrames) {
-                    if (pFrame) {
-                        mspPose.insert(pFrame->getPose());
-                    }
-                }
-                mMtxPoseQueue.unlock();
+            if (dynamic_pointer_cast<MsgType<vector<PosePtr>>>(msg)) {
+                auto vpPose = dynamic_pointer_cast<MsgType<vector<PosePtr>>>(msg)->getData();
+                this->insertPoses(vpPose);
             }
             if (dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg)) {
                 auto vpWo = dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg)->getData();
@@ -187,7 +199,7 @@ namespace NAV24 {
             return;
         }
 
-        set<PosePtr> spPoseCopy;
+        MapNamedPose poseTable;
         set<WO::WoPtr> spWoCopy;
 
 #ifdef LIB_PANGOLIN_FOUND
@@ -214,9 +226,7 @@ namespace NAV24 {
 
         while(!pangolin::ShouldQuit()) {
 
-            mMtxPoseQueue.lock();
-            spPoseCopy = mspPose;
-            mMtxPoseQueue.unlock();
+            this->retrievePoses(poseTable);
             mMtxWoQueue.lock();
             spWoCopy = mspWorldObjects;
             mMtxWoQueue.unlock();
@@ -231,18 +241,23 @@ namespace NAV24 {
 //            drawTrajectory(vector<FramePtr>());
 
             // Draw visible poses
-            for (const auto& pose : spPoseCopy) {
-                if (pose->getLevel() >= 1) {
-                    // draw only keyframes
-                    this->drawPoseFrame(pose);
-                }
-                if (mLastPose == nullptr) {
-                    mLastPose = pose;
+            for (const auto& poseInfo : poseTable) {
+                string trajName = poseInfo.first;
+                bool loop1 = true;
+                for (const auto& pose : poseInfo.second) {
+                    if (pose->getLevel() >= 1) {
+                        // draw only keyframes
+                        this->drawPoseFrame(pose);
+                    }
+                    if (mLastPose == nullptr && loop1) {
+                        mLastPose = pose;
+                        loop1 = false;
+                    }
                 }
             }
 
             // draw trajectory
-            this->drawTrajectory(spPoseCopy);
+            this->drawTrajectories(poseTable);
 
             // set first camera view
             if (mSetFirstPoseState < 2 && mLastPose != nullptr) {
@@ -258,13 +273,13 @@ namespace NAV24 {
                 this->drawWorldObject(pWo);
             }
 
-            // Swap frames and Process Events
-            pangolin::FinishFrame();
-
             if (this->isStopped()) {
                 //cout << vpPose.size() << "\n";
                 break;
             }
+
+            // Swap frames and Process Events
+            pangolin::FinishFrame();
         }
 
         DLOG(INFO) << "MapViewer::run, stopped\n";
@@ -329,6 +344,7 @@ namespace NAV24 {
 
     void MapViewer::stop() {
         MsgCallback::stop();
+        this_thread::sleep_for(chrono::microseconds(100));
 #ifdef LIB_PANGOLIN_FOUND
         pangolin::QuitAll();
 #endif
@@ -356,6 +372,50 @@ namespace NAV24 {
             M.m[4*i+3] = Twc(3,i);
         }
     }
+
+    void MapViewer::insertPoses(const vector <PosePtr> &vpPose) {
+
+        mMtxPoseQueue.lock();
+        for (const auto& pPose : vpPose) {
+            if (pPose) {
+                string poseName = pPose->getName();
+                if (!poseName.empty()) {
+                    if (!mPoseTable.contains(poseName)) {
+                        mPoseTable[poseName] = vector<PosePtr>();
+                    }
+                    mPoseTable[poseName].push_back(pPose);
+                }
+                if (!mmTrajColors.contains(poseName)) {
+                    vector<float> color{1.f, 0.f, 0.f, 0.f};
+                    for (size_t i = 1; i < color.size(); i++)
+                        color[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                    mmTrajColors[poseName] = color;
+                }
+            }
+        }
+        mMtxPoseQueue.unlock();
+    }
+
+    void MapViewer::retrievePoses(MapNamedPose &poseTable) {
+
+        mMtxPoseQueue.lock();
+        for (const auto& poseInfo : mPoseTable) {
+            string poseName = poseInfo.first;
+            if (!poseTable.contains(poseName)) {
+                poseTable[poseName] = vector<PosePtr>();
+            }
+            poseTable[poseName].clear();
+            poseTable[poseName].reserve((poseInfo.second.size()));
+            for (const auto& pPose : poseInfo.second) {
+                if (pPose && pPose->isValid()) {
+                    poseTable[poseName].push_back(pPose);
+                }
+            }
+        }
+        mPoseTable = poseTable;
+        mMtxPoseQueue.unlock();
+    }
+
 
 
 

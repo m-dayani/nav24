@@ -20,7 +20,7 @@ namespace NAV24::TF {
 //#define DEF_SEP ':'
 
     Transformation::Transformation(double _ts, std::string name_) :
-            ts(_ts), name(std::move(name_)) {
+            SensorData(_ts, ""), name(std::move(name_)) {
 
 //        key = ref + DEF_SEP + target;
     }

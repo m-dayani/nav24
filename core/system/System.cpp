@@ -15,15 +15,15 @@ namespace NAV24 {
 
     System::System() : mmChannels(), mmPublishers(), mmSubscribers(),
                        mpParamServer(), mmpDataStores(), mmpSensors(),
-                       mmpTrans(), mmpOutputs(), mpThreads(),
-                       mpTempParam(nullptr), mpAtlas(nullptr), mpTrajManager(nullptr) {
+                       mmpOutputs(), mpThreads(), mpTempParam(nullptr),
+                       mpAtlas(nullptr), mpTrajManager(nullptr) {
         mName = "System";
     }
 
-    System::System(const string &settings) : System() {
+    /*System::System(const string &settings) : System() {
 
         this->loadSettings(settings);
-    }
+    }*/
 
     /* -------------------------------------------------------------------------------------------------------------- */
 
@@ -50,37 +50,37 @@ namespace NAV24 {
     void System::registerPublisher(const int chId, const MsgCbPtr &callback) {
 
         if (mmPublishers.count(chId) <= 0) {
-            mmPublishers[chId] = vector<MsgCbPtr>();
+            mmPublishers[chId] = set<MsgCbPtr>();
         }
-        mmPublishers[chId].push_back(callback);
+        mmPublishers[chId].insert(callback);
     }
 
     void System::registerSubscriber(const int chId, const MsgCbPtr &callback) {
 
         if (mmSubscribers.count(chId) <= 0) {
-            mmSubscribers[chId] = vector<MsgCbPtr>();
+            mmSubscribers[chId] = set<MsgCbPtr>();
         }
-        mmSubscribers[chId].push_back(callback);
+        mmSubscribers[chId].insert(callback);
     }
 
     void System::registerChannel(const int chId, const MsgCbPtr &callback) {
 
         if (mmChannels.count(chId) <= 0) {
-            mmChannels[chId] = vector<MsgCbPtr>();
+            mmChannels[chId] = set<MsgCbPtr>();
         }
-        mmChannels[chId].push_back(callback);
+        mmChannels[chId].insert(callback);
     }
 
     void System::unregisterChannel(const int chId, const MsgCbPtr &callback) {
 
         if (mmChannels.contains(chId)) {
-            vector<MsgCbPtr> vNewCbs;
+            set<MsgCbPtr> sNewCbs;
             for (const auto& cbPtr : mmChannels[chId]) {
                 if (callback != cbPtr) {
-                    vNewCbs.push_back(cbPtr);
+                    sNewCbs.insert(cbPtr);
                 }
             }
-            mmChannels[chId] = vNewCbs;
+            mmChannels[chId] = sNewCbs;
         }
     }
 
@@ -98,13 +98,16 @@ namespace NAV24 {
         this->loadSensors();
 
         // Load Relations
-        this->loadRelations();
+//        this->loadRelations();
 
         // Load outputs
         this->loadOutputs();
 
         // Initialize Components
         this->initComponents();
+
+        // Load operators
+        this->loadOperators();
     }
 
     void System::loadParameters(const std::string &settings) {
@@ -199,27 +202,6 @@ namespace NAV24 {
                     auto pPoseProvider = PoseProvider::getPoseProvider(pCh, pPoseParam);
                     if (pPoseProvider) {
                         mmpSensors.insert(make_pair(pPoseProvider->getName(), pPoseProvider));
-                    }
-                }
-            }
-        }
-    }
-
-    void System::loadRelations() {
-
-        auto fp = [this](auto && PH1) {
-            receive(std::forward<decltype(PH1)>(PH1));
-        };
-        auto msgGetParams = make_shared<MsgRequest>(ID_CH_PARAMS, fp,
-                                                    ParameterServer::TOPIC, FCN_PS_REQ, PARAM_REL);
-        mpParamServer->receive(msgGetParams);
-        if (mpTempParam && mpTempParam->getName() == "Relations") {
-            for (const auto& relParamPair : mpTempParam->getAllChildren()) {
-                auto pRelParam = relParamPair.second.lock();
-                if (pRelParam) {
-                    auto pTrans = TF::PoseSE3::getTrans(pRelParam);
-                    if (pTrans) {
-                        mmpTrans.insert(make_pair(pTrans->getName(), pTrans));
                     }
                 }
             }
@@ -332,7 +314,7 @@ namespace NAV24 {
                     auto msgThread = dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg);
                     auto pThread = msgThread->getData();
                     if (pThread) {
-                        mpThreads.push_back(pThread);
+                        mpThreads.insert(pThread);
                     }
                 }
                 if (msg->getTargetId() == FCN_SYS_STOP) {
@@ -364,18 +346,6 @@ namespace NAV24 {
         if (!senderCb) {
             DLOG(WARNING) << "System::handleRequests, bad sender\n";
             return;
-        }
-
-        int action = msg->getTargetId();
-        string msgStr = msg->getMessage();
-
-        if (action == FCN_GET_TRANS) {
-            if (mmpTrans.count(msgStr) > 0) {
-
-                auto pTrans = mmpTrans[msgStr];
-                auto msgTrans = make_shared<MsgType<PosePtr>>(DEF_CAT, pTrans, msg->getTopic());
-                senderCb(msgTrans);
-            }
         }
     }
 

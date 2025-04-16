@@ -49,7 +49,7 @@ namespace NAV24 {
 
             // runtime id? -> you can use ts as the id
 //            const ulong id;
-            double ts;
+//            double ts; -> defined in SensorData
             // find poses by name
             std::string name;
             // offset and ref/target names are defined for trajectories (groups of poses)
@@ -73,12 +73,15 @@ namespace NAV24 {
             Eigen::Matrix3d T_tr;
         };
 
-        class PoseSE3 : public Transformation {
+        class PoseSE3 : public Transformation, public SmartObject {
         public:
             PoseSE3(double ts_, Eigen::Matrix4d T_rt_, const std::string &name_ = "trans");
 
             PoseSE3(double ts_, const Eigen::Matrix3d &R_rt, const Eigen::Vector3d &t_rt,
                     const std::string &name_ = "trans");
+
+            explicit PoseSE3(const std::shared_ptr<PoseSE3>& pPose) : PoseSE3(pPose->ts, pPose->T_rt, pPose->name) {}
+
 
             WO::WoPtr transform(const WO::WoPtr &worldObject) override;
 
@@ -104,7 +107,7 @@ namespace NAV24 {
             void setFrame(const FramePtr& pFrame) { mpFrame = pFrame; }
 
             void incLevel() { mLevel++; }
-            uint getLevel() const { return mLevel; }
+            [[nodiscard]] uint getLevel() const { return mLevel; }
 
 //            void setGlobalScale(const std::shared_ptr<float>& pSc) { mpGlobSc; }
 

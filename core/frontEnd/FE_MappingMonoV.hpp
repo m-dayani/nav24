@@ -27,6 +27,7 @@ namespace NAV24::FE {
         void run() override;
 
     private:
+        void processImage();
         void createNewFrame();
 
     private:

@@ -122,6 +122,7 @@ set(ALL_H_FILES
         ${OPERATORS_DIR}/trajectory/OP_KfManagerSimple.hpp
         ${OP_MAP_DIR}/OP_MapInitialization.hpp
         ${OP_MAP_DIR}/OP_2ViewReconstruction.hpp
+        ${OP_MAP_DIR}/OP_MapPointManager.hpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.hpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.hpp
         ${OBJ_DET_DIR}/OP_FtDt.hpp
@@ -191,6 +192,7 @@ set(ALL_SRC_FILES
         ${OPERATORS_DIR}/trajectory/OP_KfManagerSimple.cpp
         ${OP_MAP_DIR}/OP_MapInitialization.cpp
         ${OP_MAP_DIR}/OP_2ViewReconstruction.cpp
+        ${OP_MAP_DIR}/OP_MapPointManager.cpp
         ${OBJ_DET_DIR}/OP_ChBoardDetCv.cpp
         ${OBJ_DET_DIR}/OP_FtDtOrbSlam.cpp
         ${OBJ_DET_DIR}/OP_FtDt.cpp
