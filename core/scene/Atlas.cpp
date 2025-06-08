@@ -5,26 +5,47 @@
 #include <glog/logging.h>
 
 #include "Atlas.hpp"
+#include "System.hpp"
+
 
 using namespace std;
 
 namespace NAV24 {
 
-    Atlas::Atlas(const ChannelPtr& pChannel) : MsgCallback(pChannel), mWorlds() {}
+    Atlas::Atlas(const ChannelPtr& pChannel) : MsgCallback(pChannel),
+            mWorlds(), mvpKeyframes(), mvpFrameBuffer(), mFrameBuffLock() {
+
+        mpMpManager = make_shared<OP::MapPointManager>(mpChannel);
+        mpChannel->registerChannel(ID_CH_OP, mpMpManager);
+    }
 
     void Atlas::receive(const MsgPtr &msg) {
 
-        if (msg && msg->getTopic() == Atlas::TOPIC) {
-            switch (msg->getTargetId()) {
-                case FCN_MAP_CREATE:
-                    this->createMap(msg);
-                    break;
-                case FCN_MAP_ADD_WO:
-                    this->addWorldObjects(msg);
-                    break;
-                default:
-                    DLOG(WARNING) << "Atlas::receive, unsupported action\n";
-                    break;
+        if (msg) {
+            if (msg->getTopic() == Atlas::TOPIC) {
+                switch (msg->getTargetId()) {
+                    case FCN_MAP_CREATE:
+                        this->createMap(msg);
+                        break;
+                    case FCN_MAP_ADD_WO:
+                        this->addWorldObjects(msg);
+                        break;
+                    default:
+                        DLOG(WARNING) << "Atlas::receive, unsupported action\n";
+                        break;
+                }
+            }
+            if (dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
+                auto pFrame = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
+                if (pFrame) {
+                    this->insertFrame(pFrame);
+                }
+            }
+            if (dynamic_pointer_cast<MsgRequest>(msg)) {
+                this->handleRequest(msg);
+            }
+            if (msg->getTargetId() == FCN_SYS_STOP) {
+                this->stop();
             }
         }
     }
@@ -65,12 +86,82 @@ namespace NAV24 {
 
     }
 
-    void Atlas::handleRequest(const MsgPtr &reqMsg) {
-
+    void Atlas::handleRequest(const MsgPtr &msg) {
+        if (msg && dynamic_pointer_cast<MsgRequest>(msg)) {
+            auto msgReq = dynamic_pointer_cast<MsgRequest>(msg);
+            auto senderCb = msgReq->getCallbackFun();
+            if (senderCb) {
+                if (msg->getTargetId() == FCN_SYS_RUN) {
+                    auto pThread = make_shared<thread>(&Atlas::run, this);
+                    auto msgRes = make_shared<MsgType<shared_ptr<thread>>>(ID_CH_SYS, pThread,
+                                                                           System::TOPIC);
+                    senderCb(msgRes);
+                }
+            }
+        }
     }
 
     void Atlas::run() {
 
+        DLOG(INFO) << "Atlas::run, started the main loop\n";
+
+        while (!this->isStopped()) {
+
+            // process frames to find key frames
+            this->processFrames();
+
+            // manage world objects (map points)
+            if (!mvpKeyframes.empty()) {
+                std::vector<WO::WoPtr> vpPoints3d;
+                mpMpManager->checkNewKeyFrame(mvpKeyframes.back(), vpPoints3d);
+                // todo: process and publish map points
+            }
+
+            // manage maps
+
+            // associate visual cues, maps, world objects
+
+            // optimization
+        }
+
+        DLOG(INFO) << "Atlas::run, exit the main loop\n";
+    }
+
+    void Atlas::insertFrame(const FramePtr &pFrame) {
+
+        if (pFrame) {
+            mFrameBuffLock.lock();
+            mvpFrameBuffer.push_back(pFrame);
+            mFrameBuffLock.unlock();
+        }
+    }
+
+    void Atlas::processFrames() {
+
+        size_t kf_idx = 0;
+        mFrameBuffLock.lock();
+
+        for (size_t i = 0; i < mvpFrameBuffer.size(); i++) {
+            const auto& pFrame = mvpFrameBuffer[i];
+            if (pFrame && pFrame->getLevel() > 0) {
+                mvpKeyframes.push_back(pFrame);
+                kf_idx = i + 1;
+            }
+        }
+
+        // remove redundant frames
+        if (kf_idx != 0 || mvpFrameBuffer.size() >= ATLAS_DEF_FRAME_BUFF_SIZE) {
+            if (kf_idx == 0) {
+                kf_idx = 1;
+            }
+            vector<FramePtr> newFrames;
+            for (size_t i = kf_idx; i < mvpFrameBuffer.size(); i++) {
+                newFrames.push_back(mvpFrameBuffer[i]);
+            }
+            mvpFrameBuffer = newFrames;
+        }
+
+        mFrameBuffLock.unlock();
     }
 
 

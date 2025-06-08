@@ -2,10 +2,13 @@
 // Created by masoud on 4/7/25.
 //
 
+#include <glog/logging.h>
+
 #include "FE_MappingMonoV.hpp"
 #include "Image.hpp"
 #include "Frame.hpp"
 #include "ParameterServer.hpp"
+#include "System.hpp"
 
 
 using namespace std;
@@ -14,7 +17,7 @@ using namespace std;
 namespace NAV24::FE {
 
     MappingMonoV::MappingMonoV(const ChannelPtr &pChannel) : FrontEnd(pChannel),
-            mmPose(), mPoseMapLock(), mmImage(), mImageMapLock() {
+            mmPose(), mPoseMapLock(), mmImage(), mImageMapLock(), T_bc0(), mpLastFrame(), mvpAllFrames() {
 
         // initialize all required operators
         mpOrbDetector = make_shared<OP::FtDtOrbSlam>(mpChannel);
@@ -31,8 +34,11 @@ namespace NAV24::FE {
         }
     }
 
-    void MappingMonoV::setup(const MsgPtr &) {
-        // Get operator parameters
+    void MappingMonoV::setup(const MsgPtr &msg) {
+
+        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
+            DLOG(INFO) << "MappingMonoV::setup called\n";
+        }
     }
 
     void MappingMonoV::receive(const MsgPtr &msg) {
@@ -55,6 +61,13 @@ namespace NAV24::FE {
                 mPoseMapLock.lock();
                 mmPose.insert(make_pair(pPose->getTimestamp(), pPose));
                 mPoseMapLock.unlock();
+            }
+            if (dynamic_pointer_cast<MsgType<PosePtr>>(msg) && msg->getTopic() == FrontEnd::TOPIC) {
+                // Load pose relations
+                auto pPose = dynamic_pointer_cast<MsgType<PosePtr>>(msg)->getData();
+                if (pPose && pPose->getName() == "T_bc0") {
+                    T_bc0 = pPose;
+                }
             }
         }
 
@@ -110,11 +123,32 @@ namespace NAV24::FE {
 
         // link them to create a full MonoV frame
         if (pPose && pImage) {
-            auto pNewPose = make_shared<TF::PoseSE3>(pPose->getTimestamp(), pPose->getPose(), "world0");
-            FramePtr pFrame = make_shared<FrameImgMono>(imgTs, pNewPose, vector<OB::ObsPtr>(), pImage);
+            // This is based on EuRoC poses
+            // GT poses are stored like: T_wb, and we have T_bc0 from calib -> T_wc0 = T_wb * T_bc0
+            Eigen::Matrix4d T_wc0 = pPose->getPose();
+            if (T_bc0) {
+                T_wc0 = pPose->getPose() * T_bc0->getPose();
+            }
+            auto pNewPose = make_shared<TF::PoseSE3>(pPose->getTimestamp(), T_wc0, FE_DEF_WORLD_NAME);
+            FramePtr pFrame = make_shared<FrameMonoOS>(imgTs, pNewPose, vector<OB::ObsPtr>(), pImage);
+            pNewPose->setFrame(pFrame);
+            pFrame->setPrevFrame(mpLastFrame);
+            if (mpLastFrame) {
+                mpLastFrame->setNextFrame(pFrame);
+            }
+
             // publish the new pose
-            auto pPoseMsg = make_shared<MsgType<PosePtr>>(ID_TP_SDATA, pNewPose, FrontEnd::TOPIC);
-            mpChannel->publish(pPoseMsg);
+//            auto pPoseMsg = make_shared<MsgType<PosePtr>>(ID_TP_SDATA, pNewPose, FrontEnd::TOPIC);
+//            mpChannel->publish(pPoseMsg);
+
+            auto pFrameMsg = make_shared<MsgType<FramePtr>>(ID_TP_SDATA, pFrame, FrontEnd::TOPIC);
+            mpChannel->publish(pFrameMsg);
+
+            mpLastFrame = pFrame;
+
+            // must store all frames, otherwise, they are destroyed when go out of scope
+//            pFrame->simplify();
+            mvpAllFrames.push_back(pFrame);
         }
 
         // clean up

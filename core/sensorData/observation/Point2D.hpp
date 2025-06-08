@@ -23,7 +23,7 @@ namespace NAV24::OB {
         cv::Point2f getPointUd() { return mPointUd; }
         void setPointUd(const cv::Point2f& pointUd) { mPointUd = pointUd; }
 
-        bool isDistorted() { return mbIsDistorted; }
+        [[nodiscard]] bool isDistorted() const { return mbIsDistorted; }
         void updateDistorted(bool state) { mbIsDistorted = state; }
 
         static std::vector<cv::Point2f> toCvPoint(const std::vector<ObsPtr>& vpObs);
@@ -40,7 +40,7 @@ namespace NAV24::OB {
     class KeyPoint2D : public Point2D {
     public:
         KeyPoint2D(cv::KeyPoint kpt, const cv::Mat& desc) : Point2D(kpt.pt.x, kpt.pt.y),
-            mKPt(std::move(kpt)), mDesc(desc.clone()) {}
+            mKPt(kpt), mDesc(desc.clone()) {}
 
         [[nodiscard]] const cv::KeyPoint &getKeyPoint() const {
             return mKPt;
@@ -58,7 +58,7 @@ namespace NAV24::OB {
             KeyPoint2D::mDesc = desc;
         }
 
-        [[nodiscard]] const cv::KeyPoint getKeyPointUd() const {
+        [[nodiscard]] cv::KeyPoint getKeyPointUd() const {
             cv::KeyPoint kpt = mKPt;
             kpt.pt = mPointUd;
             return kpt;

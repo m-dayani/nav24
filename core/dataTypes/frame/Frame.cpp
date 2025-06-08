@@ -13,7 +13,7 @@ namespace NAV24 {
     long Frame::idCounter;
 
     Frame::Frame(double _ts, PosePtr pose, const std::vector<OB::ObsPtr> &vObs) :
-        ts(_ts), mpPose(std::move(pose)), mvpObservations(vObs), mId(idCounter++), mOptId(0) {}
+            ts(_ts), mId(idCounter++), mOptId(0), mvpObservations(vObs), mpPose(std::move(pose)), mLevel(0) {}
 
     const std::vector<OB::ObsPtr> &Frame::getObservations() const {
         return mvpObservations;
@@ -29,6 +29,12 @@ namespace NAV24 {
 
     void Frame::setPose(const PosePtr &pose) {
         Frame::mpPose = pose;
+    }
+
+    std::shared_ptr<Frame> Frame::getPrevFrame() const { return mpPrevFrame.lock(); }
+
+    void Frame::simplify() {
+
     }
 
 //    void Frame::addObservation(const OB::ObsPtr &pObs) {
@@ -49,13 +55,18 @@ namespace NAV24 {
         }
     }
 
-    void FrameMonoGrid::setObservations(const std::vector<OB::ObsPtr> &vpObservations) {
+    void FrameImgMono::simplify() {
+        Frame::simplify();
+        mpImage->mImage = cv::Mat();
+    }
+
+    void FrameMonoOS::setObservations(const std::vector<OB::ObsPtr> &vpObservations) {
         Frame::setObservations(vpObservations);
         mpGrid = std::make_shared<OB::FeatureGrid>(mvpObservations);
     }
 
     std::vector<std::size_t>
-    FrameMonoGrid::getFeaturesInArea(const OB::ObsPtr &pObs, float windowSize, int minLevel, int maxLevel) {
+    FrameMonoOS::getFeaturesInArea(const OB::ObsPtr &pObs, float windowSize, int minLevel, int maxLevel) {
 
         if (pObs && dynamic_pointer_cast<OB::Point2D>(pObs)) {
             auto pt2d = dynamic_pointer_cast<OB::Point2D>(pObs);
@@ -65,5 +76,9 @@ namespace NAV24 {
             }
         }
         return {};
+    }
+
+    void FrameMonoOS::computeFtVecDBoW2() {
+        // todo: implement FrameMonoOS::computeFtVecDBoW2()
     }
 } // NAV24

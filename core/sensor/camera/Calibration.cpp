@@ -159,7 +159,7 @@ namespace NAV24 {
         return pObs;
     }
 
-    WO::WoPtr Calibration::unproject(const OB::ObsPtr& pt2d) {
+    WO::WoPtr Calibration::unproject(const OB::ObsPtr& pt2d) const {
 
         WO::WoPtr pWobj;
         cv::Point2f kpt;
@@ -175,7 +175,7 @@ namespace NAV24 {
         return pWobj;
     }
 
-    OB::ObsPtr Calibration::project(const WO::WoPtr& pt3d) {
+    OB::ObsPtr Calibration::project(const WO::WoPtr& pt3d) const {
 
         OB::ObsPtr pObs = nullptr;
 
@@ -189,7 +189,7 @@ namespace NAV24 {
         return pObs;
     }
 
-    std::vector<OB::ObsPtr> Calibration::undistort(const vector <OB::ObsPtr> &vpObs) {
+    std::vector<OB::ObsPtr> Calibration::undistort(const vector <OB::ObsPtr> &vpObs) const {
 
         vector<OB::ObsPtr> vpObsOut(vpObs.size());
         for (size_t i = 0; i < vpObs.size(); i++) {
@@ -198,7 +198,7 @@ namespace NAV24 {
         return vpObsOut;
     }
 
-    std::vector<float> Calibration::computeImageBounds(const cv::Mat &image) {
+    std::vector<float> Calibration::computeImageBounds(const cv::Mat &image) const {
 
         vector<float> res(4);
 
@@ -237,14 +237,14 @@ namespace NAV24 {
         return distType != "radial-tangential" && distType != "kannala-brandt8";
     }
 
-    Eigen::Vector2d Calibration::project(const Eigen::Vector3d &pt3d) {
+    Eigen::Vector2d Calibration::project(const Eigen::Vector3d &pt3d) const {
         if (mpCamModel) {
             return mpCamModel->project(pt3d);
         }
         return {};
     }
 
-    Eigen::Matrix<double, 2, 3> Calibration::projectJac(const Eigen::Vector3d &pt3d) {
+    Eigen::Matrix<double, 2, 3> Calibration::projectJac(const Eigen::Vector3d &pt3d) const {
         if (mpCamModel) {
             return mpCamModel->projectJac(pt3d);
         }

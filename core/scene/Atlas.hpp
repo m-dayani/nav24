@@ -11,11 +11,15 @@
 #include "Message.hpp"
 #include "Interface.hpp"
 #include "Map.hpp"
+#include "Frame.hpp"
+#include "OP_MapPointManager.hpp"
+
 
 namespace NAV24 {
 
 #define FCN_MAP_CREATE 2
 #define FCN_MAP_ADD_WO 5
+#define ATLAS_DEF_FRAME_BUFF_SIZE 10
 
     class Atlas : public MsgCallback {
     public:
@@ -31,10 +35,19 @@ namespace NAV24 {
 
         void createMap(const MsgPtr &msg);
         void addWorldObjects(const MsgPtr& msg);
+        void insertFrame(const FramePtr& pFrame);
+        void processFrames();
 
     protected:
         std::map<std::string, MapPtr> mWorlds;
         std::string mActiveWorld;
+
+    private:
+        std::shared_ptr<OP::MapPointManager> mpMpManager;
+        std::vector<FramePtr> mvpKeyframes;
+
+        std::vector<FramePtr> mvpFrameBuffer;
+        std::mutex mFrameBuffLock;
     };
     typedef std::shared_ptr<Atlas> AtlasPtr;
 

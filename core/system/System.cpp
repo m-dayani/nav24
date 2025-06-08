@@ -248,6 +248,7 @@ namespace NAV24 {
         if (!mpAtlas) {
             mpAtlas = make_shared<Atlas>(pChannel);
             this->registerChannel(ID_CH_ATLAS, mpAtlas);
+            this->registerSubscriber(ID_TP_SDATA, mpAtlas);
             auto msgRunAtlas = make_shared<MsgRequest>(ID_CH_ATLAS,
                                                       fp, Atlas::TOPIC, FCN_SYS_RUN);
             mpAtlas->receive(msgRunAtlas);

@@ -16,7 +16,7 @@ using namespace std;
 namespace NAV24 {
 
     ImageViewer::ImageViewer(const ChannelPtr& pChannel) :
-            Output(pChannel), mFps(30), mmqpImages(), mMtxImgQueue(), mMtxImage() {}
+            Output(pChannel), mmqpImages(), mMtxImgQueue(), mMtxImage(), mFps(30) {}
 
     void ImageViewer::requestStop(const std::string &channel) {
 
@@ -63,13 +63,14 @@ namespace NAV24 {
                     pImage = imageQueue->front();
                     imageQueue->pop();
 
-                    if (!pImage || pImage->mImage.empty()) {
+                    if (!pImage) {// || pImage->mImage.empty()) {
                         this->requestStop(winName);
                     }
                 }
                 mMtxImage.unlock();
 
                 if (!pImage) {
+//                    this->requestStop(winName);
                     continue;
                 }
 
@@ -78,7 +79,12 @@ namespace NAV24 {
                     auto pImageTs = dynamic_pointer_cast<ImageTs>(pImage);
                     imTs = pImageTs->mTimeStamp;
                 }
-                cv::Mat imageToShow = pImage->mImage.clone();
+
+                cv::Mat imageToShow;
+                getImage(pImage, imageToShow);
+                if (imageToShow.empty()) {
+                    continue;
+                }
 
                 //cv::cvtColor(imageToShow, imageToShow, cv::COLOR_GRAY2RGB);
 
@@ -154,17 +160,33 @@ namespace NAV24 {
         Output::setup(msg);
     }
 
-    static void onMouse(int event, int x, int y, int flags, void* param) {
-        //cv::Mat &xyz = *((cv::Mat*)param); //cast and deref the param
+    void ImageViewer::getImage(const ImagePtr &pImage, cv::Mat &imageToShow) {
 
-        if (event == cv::EVENT_LBUTTONDOWN) {
-            short val = 10;//xyz.at< short >(y,x); // opencv is row-major !
-            cout << "x= " << x << " y= " << y << "val= "<<val<< endl;
+        if (pImage) {
+            if (!pImage->mImage.empty()) {
+                imageToShow = pImage->mImage.clone();
+            }
+            else if (!pImage->mPath.empty()) {
+                imageToShow = cv::imread(pImage->mPath, cv::IMREAD_UNCHANGED);
+            }
         }
     }
 
-    void setMouseCallback(const string& winName) {
-        cv::setMouseCallback(winName, onMouse);//, &cvMatImage);
-    }
+//    bool ImageViewer::imageEmpty(const ImagePtr& pImage) {
+//        return (!pImage || (pImage->mImage.empty() && pImage->mPath.empty()));
+//    }
+
+//    static void onMouse(int event, int x, int y, int, void*) {
+//        //cv::Mat &xyz = *((cv::Mat*)param); //cast and deref the param
+//
+//        if (event == cv::EVENT_LBUTTONDOWN) {
+//            short val = 10;//xyz.at< short >(y,x); // opencv is row-major !
+//            cout << "x= " << x << " y= " << y << "val= "<<val<< endl;
+//        }
+//    }
+
+//    void setMouseCallback(const string& winName) {
+//        cv::setMouseCallback(winName, onMouse);//, &cvMatImage);
+//    }
 
 } // NAV24

@@ -21,6 +21,7 @@ namespace NAV24::OP {
         virtual std::vector<int> matchV(const FramePtr& pFrame1, const FramePtr& pFrame2) = 0;
         virtual int match(const FramePtr& pFrame1, const FramePtr& pFrame2, OB::FtTracksPtr& pTracks) = 0;
     };
+    typedef std::shared_ptr<FtAssoc> FtAssocPtr;
 
     class FtAssocOCV : public FtAssoc {
     public:

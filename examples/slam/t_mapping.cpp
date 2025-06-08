@@ -39,6 +39,15 @@ int main(int argc, char** argv) {
     MsgPtr msgLoadSettings = make_shared<Message>(ID_CH_SYS, System::TOPIC, FCN_LD_PARAMS, confFile);
     mpSystem->receive(msgLoadSettings);
 
+    // get the required pose relations
+    // todo: hide this implementation
+    auto fp = [pMappingFE](auto && PH1) {
+        pMappingFE->receive(std::forward<decltype(PH1)>(PH1));
+    };
+    auto msgReqPR = make_shared<MsgRequest>(ID_CH_TRAJECTORY, fp, FE::FrontEnd::TOPIC,
+                                            FCN_GET_TRANS, "T_bc0");
+    mpSystem->send(msgReqPR);
+
     // play the pose provider (and all other sensors) in the bg
     auto fp1 = [mpSystem](auto && PH1) {
         mpSystem->receive(std::forward<decltype(PH1)>(PH1));

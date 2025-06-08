@@ -114,7 +114,7 @@ public:
 
     virtual void linearizeOplus();
 
-    NAV24::CalibPtr pCamera;
+    NAV24::CalibPtrRO pCamera;
 };
 /*
 class  EdgeSE3ProjectXYZToBody: public  g2o::BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexPointXYZ, g2o::VertexSE3Expmap>{

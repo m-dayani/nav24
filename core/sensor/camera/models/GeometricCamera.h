@@ -62,6 +62,9 @@ namespace NAV24 {
             cx = mvParameters[2];
             cy = mvParameters[3];
 
+            fx_1 = 1.f / fx;
+            fy_1 = 1.f / fy;
+
             mK_cv = (cv::Mat_<float>(3, 3) << fx, 0.f, cx, 0.f, fy, cy, 0.f, 0.f, 1.f);
             mK_ei << fx, 0.f, cx, 0.f, fy, cy, 0.f, 0.f, 1.f;
             mD_cv = cv::Mat::zeros(4, 1, CV_32F);
@@ -109,6 +112,7 @@ namespace NAV24 {
         cv::Mat getK_cv() { return mK_cv; }
         Eigen::Matrix3f getK_ei() { return mK_ei; }
         cv::Mat getDist() { return mD_cv; }
+        [[nodiscard]] std::vector<float> getIntrinsicsVector() const { return {fx, fy, cx, cy, fx_1, fy_1}; }
 
         void setRectificationMat(const cv::Mat& R) { mR = R.clone(); }
         void setProjectionMat(const cv::Mat& P) { mP = P.clone(); }
@@ -124,7 +128,7 @@ namespace NAV24 {
         unsigned int mnId{};
         unsigned int mnType{};
 
-        float fx{-1.f}, fy{-1.f}, cx{-1.f}, cy{-1.f};
+        float fx{-1.f}, fy{-1.f}, cx{-1.f}, cy{-1.f}, fx_1{-1.f}, fy_1{-1.f};
         cv::Mat mK_cv;
         Eigen::Matrix3f mK_ei;
 

@@ -16,7 +16,8 @@ namespace NAV24 {
     public:
         SmartObject() : mbValid(true), mMtxValid(), mbVisible(true), mMtxVisible(),
                         mbOptLockState(false), mMtxLockState(), mbOptFixed(false),
-                        mMtxOptFixed(), mbOptIgnore(false), mMtxOptIgnore() {}
+                        mMtxOptFixed(), mbOptIgnore(false), mMtxOptIgnore(),
+                        mfUncertainty(-1.f), mMtxUncertainty() {}
 
         [[nodiscard]] virtual bool isValid() const {
             return mbValid;
@@ -68,6 +69,16 @@ namespace NAV24 {
             mMtxOptIgnore.unlock();
         }
 
+        [[nodiscard]] float getUncertainty() const {
+            return mfUncertainty;
+        }
+
+        void setUncertainty(float unc) {
+            mMtxUncertainty.lock();
+            mfUncertainty = unc;
+            mMtxUncertainty.unlock();
+        }
+
     protected:
         // Controls validity of a frame, observation, or world object
         bool mbValid;
@@ -85,6 +96,9 @@ namespace NAV24 {
         // Ignore this variable for an optimization problem
         bool mbOptIgnore;
         std::mutex mMtxOptIgnore;
+        // Uncertainty
+        float mfUncertainty;
+        std::mutex mMtxUncertainty;
     };
 } // NAV24
 

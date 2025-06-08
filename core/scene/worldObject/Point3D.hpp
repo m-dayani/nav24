@@ -7,6 +7,8 @@
 
 #include <opencv2/core.hpp>
 
+#include <Eigen/Eigen>
+
 #include "WorldObject.hpp"
 
 
@@ -15,6 +17,7 @@ namespace NAV24::WO {
     class Point3D : public WorldObject {
     public:
         Point3D(double x, double y, double z) : mPoint(x, y, z) {}
+        Point3D(const Eigen::Vector3f& p3d) : mPoint(p3d.x(), p3d.y(), p3d.z()) {}
 
         [[nodiscard]] const cv::Point3d &getPoint() const {
             return mPoint;

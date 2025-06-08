@@ -106,8 +106,8 @@ namespace NAV24 {
             FramePtr getFrame() { return mpFrame.lock(); }
             void setFrame(const FramePtr& pFrame) { mpFrame = pFrame; }
 
-            void incLevel() { mLevel++; }
-            [[nodiscard]] uint getLevel() const { return mLevel; }
+            void incLevel();
+            [[nodiscard]] uint getLevel() const;
 
 //            void setGlobalScale(const std::shared_ptr<float>& pSc) { mpGlobSc; }
 
@@ -116,14 +116,15 @@ namespace NAV24 {
             Eigen::Matrix4d T_rt;
             Eigen::Matrix4d T_tr;
 
-            // doubly linked structure
-            std::weak_ptr<Transformation> mpPosePrev;
-            std::weak_ptr<Transformation> mpPoseNext;
-
             FramePtrW mpFrame;
 
+            // set these info (frame, keyframe, level, pre/next in the corresponding frame ->
+            // container of all info: pose, map points, observations)
+            // doubly linked structure
+//            std::weak_ptr<Transformation> mpPosePrev;
+//            std::weak_ptr<Transformation> mpPoseNext;
             // Pose level (0, 1, ...) -> frame, keyframe, ...
-            uint mLevel;
+//            uint mLevel;
 
 //            std::shared_ptr<float> mpGlobSc;
         };
@@ -138,6 +139,7 @@ namespace NAV24 {
 
     typedef std::shared_ptr<TF::Transformation> TransPtr;
     typedef std::shared_ptr<TF::PoseSE3> PosePtr;
+    typedef std::shared_ptr<const TF::PoseSE3> PosePtrConst;
     typedef std::shared_ptr<TF::Trans2D> Tf2dPtr;
 } // NAV24
 

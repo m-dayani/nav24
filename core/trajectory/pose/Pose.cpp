@@ -8,6 +8,7 @@
 #include "Pose.hpp"
 #include "DataConversion.hpp"
 #include "Point3D.hpp"
+#include "Frame.hpp"
 
 
 using namespace std;
@@ -57,13 +58,13 @@ namespace NAV24::TF {
     /* ============================================================================================================== */
 
     PoseSE3::PoseSE3(double ts_, Eigen::Matrix4d T_rt_, const std::string &name_) :
-            Transformation(ts_, name_), T_rt(std::move(T_rt_)), mLevel(0) {
+            Transformation(ts_, name_), T_rt(std::move(T_rt_)) {
 
         T_tr = T_rt.inverse();
     }
 
     PoseSE3::PoseSE3(double ts_, const Eigen::Matrix3d &R_rt, const Eigen::Vector3d &t_rt, const std::string &name_) :
-            Transformation(ts_, name_), mLevel(0) {
+            Transformation(ts_, name_) {
 
         T_rt = Eigen::Matrix4d::Identity();
         T_rt.block<3, 3>(0, 0) = R_rt;
@@ -146,6 +147,19 @@ namespace NAV24::TF {
 
     OB::ObsPtr PoseSE3::transformObs(const OB::ObsPtr &pObs) {
         return {};
+    }
+
+    void PoseSE3::incLevel() {
+        if (mpFrame.lock()) {
+            mpFrame.lock()->incLevel();
+        }
+    }
+
+    uint PoseSE3::getLevel() const {
+        if (mpFrame.lock()) {
+            return mpFrame.lock()->getLevel();
+        }
+        return 0;
     }
 
 

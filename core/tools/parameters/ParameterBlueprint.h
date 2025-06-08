@@ -14,6 +14,7 @@ namespace NAV24 {
 #define PARAM_OP "Process/OP"
 #define PARAM_OUT "Output"
 
+#define PKEY_POSE_REL "Relations"
 #define PKEY_NAME "name"
 
 #define PKEY_INTERFACE "interface"

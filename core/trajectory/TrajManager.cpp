@@ -54,6 +54,23 @@ namespace NAV24 {
             if (dynamic_pointer_cast<MsgType<vector<PosePtr>>>(msg)) {
                 this->addPosesToQueue(dynamic_pointer_cast<MsgType<vector<PosePtr>>>(msg)->getData());
             }
+            if (dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
+                auto pFrame = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
+                if (pFrame && pFrame->getPose()) {
+                    this->addPosesToQueue({pFrame->getPose()});
+                }
+            }
+            if (dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)) {
+                auto vpFrame = dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)->getData();
+                vector<PosePtr> vpPose;
+                vpPose.reserve(vpFrame.size());
+                for (const auto& pFrame: vpFrame) {
+                    if (pFrame && pFrame->getPose()) {
+                        vpPose.push_back(pFrame->getPose());
+                    }
+                }
+                this->addPosesToQueue(vpPose);
+            }
             if (dynamic_pointer_cast<MsgConfig>(msg)) {
                 this->setup(msg);
             }
@@ -96,7 +113,7 @@ namespace NAV24 {
         if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
 
             auto pParam = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
-            if (pParam && pParam->getName() == PARAM_REL) {
+            if (pParam && pParam->getName() == PKEY_POSE_REL) {
                 for (const auto& relParamPair : pParam->getAllChildren()) {
                     auto pRelParam = relParamPair.second.lock();
                     if (pRelParam) {
@@ -188,7 +205,7 @@ namespace NAV24 {
                     trajInfo << "(" << traj.first << ", " << traj.second->getNumPose() << "), ";
                 }
             }
-            DLOG_EVERY_N(INFO, 1000) << "TrajManager::run, Trajectory Info, (name, num poses): "
+            DLOG_EVERY_N(INFO, 10000) << "TrajManager::run, Trajectory Info, (name, num poses): "
                                      << trajInfo.str() << "\n";
         }
 

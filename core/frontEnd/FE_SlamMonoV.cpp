@@ -101,7 +101,7 @@ namespace NAV24::FE {
                 }
 
                 // Extract features
-                mpCurrFrame = make_shared<FrameMonoGrid>(pImage->mTimeStamp, nullptr, vector<OB::ObsPtr>(), pImage);
+                mpCurrFrame = make_shared<FrameMonoOS>(pImage->mTimeStamp, nullptr, vector<OB::ObsPtr>(), pImage);
 //                mmpFrames.insert(make_pair(mpCurrFrame->getId(), mpCurrFrame));
                 if (mpOrbDetector) {
                     mpOrbDetector->detect(mpCurrFrame);

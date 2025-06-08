@@ -7,6 +7,7 @@
 
 #include "OP_FtAssoc.hpp"
 #include "Frame.hpp"
+#include "OP_FtDtOrbSlam.hpp"
 
 namespace NAV24::OP {
 
@@ -19,6 +20,17 @@ namespace NAV24::OP {
         int match(const FramePtr &pFrame1, const FramePtr &pFrame2, OB::FtTracksPtr &pTracks) override;
 
         void match(const FramePtr &pFrame1, const FramePtr &pFrame2) override;
+
+        void receive(const MsgPtr &msg) override;
+
+    protected:
+        void setup(const MsgPtr &configMsg) override;
+
+    public:
+
+        int searchForTriangulation(const FramePtr& pKF1, const FramePtr& pKF2, const CalibPtrRO& pCalib,
+                                   std::vector<std::pair<std::size_t, std::size_t>> &vMatchedPairs,
+                                   const bool bOnlyStereo, const bool bCoarse);
 
         // Computes the Hamming distance between two ORB descriptors
         static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
@@ -36,6 +48,8 @@ namespace NAV24::OP {
         float mfNNratio;
         bool mbCheckOrientation;
         float windowSize;
+
+        ImgPyramidInfo mPInfo;
     };
 } // NAV24::OP
 

@@ -9,12 +9,19 @@
 #include <set>
 #include <vector>
 
+//#include <Eigen/Eigen>
+
 #include "SmartObject.hpp"
 
 namespace NAV24::OB {
     class Observation;
     typedef std::shared_ptr<Observation> ObsPtr;
     typedef std::weak_ptr<Observation> ObsPtrW;
+}
+
+namespace NAV24 {
+    class Frame;
+    typedef std::weak_ptr<Frame> FramePtrW;
 }
 
 namespace NAV24::WO {
@@ -26,8 +33,14 @@ namespace NAV24::WO {
         std::vector<OB::ObsPtrW> getObservations() { return mvpObs; }
 
         virtual std::string toString() { return "World Object, Base Class\n"; }
+
+        [[nodiscard]] size_t getNumObs() const { return mvpObs.size(); }
+        [[nodiscard]] size_t getNumKFs() const { return mvpFrames.size(); }
     protected:
+//        Eigen::Vector3f mPos3D;
+
         std::vector<OB::ObsPtrW> mvpObs{};
+        std::vector<FramePtrW> mvpFrames{};
     };
     typedef std::shared_ptr<WorldObject> WoPtr;
     typedef std::weak_ptr<WorldObject> WoPtrW;

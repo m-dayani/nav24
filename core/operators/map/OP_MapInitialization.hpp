@@ -15,8 +15,8 @@ namespace NAV24::OP {
 
     class MapInitializer : public Operator {
     public:
-        explicit MapInitializer(const CalibPtr& pCalib, float sigma = DEF_2VR_SIGMA, int iterations = DEF_MAX_RANSAC_ITER);
-        explicit MapInitializer(const CalibPtr& pCalib, const Params2VR& params2VR);
+        explicit MapInitializer(const CalibPtrRO& pCalib, float sigma = DEF_2VR_SIGMA, int iterations = DEF_MAX_RANSAC_ITER);
+        explicit MapInitializer(const CalibPtrRO& pCalib, const Params2VR& params2VR);
 
         bool reconstruct(const OB::VecObsPair& vpObs, FramePtr& pFrame1, FramePtr& pFrame2, std::vector<WO::WoPtr>& vpPt3D);
         bool reconstruct(FramePtr& pFrame1, FramePtr& pFrame2, std::vector<WO::WoPtr>& vpPt3D);
@@ -35,7 +35,7 @@ namespace NAV24::OP {
                          const cv::Mat& R21, const cv::Mat& t21, const std::vector<cv::Point3f>& vP3D,
                          const std::vector<bool>& vbTriangulated);
     protected:
-        CalibPtr mpCalib;
+        CalibPtrRO mpCalib;
         std::shared_ptr<TwoViewReconstruction> mpTVR;
     };
 } // NAV24::OP

@@ -16,6 +16,8 @@
 
 namespace NAV24::FE {
 
+#define FE_DEF_WORLD_NAME "world0"
+
     class MappingMonoV : public FrontEnd {
     public:
         explicit MappingMonoV(const ChannelPtr& pChannel);
@@ -39,6 +41,12 @@ namespace NAV24::FE {
 
         OP::FtDtPtr mpOrbDetector;
         std::shared_ptr<OP::FtAssocOrbSlam> mpOrbMatcher;
+
+        PosePtrConst T_bc0;
+
+        FramePtr mpLastFrame;
+
+        std::vector<FramePtr> mvpAllFrames;
 
 //        ParamPtr mpTempParam;;
     };

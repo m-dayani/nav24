@@ -58,7 +58,7 @@ namespace NAV24::FE {
         std::shared_ptr<OB::FeatureTracks> mpFtTracks;
         std::shared_ptr<OB::FeatureGrid> mpDummyGrid;
 
-        CalibPtr mpCalib;
+        CalibPtrRO mpCalib;
 
         std::shared_ptr<OP::FtDt> mpOrbDetector;
         std::shared_ptr<OP::FtAssoc> mpOrbMatcher;

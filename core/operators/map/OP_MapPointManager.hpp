@@ -9,21 +9,37 @@
 #include <Eigen/Eigen>
 
 #include "Operator.hpp"
+#include "Frame.hpp"
+#include "OP_FtAssocOrbSlam.hpp"
 
 
 namespace NAV24::OP {
 
+#define OP_MPM_DEF_TH_N_OBS 3
+#define OP_MPM_DEF_TH_N_KF 3
+
     class MapPointManager : public Operator {
     public:
-        explicit MapPointManager(const ChannelPtr& pChannel) : Operator(pChannel) {}
+        explicit MapPointManager(const ChannelPtr& pChannel);
+
+        void checkNewKeyFrame(const FramePtr& pKF, std::vector<WO::WoPtr>& vpPoints3d);
+
+        void receive(const MsgPtr &msg) override;
 
     private:
         static bool triangulate(Eigen::Vector3f &x_c1, Eigen::Vector3f &x_c2, Eigen::Matrix<float,3,4> &Tc1w,
                                 Eigen::Matrix<float,3,4> &Tc2w, Eigen::Vector3f &x3D);
-        void createMapPoints();
-        void mapPointCulling();
+        static void findBestCovisibility(const FramePtr& pKF, std::vector<FramePtr>& vpCovisKFs);
+
+        void createMapPoints(const FramePtr &pKF, std::vector<WO::WoPtr>& vpPoints3d);
+        static void mapPointCulling(const std::vector<WO::WoPtr>& vpWorldObjs, int nTotalKFs);
 //        void updateCovisibilityGraph();
 
+        static float computeMedianDepth(const FramePtr& pFrame);
+
+    private:
+        std::shared_ptr<OP::FtAssocOrbSlam> mpFtMatcher;
+        CalibPtrRO mpCamCalib;
     };
 
 } // NAV24::OP

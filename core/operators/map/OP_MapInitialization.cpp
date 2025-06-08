@@ -16,12 +16,12 @@ namespace NAV24::OP {
 #define DEF_TH_MATCHES 100
 #define DEF_TH_DIST_FRAMES 3
 
-    MapInitializer::MapInitializer(const CalibPtr& pCalib, float sigma, int iterations) : mpCalib(pCalib) {
+    MapInitializer::MapInitializer(const CalibPtrRO& pCalib, float sigma, int iterations) : mpCalib(pCalib) {
         if (pCalib)
             mpTVR = make_shared<TwoViewReconstruction>(pCalib->getK_cv(), sigma, iterations);
     }
 
-    MapInitializer::MapInitializer(const CalibPtr& pCalib, const Params2VR &params2VR) : mpCalib(pCalib) {
+    MapInitializer::MapInitializer(const CalibPtrRO& pCalib, const Params2VR &params2VR) : mpCalib(pCalib) {
         if (pCalib)
             mpTVR = make_shared<TwoViewReconstruction>(pCalib->getK_cv(), params2VR);
     }

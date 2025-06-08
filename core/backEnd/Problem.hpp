@@ -40,9 +40,9 @@ namespace NAV24 {
 
     class PR_VBA : public Problem {
     public:
-        PR_VBA(const std::vector<FramePtr>& vpFrames, const CalibPtr& pCalib) : mvpFrames(vpFrames), mpCalib(pCalib) {}
+        PR_VBA(const std::vector<FramePtr>& vpFrames, const CalibPtrRO& pCalib) : mvpFrames(vpFrames), mpCalib(pCalib) {}
         std::vector<FramePtr> mvpFrames;
-        CalibPtr mpCalib;
+        CalibPtrRO mpCalib;
         bool mbRobust = false;
     };
 

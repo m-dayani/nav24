@@ -24,6 +24,19 @@ namespace NAV24::OP {
         bool bNoMore;
     };
 
+    struct ImgPyramidInfo {
+        ImgPyramidInfo() = default;
+        ImgPyramidInfo(int nLevels, float scaleFactor);
+
+        float scaleFactor{1.f};
+        int nLevels{1};
+
+        std::vector<float> mvScaleFactor;
+        std::vector<float> mvInvScaleFactor;
+        std::vector<float> mvLevelSigma2;
+        std::vector<float> mvInvLevelSigma2;
+    };
+
     class FtDtOrbSlam : public FtDt {
     public:
         enum {HARRIS_SCORE=0, FAST_SCORE=1 };
@@ -34,25 +47,25 @@ namespace NAV24::OP {
         int detect(FramePtr& pFrame) override;
 
         int inline GetLevels(){
-            return nLevels;}
+            return mPInfo.nLevels;}
 
         float inline GetScaleFactor(){
-            return scaleFactor;}
+            return mPInfo.scaleFactor;}
 
         std::vector<float> inline GetScaleFactors(){
-            return mvScaleFactor;
+            return mPInfo.mvScaleFactor;
         }
 
         std::vector<float> inline GetInverseScaleFactors(){
-            return mvInvScaleFactor;
+            return mPInfo.mvInvScaleFactor;
         }
 
         std::vector<float> inline GetScaleSigmaSquares(){
-            return mvLevelSigma2;
+            return mPInfo.mvLevelSigma2;
         }
 
         std::vector<float> inline GetInverseScaleSigmaSquares(){
-            return mvInvLevelSigma2;
+            return mPInfo.mvInvLevelSigma2;
         }
 
         void setNumFeatures(int nFt) override;
@@ -69,19 +82,14 @@ namespace NAV24::OP {
     protected:
         std::vector<cv::Point> pattern;
 
-        double scaleFactor{};
-        int nLevels{};
         int iniThFAST{};
         int minThFAST{};
+
+        ImgPyramidInfo mPInfo{};
 
         std::vector<int> mnFeaturesPerLevel;
 
         std::vector<int> umax;
-
-        std::vector<float> mvScaleFactor;
-        std::vector<float> mvInvScaleFactor;
-        std::vector<float> mvLevelSigma2;
-        std::vector<float> mvInvLevelSigma2;
 
         std::vector<cv::Mat> mvImagePyramid;
     };

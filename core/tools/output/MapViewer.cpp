@@ -174,6 +174,23 @@ namespace NAV24 {
                 auto vpPose = dynamic_pointer_cast<MsgType<vector<PosePtr>>>(msg)->getData();
                 this->insertPoses(vpPose);
             }
+            if (dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
+                auto pFrame = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
+                if (pFrame && pFrame->getPose()) {
+                    this->insertPoses({pFrame->getPose()});
+                }
+            }
+            if (dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)) {
+                auto vpFrame = dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)->getData();
+                vector<PosePtr> vpPose;
+                vpPose.reserve(vpFrame.size());
+                for (const auto& pFrame: vpFrame) {
+                    if (pFrame && pFrame->getPose()) {
+                        vpPose.push_back(pFrame->getPose());
+                    }
+                }
+                this->insertPoses(vpPose);
+            }
             if (dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg)) {
                 auto vpWo = dynamic_pointer_cast<MsgType<vector<WO::WoPtr>>>(msg)->getData();
                 mMtxWoQueue.lock();

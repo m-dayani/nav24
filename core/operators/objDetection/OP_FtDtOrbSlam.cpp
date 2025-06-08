@@ -728,6 +728,7 @@ namespace NAV24::OP {
 
     void FtDtOrbSlam::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
     {
+        const int& nLevels = mPInfo.nLevels;
         allKeypoints.resize(nLevels);
 
         const float W = 35;
@@ -825,7 +826,7 @@ namespace NAV24::OP {
             keypoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
                                           minBorderY, maxBorderY,mnFeaturesPerLevel[level], level);
 
-            const int scaledPatchSize = PATCH_SIZE*mvScaleFactor[level];
+            const int scaledPatchSize = PATCH_SIZE*mPInfo.mvScaleFactor[level];
 
             // Add border to coordinates and scale information
             const int nkps = keypoints.size();
@@ -862,6 +863,7 @@ namespace NAV24::OP {
 
         Mat descriptors;
 
+        const int& nLevels = mPInfo.nLevels;
         int nkeypoints = 0;
         for (int level = 0; level < nLevels; ++level)
             nkeypoints += (int)allKeypoints[level].size();
@@ -899,7 +901,7 @@ namespace NAV24::OP {
 
             offset += nkeypointsLevel;
 
-            float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+            float scale = mPInfo.mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
             int i = 0;
             for (auto & keypoint : keypoints){
 
@@ -936,9 +938,9 @@ namespace NAV24::OP {
     }
 
     void FtDtOrbSlam::ComputePyramid(cv::Mat image) {
-        for (int level = 0; level < nLevels; ++level)
+        for (int level = 0; level < mPInfo.nLevels; ++level)
         {
-            float scale = mvInvScaleFactor[level];
+            float scale = mPInfo.mvInvScaleFactor[level];
             Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
             Size wholeSize(sz.width + EDGE_THRESHOLD*2, sz.height + EDGE_THRESHOLD*2);
             Mat temp(wholeSize, image.type()), masktemp;
@@ -964,7 +966,8 @@ namespace NAV24::OP {
     void FtDtOrbSlam::setNumFeatures(const int nFt) {
         FtDt::setNumFeatures(nFt);
 
-        float factor = 1.0f / scaleFactor;
+        const int& nLevels = mPInfo.nLevels;
+        float factor = 1.0f / mPInfo.scaleFactor;
         float nDesiredFeaturesPerScale = mnFeatures * (1 - factor) / (1 - (float)pow((double)factor, (double)nLevels));
 
         int sumFeatures = 0;
@@ -982,13 +985,13 @@ namespace NAV24::OP {
         if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
 
             auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
-            if (pParam) {
+            if (pParam && pParam->getName() == "ft_detector") {
                     // todo: add these parsing inside the OrbSlam detector
                     auto pNft = find_param<ParamType<int>>("nFeatures", pParam);
                     mnFeatures = (pNft) ? pNft->getValue() : 1000;
 
                     auto pNl = find_param<ParamType<int>>("nLevels", pParam);
-                    nLevels = (pNl) ? pNl->getValue() : 8;
+                    mPInfo.nLevels = (pNl) ? pNl->getValue() : 8;
 
                     auto pIniThFast = find_param<ParamType<int>>("iniThFast", pParam);
                     iniThFAST = (pIniThFast) ? pIniThFast->getValue() : 20;
@@ -997,7 +1000,7 @@ namespace NAV24::OP {
                     minThFAST = (pMinThFast) ? pMinThFast->getValue() : 7;
 
                     auto pScaleFactor = find_param<ParamType<double>>("nFeatures", pParam);
-                    scaleFactor = (pScaleFactor) ? (float) pScaleFactor->getValue() : 1.2f;
+                    mPInfo.scaleFactor = (pScaleFactor) ? (float) pScaleFactor->getValue() : 1.2f;
 
 //                                pDetector = make_shared<FtDtOrbSlam>(nFeatures, scaleFactor, nLevels, iniThFast,
 //                                                                     minThFast);
@@ -1006,4 +1009,7 @@ namespace NAV24::OP {
     }
 
 
+    ImgPyramidInfo::ImgPyramidInfo(int nLevels, float scaleFactor) {
+
+    }
 } // NAV24::OP

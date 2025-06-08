@@ -20,6 +20,8 @@ namespace NAV24 {
     class Parameter;
     typedef std::shared_ptr<Parameter> ParamPtr;
     typedef std::weak_ptr<Parameter> ParamPtrW;
+    typedef std::shared_ptr<const Parameter> ParamPtrConst;
+
     class Parameter {
     public:
         enum NodeType {

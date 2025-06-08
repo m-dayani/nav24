@@ -35,6 +35,9 @@ namespace NAV24 {
         void run() override;
         void requestStop(const std::string& channel) override;
 
+    private:
+        static void getImage(const ImagePtr& pImage, cv::Mat& imageToShow);
+
     protected:
         std::map<std::string, std::shared_ptr<std::queue<ImagePtr>>> mmqpImages;
         std::mutex mMtxImgQueue;
