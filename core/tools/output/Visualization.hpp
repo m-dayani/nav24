@@ -17,7 +17,7 @@
 namespace NAV24 {
     class Visualization {
     public:
-        static void projectMap(cv::Mat& img, const PosePtr& pPose_cw, const CalibPtr& pCalib,
+        static void projectMap(cv::Mat& img, const PosePtr& pPose_cw, const CalibPtrRO& pCalib,
                                const std::vector<WO::WoPtr>& vpMapPts);
 
 //        static void drawGrid(cv::Mat& img, const cv::Mat& K, const cv::Mat& D,

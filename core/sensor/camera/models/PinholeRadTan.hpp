@@ -9,15 +9,7 @@
 
 namespace NAV24 {
     class PinholeRadTan : public Pinhole {
-    public:
-        explicit PinholeRadTan(const std::vector<float>& vParams) : Pinhole(vParams) {
 
-            for (size_t i = 4; i < vParams.size(); i++) {
-                mD_cv.at<float>((int)i-4) = vParams[i];
-            }
-        }
-
-        std::vector<cv::KeyPoint> UndistortKeyPoints(const std::vector<cv::KeyPoint> &vKPts) override;
     };
 } // NAV24
 

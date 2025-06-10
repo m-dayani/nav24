@@ -65,7 +65,7 @@ namespace NAV24::FE {
         std::shared_ptr<FrameImgMono> mpLastFrame;
         std::map<long, FramePtr> mmpFrameBuffer;
 
-        CalibPtr mpCalib;
+        CalibPtrRO mpCalib;
     };
 } // NAV24::FE
 

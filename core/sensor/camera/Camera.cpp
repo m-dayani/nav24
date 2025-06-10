@@ -84,7 +84,7 @@ namespace NAV24 {
             }
 
             // Calib
-            mpCalib = make_shared<Calibration>(pParamCam->read(PKEY_CAM_CALIB));
+            mpCalib = Calibration::getNewInstance(mpChannel, pParamCam);
 
             // Load important paths
             auto fp = [this](auto && PH1) {
@@ -144,10 +144,12 @@ namespace NAV24 {
         return pCamera;
     }
 
-    WO::WoPtr Camera::unproject(const OB::ObsPtr &pObs, const TransPtr &pPose_wc, const NAV24::CalibPtr &pCalib, const float) {
+    WO::WoPtr Camera::unproject(const OB::ObsPtr &pObs, const TransPtr &pPose_wc, const CalibPtrRO &pCalib, const float) {
 
-        auto pc = pCalib->undistort(pObs);
-        auto Pc = dynamic_pointer_cast<OB::Point2D>(pc);
+//        std::shared_ptr<OB::Point2D> Pc;
+        vector<OB::ObsPtr> vpUd{};
+        pCalib->undistort({pObs}, vpUd);
+        auto Pc = dynamic_pointer_cast<OB::Point2D>(vpUd[0]);
         auto Pc_cv = Pc->getPointUd();
         auto pWo = make_shared<WO::Point3D>(Pc_cv.x, Pc_cv.y, 1.0);
         return pPose_wc->transform(pWo);
@@ -155,7 +157,7 @@ namespace NAV24 {
         //return make_shared<WO::Point3D>(Pw_cv.x / Pw_cv.z, Pw_cv.y / Pw_cv.z, 1.0);
     }
 
-    OB::ObsPtr Camera::project(const WO::WoPtr &pWo, const TransPtr &pPose_cw, const NAV24::CalibPtr &pCalib, const float) {
+    OB::ObsPtr Camera::project(const WO::WoPtr &pWo, const TransPtr &pPose_cw, const CalibPtrRO &pCalib, const float) {
 
         auto Pc = pPose_cw->transform(pWo);
         return pCalib->project(Pc);

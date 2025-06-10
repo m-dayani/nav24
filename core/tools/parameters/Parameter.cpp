@@ -149,6 +149,10 @@ namespace NAV24 {
         return oss.str();
     }
 
+    std::string const &Parameter::getName() const {
+        return name;
+    }
+
 
     template<typename T>
     std::string ParamType<T>::printStr(const std::string &prefix) const {

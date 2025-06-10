@@ -86,7 +86,7 @@ namespace NAV24::FE {
         //bool mbTrInitFrame;
         long mTsYoloUpdate;
 
-        CalibPtr mpCalib;
+        CalibPtrRO mpCalib;
     };
 } // NAV24::FE
 

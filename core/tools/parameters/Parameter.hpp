@@ -61,7 +61,7 @@ namespace NAV24 {
         void setType(NodeType type_) { type = type_; }
         NodeType getType() { return type; }
 
-        std::string const& getName() { return name; }
+        [[nodiscard]] std::string const& getName() const;
         void setName(const std::string& name_);// { name = name_; }
 
         ParamPtr getParent() { return parent.lock(); }

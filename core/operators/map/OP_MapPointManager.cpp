@@ -64,13 +64,13 @@ namespace NAV24::OP {
         Eigen::Vector3f tcw1 = T_cw1.block<3,1>(0,3).cast<float>();
         Eigen::Vector3f Ow1 = T_wc1.block<3,1>(0,3).cast<float>();
 
-        vector<float> intrinsics1 = mpCamCalib->getIntrinsicsVector();
-        const float &fx1 = intrinsics1[0];
-        const float &fy1 = intrinsics1[1];
-        const float &cx1 = intrinsics1[2];
-        const float &cy1 = intrinsics1[3];
-        const float &invfx1 = intrinsics1[4];
-        const float &invfy1 = intrinsics1[5];
+//        vector<float> intrinsics1 = mpCamCalib->getIntrinsicsVector();
+//        const float &fx1 = intrinsics1[0];
+//        const float &fy1 = intrinsics1[1];
+//        const float &cx1 = intrinsics1[2];
+//        const float &cy1 = intrinsics1[3];
+//        const float &invfx1 = intrinsics1[4];
+//        const float &invfy1 = intrinsics1[5];
 
         auto vpObs1 = pKF->getObservations();
 
@@ -90,12 +90,12 @@ namespace NAV24::OP {
 
             // assuming all camera frames use the same calibration
             // todo: refine this to include general cases
-            const float &fx2 = fx1;
-            const float &fy2 = fy1;
-            const float &cx2 = cx1;
-            const float &cy2 = cy1;
-            const float &invfx2 = invfx1;
-            const float &invfy2 = invfy1;
+//            const float &fx2 = fx1;
+//            const float &fy2 = fy1;
+//            const float &cx2 = cx1;
+//            const float &cy2 = cy1;
+//            const float &invfx2 = invfx1;
+//            const float &invfy2 = invfy1;
 
             // Check based line for close frames
             Eigen::Vector3f vBaseline = Ow2-Ow1;
@@ -274,8 +274,8 @@ namespace NAV24::OP {
         Operator::receive(msg);
 
         if (msg) {
-            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
-                mpCamCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+            if (dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)) {
+                mpCamCalib = dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)->getData();
             }
         }
     }

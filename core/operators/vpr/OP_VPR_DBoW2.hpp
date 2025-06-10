@@ -42,14 +42,20 @@ namespace NAV24::OP {
         void reloadDbWithVocab(const std::shared_ptr<OrbVocabulary>& pVoc);
 #endif
 
+        // todo: unify these data conversion methods
+        static void getDescriptors(const std::vector<OB::ObsPtr>& vpObs, std::vector<cv::Mat>& vDescriptors);
+
+        void computeBowInfo(const FramePtr& pKF);
+
+    protected:
+        void setup(const MsgPtr &configMsg) override;
+
     private:
         void loadVocabulary();
         void saveVocabulary();
         void loadDatabase();
         void saveDatabase();
         void loadTsMap();
-
-        static void getDescriptors(const std::vector<OB::ObsPtr>& vpObs, std::vector<cv::Mat>& vDescriptors);
 
 #ifdef LIB_DBOW2_FOUND
         void computeBoW(const std::vector<OB::ObsPtr>& vpObs, DBoW2::BowVector& v1);

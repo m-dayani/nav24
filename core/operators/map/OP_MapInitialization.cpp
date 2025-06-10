@@ -18,12 +18,16 @@ namespace NAV24::OP {
 
     MapInitializer::MapInitializer(const CalibPtrRO& pCalib, float sigma, int iterations) : mpCalib(pCalib) {
         if (pCalib)
-            mpTVR = make_shared<TwoViewReconstruction>(pCalib->getK_cv(), sigma, iterations);
+            mpTVR = make_shared<TwoViewReconstruction>(
+                    dynamic_pointer_cast<const CalibPinhole>(pCalib)->getK_cv(),
+                    sigma, iterations);
     }
 
     MapInitializer::MapInitializer(const CalibPtrRO& pCalib, const Params2VR &params2VR) : mpCalib(pCalib) {
         if (pCalib)
-            mpTVR = make_shared<TwoViewReconstruction>(pCalib->getK_cv(), params2VR);
+            mpTVR = make_shared<TwoViewReconstruction>(
+                    dynamic_pointer_cast<const CalibPinhole>(pCalib)->getK_cv(),
+                    params2VR);
     }
 
     bool MapInitializer::reconstruct(const std::vector<std::pair<OB::ObsPtr, OB::ObsPtr>> &vpObs,

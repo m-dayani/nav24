@@ -21,7 +21,7 @@ namespace NAV24 {
         mViewpointF(420.f), mMtxPoseQueue(), mMtxWoQueue(), mLastPose(),
         mSetFirstPoseState(0), mmTrajColors() {
 
-        srand (static_cast <unsigned> (time(0)));
+        srand (static_cast <unsigned> (time(nullptr)));
     }
 
     void MapViewer::drawPose(const PosePtr& pPose) const {

@@ -6,7 +6,7 @@
 #include <DBoW2.h>
 
 #include "OP_FtAssocOrbSlam.hpp"
-#include "ParameterBlueprint.h"
+#include "Point3D.hpp"
 
 using namespace std;
 
@@ -279,11 +279,17 @@ namespace NAV24::OP {
 
         if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
             const auto pParams = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
-            if (pParams->getName() == "ft_detector") {
+            if (pParams) {
+                auto pOpName = find_param<ParamType<string>>("name", pParams);
+                if (!pOpName || pOpName->getValue() != "ft_detector") {
+                    return;
+                }
+
                 auto pParamNLevels = find_param<ParamType<int>>("nLevels", pParams);
                 int nLevels = (pParamNLevels) ? pParamNLevels->getValue() : 1;
+
                 auto pParamScaleFactor = find_param<ParamType<double>>("scaleFactor", pParams);
-                float scaleFactor = (pParamScaleFactor) ? pParamScaleFactor->getValue() : 1.f;
+                float scaleFactor = (pParamScaleFactor) ? (float) pParamScaleFactor->getValue() : 1.f;
 
                 mPInfo = ImgPyramidInfo(nLevels, scaleFactor);
             }
@@ -309,9 +315,9 @@ namespace NAV24::OP {
         Eigen::Vector3f Cw = Tw1.block<3,1>(0,3);
         Eigen::Vector4f Cw_h(Cw.x(), Cw.y(), Cw.z(), 1.f);
         Eigen::Vector4f C2_h = T2w * Cw_h;
-        Eigen::Vector3f C2(C2_h.x(), C2_h.y(), C2_h.z());
+        auto pC2 = make_shared<WO::Point3D>(C2_h.x(), C2_h.y(), C2_h.z());
 
-        Eigen::Vector2f ep = pCalib->project(C2);
+        auto ep = dynamic_pointer_cast<OB::Point2D>(pCalib->project(pC2));
         Eigen::Matrix4f T12;
 //        Eigen::Matrix4f Tll, Tlr, Trl, Trr;
         Eigen::Matrix3f R12; // for fastest computation
@@ -324,6 +330,7 @@ namespace NAV24::OP {
             T12 = T1w * Tw2;
             R12 = T12.block<3,3>(0,0);
             t12 = T12.block<3,1>(0,3);
+            auto pPose_12 = make_shared<TF::PoseSE3>(-1.0, T12.cast<double>());
 //        }
 //        else{
 //            Sophus::SE3f Tr1w = pKF1->GetRightPose();
@@ -419,8 +426,8 @@ namespace NAV24::OP {
 
 //                        if(!bStereo1 && !bStereo2 && !pKF1->mpCamera2)
 //                        {
-                            const float distex = ep(0)-kp2->getPointUd().x;
-                            const float distey = ep(1)-kp2->getPointUd().y;
+                            const float distex = ep->getPointUd().x-kp2->getPointUd().x;
+                            const float distey = ep->getPointUd().y-kp2->getPointUd().y;
                             // pKF2->mvScaleFactors[kp2.octave] => kp2->getScaleFactor()?
                             if(distex*distex+distey*distey<100*mPInfo.mvScaleFactor[kp2->getKeyPoint().octave])
                             {
@@ -464,9 +471,9 @@ namespace NAV24::OP {
 //                        }
 
                         // pKF->mvLevelSigma2[kp.octave] => getUncertainty()
-                        if(bCoarse || pCamera1->epipolarConstrain(pCamera2,kp1,kp2,R12,t12,
-                                                                  kp1->getUncertainty(),
-                                                                  kp2->getUncertainty())) // MODIFICATION_2
+                        if(bCoarse || pCalib->epipolarConstrain(pCalib,kp1,kp2,pPose_12,
+                                                                kp1->getUncertainty(),
+                                                                kp2->getUncertainty())) // MODIFICATION_2
                         {
                             bestIdx2 = idx2;
                             bestDist = dist;

@@ -43,13 +43,9 @@ namespace NAV24 {
 
     struct ImageTsCalib : public ImageTs {
 
-        ImageTsCalib(const cv::Mat& image, double ts, const std::string& imPath, const CalibPtr pCalib) :
+        ImageTsCalib(const cv::Mat& image, double ts, const std::string& imPath, const CalibPtrRO& pCalib) :
                 ImageTs(image, ts, imPath), mpCamera(pCalib) {}
 
-        void hello() {
-            auto bili = std::make_shared<OB::Point2D>(3, 4);
-            mpCamera->undistort(bili);
-        }
         // This must be protected against the content modification
         CalibPtrRO mpCamera;
     };

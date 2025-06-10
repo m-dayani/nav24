@@ -57,8 +57,8 @@ namespace NAV24::FE {
             if (dynamic_pointer_cast<MsgSensorData>(msg)) {
                 this->handleImageMsg(msg);
             }
-            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
-                mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+            if (dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)) {
+                mpCalib = dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)->getData();
                 mpMapInit = make_shared<OP::MapInitializer>(mpCalib);
             }
             if (dynamic_pointer_cast<MsgConfig>(msg)) {
@@ -113,7 +113,9 @@ namespace NAV24::FE {
 
                 // Undistort features
                 if (mpCalib) {
-                    mpCurrFrame->setObservations(mpCalib->undistort(mpCurrFrame->getObservations()));
+                    vector<OB::ObsPtr> vpObsUd;
+                    mpCalib->undistort(mpCurrFrame->getObservations(), vpObsUd);
+                    mpCurrFrame->setObservations(vpObsUd);
                 }
 
                 // Match Features

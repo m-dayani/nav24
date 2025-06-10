@@ -74,7 +74,7 @@ namespace NAV24 {
                     cv::Scalar(0, cInt, 0), 2);
     }*/
 
-    void Visualization::projectMap(cv::Mat &img, const PosePtr &pPose_cw, const CalibPtr &pCalib,
+    void Visualization::projectMap(cv::Mat &img, const PosePtr &pPose_cw, const CalibPtrRO &pCalib,
                                    const vector<WO::WoPtr> &vpMapPts) {
 
         cv::Point2f orig, ax, ay;

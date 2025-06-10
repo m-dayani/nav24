@@ -499,7 +499,9 @@ namespace NAV24::OP {
         }
     }*/
 
-    FtDtOrbSlam::FtDtOrbSlam(const NAV24::ChannelPtr &pChannel) : FtDt(pChannel) {}
+    FtDtOrbSlam::FtDtOrbSlam(const NAV24::ChannelPtr &pChannel) : FtDt(pChannel) {
+
+    }
 
     vector<cv::KeyPoint> FtDtOrbSlam::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                                         const int &maxX, const int &minY, const int &maxY, const int &N,
@@ -985,31 +987,102 @@ namespace NAV24::OP {
         if (configMsg && dynamic_pointer_cast<MsgConfig>(configMsg)) {
 
             auto pParam = dynamic_pointer_cast<MsgConfig>(configMsg)->getConfig();
-            if (pParam && pParam->getName() == "ft_detector") {
-                    // todo: add these parsing inside the OrbSlam detector
-                    auto pNft = find_param<ParamType<int>>("nFeatures", pParam);
-                    mnFeatures = (pNft) ? pNft->getValue() : 1000;
+            if (pParam) {
+                auto pOpName = find_param<ParamType<string>>("name", pParam);
+                if (!pOpName || pOpName->getValue() != "ft_detector") {
+                    return;
+                }
 
-                    auto pNl = find_param<ParamType<int>>("nLevels", pParam);
-                    mPInfo.nLevels = (pNl) ? pNl->getValue() : 8;
+                // todo: add these parsing inside the OrbSlam detector
+                auto pNft = find_param<ParamType<int>>("nFeatures", pParam);
+                mnFeatures = (pNft) ? pNft->getValue() : 1000;
 
-                    auto pIniThFast = find_param<ParamType<int>>("iniThFast", pParam);
-                    iniThFAST = (pIniThFast) ? pIniThFast->getValue() : 20;
+                auto pNl = find_param<ParamType<int>>("nLevels", pParam);
+                mPInfo.nLevels = (pNl) ? pNl->getValue() : 8;
 
-                    auto pMinThFast = find_param<ParamType<int>>("minThFast", pParam);
-                    minThFAST = (pMinThFast) ? pMinThFast->getValue() : 7;
+                auto pIniThFast = find_param<ParamType<int>>("iniThFast", pParam);
+                iniThFAST = (pIniThFast) ? pIniThFast->getValue() : 20;
 
-                    auto pScaleFactor = find_param<ParamType<double>>("nFeatures", pParam);
-                    mPInfo.scaleFactor = (pScaleFactor) ? (float) pScaleFactor->getValue() : 1.2f;
+                auto pMinThFast = find_param<ParamType<int>>("minThFast", pParam);
+                minThFAST = (pMinThFast) ? pMinThFast->getValue() : 7;
 
+                auto pScaleFactor = find_param<ParamType<double>>("nFeatures", pParam);
+                mPInfo.scaleFactor = (pScaleFactor) ? (float) pScaleFactor->getValue() : 1.2f;
+
+                mPInfo.processPyramid();
+                this->initLevelInfo();
 //                                pDetector = make_shared<FtDtOrbSlam>(nFeatures, scaleFactor, nLevels, iniThFast,
 //                                                                     minThFast);
             }
         }
     }
 
+    void FtDtOrbSlam::initLevelInfo() {
 
-    ImgPyramidInfo::ImgPyramidInfo(int nLevels, float scaleFactor) {
+        mvImagePyramid.resize(mPInfo.nLevels);
 
+        mnFeaturesPerLevel.resize(mPInfo.nLevels);
+        float factor = 1.0f / mPInfo.scaleFactor;
+        float nDesiredFeaturesPerScale = mnFeatures * (1 - factor) / (1 - (float)pow((double)factor, (double)mPInfo.nLevels));
+
+        int sumFeatures = 0;
+        for( int level = 0; level < mPInfo.nLevels-1; level++ )
+        {
+            mnFeaturesPerLevel[level] = cvRound(nDesiredFeaturesPerScale);
+            sumFeatures += mnFeaturesPerLevel[level];
+            nDesiredFeaturesPerScale *= factor;
+        }
+        mnFeaturesPerLevel[mPInfo.nLevels-1] = std::max(mnFeatures - sumFeatures, 0);
+
+        const int npoints = 512;
+        const Point* pattern0 = (const Point*)bit_pattern_31_;
+        std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
+
+        //This is for orientation
+        // pre-compute the end of a row in a circular patch
+        umax.resize(HALF_PATCH_SIZE + 1);
+
+        int v, v0, vmax = cvFloor(HALF_PATCH_SIZE * sqrt(2.f) / 2 + 1);
+        int vmin = cvCeil(HALF_PATCH_SIZE * sqrt(2.f) / 2);
+        const double hp2 = HALF_PATCH_SIZE*HALF_PATCH_SIZE;
+        for (v = 0; v <= vmax; ++v)
+            umax[v] = cvRound(sqrt(hp2 - v * v));
+
+        // Make sure we are symmetric
+        for (v = HALF_PATCH_SIZE, v0 = 0; v >= vmin; --v)
+        {
+            while (umax[v0] == umax[v0 + 1])
+                ++v0;
+            umax[v] = v0;
+            ++v0;
+        }
+    }
+
+
+    ImgPyramidInfo::ImgPyramidInfo(const int nLevels_, const float scaleFactor_) :
+            scaleFactor(scaleFactor_), nLevels(nLevels_) {
+
+        this->processPyramid();
+    }
+
+    void ImgPyramidInfo::processPyramid() {
+
+        mvScaleFactor.resize(nLevels);
+        mvLevelSigma2.resize(nLevels);
+        mvScaleFactor[0]=1.0f;
+        mvLevelSigma2[0]=1.0f;
+        for(int i=1; i<nLevels; i++)
+        {
+            mvScaleFactor[i]=mvScaleFactor[i-1]*scaleFactor;
+            mvLevelSigma2[i]=mvScaleFactor[i]*mvScaleFactor[i];
+        }
+
+        mvInvScaleFactor.resize(nLevels);
+        mvInvLevelSigma2.resize(nLevels);
+        for(int i=0; i<nLevels; i++)
+        {
+            mvInvScaleFactor[i]=1.0f/mvScaleFactor[i];
+            mvInvLevelSigma2[i]=1.0f/mvLevelSigma2[i];
+        }
     }
 } // NAV24::OP

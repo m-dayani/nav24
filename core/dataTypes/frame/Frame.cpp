@@ -2,9 +2,11 @@
 // Created by masoud on 4/28/24.
 //
 
-#include "Frame.hpp"
-
 #include <utility>
+
+#include "Frame.hpp"
+#include "OP_VPR_DBoW2.hpp"
+
 
 using namespace std;
 
@@ -78,7 +80,18 @@ namespace NAV24 {
         return {};
     }
 
-    void FrameMonoOS::computeFtVecDBoW2() {
-        // todo: implement FrameMonoOS::computeFtVecDBoW2()
+    // can't do this here, requires an OrbVocab instance
+//    void FrameMonoOS::computeFtVecDBoW2() {
+//        // convert observations to descriptors
+//        vector<cv::Mat> vDesc;
+//        OP::VPR_DBoW2::getDescriptors(mvpObservations, vDesc);
+//        DBoW2::BowVector v1;
+//        DBoW2::FeatureVector fv1;
+//        int levelup = 0;
+//        OrbVocabulary::transform(vDesc, v1, fv1, levelup);
+//    }
+
+    void FrameMonoOS::processKeyframe() {
+//        this->computeFtVecDBoW2();
     }
 } // NAV24

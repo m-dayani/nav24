@@ -130,11 +130,18 @@ namespace NAV24::FE {
                 T_wc0 = pPose->getPose() * T_bc0->getPose();
             }
             auto pNewPose = make_shared<TF::PoseSE3>(pPose->getTimestamp(), T_wc0, FE_DEF_WORLD_NAME);
+
+            // frame creation
             FramePtr pFrame = make_shared<FrameMonoOS>(imgTs, pNewPose, vector<OB::ObsPtr>(), pImage);
             pNewPose->setFrame(pFrame);
             pFrame->setPrevFrame(mpLastFrame);
             if (mpLastFrame) {
                 mpLastFrame->setNextFrame(pFrame);
+            }
+
+            // feature extraction
+            if (mpOrbDetector) {
+                mpOrbDetector->detect(pFrame);
             }
 
             // publish the new pose

@@ -43,6 +43,8 @@ namespace NAV24 {
 
         virtual void simplify();
 
+        virtual void processKeyframe() {}
+
     protected:
         double ts;
         const long mId;
@@ -92,10 +94,17 @@ namespace NAV24 {
         std::vector<std::size_t> getFeaturesInArea(const OB::ObsPtr& pObs, float windowSize, int minLevel, int maxLevel);
 
         [[nodiscard]] DBoW2::FeatureVector getFtVecDBoW2() const { return mFtVecDBoW2; }
-        void computeFtVecDBoW2();
+        void setFtVecDBoW2(const DBoW2::FeatureVector& ftVec) { mFtVecDBoW2 = ftVec; }
+//        void computeFtVecDBoW2();
+        [[nodiscard]] DBoW2::BowVector getBowVecDBoW2() const { return mBowVecDBoW2; }
+        void setBowVecDBoW2(const DBoW2::BowVector& bowVec) { mBowVecDBoW2 = bowVec; }
+
+        void processKeyframe() override;
+
     protected:
         std::shared_ptr<OB::FeatureGrid> mpGrid;
         DBoW2::FeatureVector mFtVecDBoW2;
+        DBoW2::BowVector mBowVecDBoW2;
     };
 
 } // NAV24

@@ -40,14 +40,21 @@ namespace NAV24::OB {
     class KeyPoint2D : public Point2D {
     public:
         KeyPoint2D(cv::KeyPoint kpt, const cv::Mat& desc) : Point2D(kpt.pt.x, kpt.pt.y),
-            mKPt(kpt), mDesc(desc.clone()) {}
+            angle(0.f), octave(0), mDesc(desc.clone()) {}
 
-        [[nodiscard]] const cv::KeyPoint &getKeyPoint() const {
-            return mKPt;
+        [[nodiscard]] cv::KeyPoint getKeyPoint() const {
+            cv::KeyPoint kpt;
+            kpt.pt = mPoint;
+            kpt.angle = angle;
+            kpt.octave = octave;
+            return kpt;
         }
 
         void setKeyPoint(const cv::KeyPoint &kpt) {
-            KeyPoint2D::mKPt = kpt;
+//            KeyPoint2D::mKPt = kpt;
+            mPoint = kpt.pt;
+            octave = kpt.octave;
+            angle = kpt.angle;
         }
 
         [[nodiscard]] const cv::Mat &getDescriptor() const {
@@ -59,15 +66,22 @@ namespace NAV24::OB {
         }
 
         [[nodiscard]] cv::KeyPoint getKeyPointUd() const {
-            cv::KeyPoint kpt = mKPt;
+            cv::KeyPoint kpt;
             kpt.pt = mPointUd;
+            kpt.angle = angle;
+            kpt.octave = octave;
             return kpt;
         }
+
+        [[nodiscard]] int getOctave() const { return octave; }
+        [[nodiscard]] float getAngle() const { return angle; }
 
         static std::vector<cv::KeyPoint> toCvKeyPoint(const std::vector<ObsPtr>& vpObs);
         static std::vector<cv::KeyPoint> toCvKeyPointUd(const std::vector<ObsPtr>& vpObs);
     protected:
-        cv::KeyPoint mKPt;
+//        cv::KeyPoint mKPt;
+        float angle;
+        int octave;
         cv::Mat mDesc;
     };
 

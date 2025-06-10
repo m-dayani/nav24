@@ -206,7 +206,8 @@ namespace NAV24::FE {
             // Update calibration parameters: K, D
             auto pCalibParam = Calibration::getCalibParams(pProblem->mK, pProblem->mDistCoeffs,
                                                            "radial-tangential", mvpParamHolder);
-            mpCalib = make_shared<Calibration>(pCalibParam);
+//            mpCalib = make_shared<Calibration>(pCalibParam);
+            mpCalib = Calibration::getNewInstance(mpChannel, pCalibParam);
             auto msgCalibConf = make_shared<MsgConfig>(ID_CH_PARAMS, pCalibParam,
                                                        ParameterServer::TOPIC);
             // todo: you normally get param keys from the system

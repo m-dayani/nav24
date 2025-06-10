@@ -183,6 +183,39 @@ namespace NAV24::OP {
         mpOrbDatabase = make_shared<OrbDatabase>(*mpOrbVocabulary, false, 0);
     }
 
+    void VPR_DBoW2::setup(const MsgPtr &msg) {
+
+        if (msg && dynamic_pointer_cast<MsgConfig>(msg)) {
+
+            auto pParams = dynamic_pointer_cast<MsgConfig>(msg)->getConfig();
+            if (pParams) {
+                // path params: voc, db, and ts_map
+                // voc can be the old ORB-SLAM.txt file or the newer voc.yml.gz file
+            }
+        }
+    }
+
+    void VPR_DBoW2::computeBowInfo(const FramePtr &pKF) {
+
+        if (!pKF || !dynamic_pointer_cast<FrameMonoOS>(pKF)) {
+            return;
+        }
+
+        auto pOrbFrame = dynamic_pointer_cast<FrameMonoOS>(pKF);
+
+        auto mvpObservations = pOrbFrame->getObservations();
+        vector<cv::Mat> vDesc;
+        getDescriptors(mvpObservations, vDesc);
+
+        DBoW2::BowVector v1;
+        DBoW2::FeatureVector fv1;
+        int levelsup = 0;
+        mpOrbVocabulary->transform(vDesc, v1, fv1, levelsup);
+
+        pOrbFrame->setBowVecDBoW2(v1);
+        pOrbFrame->setFtVecDBoW2(fv1);
+    }
+
 #endif
 
     // todo: implement MsgCallback's methods

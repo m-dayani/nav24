@@ -48,8 +48,8 @@ namespace NAV24::FE {
                 // correct observations
                 this->correctObservation(msgPtObs->getData());
             }
-            if (dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
-                mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+            if (dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)) {
+                mpCalib = dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)->getData();
             }
             if (dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg)) {
                 auto pThMsg = dynamic_pointer_cast<MsgType<shared_ptr<thread>>>(msg);

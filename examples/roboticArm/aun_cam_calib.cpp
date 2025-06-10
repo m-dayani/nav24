@@ -19,8 +19,8 @@ class ParamReceiverCalib : public ParamReceiver {
 public:
     void receive(const MsgPtr &msg) override {
         ParamReceiver::receive(msg);
-        if (msg && dynamic_pointer_cast<MsgType<CalibPtr>>(msg)) {
-            mpCalib = dynamic_pointer_cast<MsgType<CalibPtr>>(msg)->getData();
+        if (msg && dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)) {
+            mpCalib = dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)->getData();
         }
     }
 

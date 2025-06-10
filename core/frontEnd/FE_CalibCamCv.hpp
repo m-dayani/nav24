@@ -53,7 +53,7 @@ namespace NAV24::FE {
 
         std::vector<ParamPtr> mvpParamHolder;
 
-        CalibPtr mpCalib;
+        CalibPtrRO mpCalib;
     };
 
 } // NAV24::FE

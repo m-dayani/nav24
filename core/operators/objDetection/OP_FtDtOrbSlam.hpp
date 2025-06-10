@@ -28,6 +28,8 @@ namespace NAV24::OP {
         ImgPyramidInfo() = default;
         ImgPyramidInfo(int nLevels, float scaleFactor);
 
+        void processPyramid();
+
         float scaleFactor{1.f};
         int nLevels{1};
 
@@ -72,6 +74,7 @@ namespace NAV24::OP {
 
     protected:
         void setup(const MsgPtr &configMsg) override;
+        void initLevelInfo();
 
         void ComputePyramid(cv::Mat image);
         void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint>>& allKeypoints);

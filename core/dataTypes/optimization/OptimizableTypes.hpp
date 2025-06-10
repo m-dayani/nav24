@@ -27,6 +27,8 @@
 
 #include "GeometricCamera.h"
 #include "Calibration.hpp"
+#include "Point3D.hpp"
+#include "Calibration.hpp"
 
 
 namespace ORB_SLAM3 {
@@ -103,7 +105,12 @@ public:
         const g2o::VertexSE3Expmap* v1 = static_cast<const g2o::VertexSE3Expmap*>(_vertices[1]);
         const g2o::VertexPointXYZ* v2 = static_cast<const g2o::VertexPointXYZ*>(_vertices[0]);
         Eigen::Vector2d obs(_measurement);
-        _error = obs-pCamera->project(v1->estimate().map(v2->estimate()));
+        auto P = v1->estimate().map(v2->estimate());
+        auto pWo = std::make_shared<NAV24::WO::Point3D>(P[0], P[1], P[2]);
+        auto pObs = pCamera->project(pWo);
+        Eigen::Vector2f p2d;
+        NAV24::Calibration::obs2vec(pObs, p2d);
+        _error = obs-p2d.cast<double>();
     }
 
     bool isDepthPositive() {
