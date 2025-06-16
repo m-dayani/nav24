@@ -303,6 +303,11 @@ namespace NAV24::OP {
         auto pKF1 = dynamic_pointer_cast<FrameMonoOS>(mpKF1);
         auto pKF2 = dynamic_pointer_cast<FrameMonoOS>(mpKF2);
 
+        if (!pKF1 || !pKF2 || !pCalib) {
+            DLOG(WARNING) << "FtAssocOrbSlam::searchForTriangulation, Keyframes or Calibration is NULL, abort...\n";
+            return 0;
+        }
+
         const DBoW2::FeatureVector &vFeatVec1 = pKF1->getFtVecDBoW2();
         const DBoW2::FeatureVector &vFeatVec2 = pKF2->getFtVecDBoW2();
 
@@ -373,7 +378,12 @@ namespace NAV24::OP {
                 {
                     const size_t idx1 = f1it->second[i1];
 
-                    auto pMP1 = vpObs1[idx1]->getWorldObject();
+                    const auto& kp1 = dynamic_pointer_cast<OB::KeyPoint2D>(vpObs1[idx1]);
+                    if (!kp1) {
+                        continue;
+                    }
+
+                    auto pMP1 = kp1->getWorldObject();
 
                     // If there is already a MapPoint skip
                     if(pMP1)
@@ -382,12 +392,9 @@ namespace NAV24::OP {
                     }
 
 //                    const bool bStereo1 = (!pKF1->mpCamera2 && pKF1->mvuRight[idx1]>=0);
-//
 //                    if(bOnlyStereo)
 //                        if(!bStereo1)
 //                            continue;
-
-                    const auto& kp1 = dynamic_pointer_cast<OB::KeyPoint2D>(vpObs1[idx1]);
 
 //                    const bool bRight1 = (pKF1 -> NLeft == -1 || idx1 < pKF1 -> NLeft) ? false : true;
 
@@ -396,40 +403,41 @@ namespace NAV24::OP {
                     int bestDist = TH_LOW;
                     int bestIdx2 = -1;
 
-                    for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
-                    {
-                        size_t idx2 = f2it->second[i2];
+                    for(unsigned long idx2 : f2it->second) {
 
-                        auto pMP2 = vpObs2[idx2]->getWorldObject();
+                        const auto& kp2 = dynamic_pointer_cast<OB::KeyPoint2D>(vpObs2[idx2]);
+                        if (!kp2) {
+                            continue;
+                        }
+
+                        auto pMP2 = kp2->getWorldObject();
 
                         // If we have already matched or there is a MapPoint skip
                         if(vbMatched2[idx2] || pMP2)
                             continue;
 
 //                        const bool bStereo2 = (!pKF2->mpCamera2 &&  pKF2->mvuRight[idx2]>=0);
-
 //                        if(bOnlyStereo)
 //                            if(!bStereo2)
 //                                continue;
-
-                        const auto& kp2 = dynamic_pointer_cast<OB::KeyPoint2D>(vpObs2[idx2]);
 
                         const cv::Mat &d2 = kp2->getDescriptor();
 
                         const int dist = DescriptorDistance(d1,d2);
 
-                        if(dist>TH_LOW || dist>bestDist)
+                        if (dist > TH_LOW || dist > bestDist) {
                             continue;
+                        }
 
-                        // todo check indices are correct!
+                        // check indices are correct!
 //                        const bool bRight2 = (pKF2 -> NLeft == -1 || idx2 < pKF2 -> NLeft) ? false : true;
 
 //                        if(!bStereo1 && !bStereo2 && !pKF1->mpCamera2)
 //                        {
-                            const float distex = ep->getPointUd().x-kp2->getPointUd().x;
-                            const float distey = ep->getPointUd().y-kp2->getPointUd().y;
+                            const float distex = ep->getPoint().x-kp2->getPointUd().x;
+                            const float distey = ep->getPoint().y-kp2->getPointUd().y;
                             // pKF2->mvScaleFactors[kp2.octave] => kp2->getScaleFactor()?
-                            if(distex*distex+distey*distey<100*mPInfo.mvScaleFactor[kp2->getKeyPoint().octave])
+                            if(distex*distex+distey*distey<100*mPInfo.mvScaleFactor[kp2->getOctave()])
                             {
                                 continue;
                             }
@@ -472,10 +480,9 @@ namespace NAV24::OP {
 
                         // pKF->mvLevelSigma2[kp.octave] => getUncertainty()
                         if(bCoarse || pCalib->epipolarConstrain(pCalib,kp1,kp2,pPose_12,
-                                                                kp1->getUncertainty(),
-                                                                kp2->getUncertainty())) // MODIFICATION_2
-                        {
-                            bestIdx2 = idx2;
+                                                                mPInfo.mvLevelSigma2[kp1->getOctave()],
+                                                                mPInfo.mvLevelSigma2[kp2->getOctave()])) {
+                            bestIdx2 = static_cast<int>(idx2);
                             bestDist = dist;
                         }
                     }
@@ -489,14 +496,14 @@ namespace NAV24::OP {
 
                         if(mbCheckOrientation)
                         {
-                            float rot = kp1->getKeyPoint().angle - kp2->getKeyPoint().angle;
+                            float rot = kp1->getAngle() - kp2->getAngle();
                             if(rot<0.0)
                                 rot+=360.0f;
-                            int bin = round(rot*factor);
+                            int bin = static_cast<int>(round(rot*factor));
                             if(bin==HISTO_LENGTH)
                                 bin=0;
                             assert(bin>=0 && bin<HISTO_LENGTH);
-                            rotHist[bin].push_back(idx1);
+                            rotHist[bin].push_back(static_cast<int>(idx1));
                         }
                     }
                 }
@@ -504,31 +511,28 @@ namespace NAV24::OP {
                 f1it++;
                 f2it++;
             }
-            else if(f1it->first < f2it->first)
-            {
+            else if(f1it->first < f2it->first) {
                 f1it = vFeatVec1.lower_bound(f2it->first);
             }
-            else
-            {
+            else {
                 f2it = vFeatVec2.lower_bound(f1it->first);
             }
         }
 
-        if(mbCheckOrientation)
-        {
+        if(mbCheckOrientation) {
             int ind1=-1;
             int ind2=-1;
             int ind3=-1;
 
             ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
 
-            for(int i=0; i<HISTO_LENGTH; i++)
-            {
+            for(int i=0; i<HISTO_LENGTH; i++) {
+
                 if(i==ind1 || i==ind2 || i==ind3)
                     continue;
-                for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
-                {
-                    vMatches12[rotHist[i][j]]=-1;
+
+                for(int j : rotHist[i]) {
+                    vMatches12[j]=-1;
                     nmatches--;
                 }
             }
@@ -538,11 +542,12 @@ namespace NAV24::OP {
         vMatchedPairs.clear();
         vMatchedPairs.reserve(nmatches);
 
-        for(size_t i=0, iend=vMatches12.size(); i<iend; i++)
-        {
+        for(size_t i=0, iend=vMatches12.size(); i<iend; i++) {
+
             if(vMatches12[i]<0)
                 continue;
-            vMatchedPairs.push_back(make_pair(i,vMatches12[i]));
+
+            vMatchedPairs.emplace_back(i, vMatches12[i]);
         }
 
         return nmatches;

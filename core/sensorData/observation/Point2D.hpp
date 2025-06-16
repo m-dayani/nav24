@@ -40,7 +40,7 @@ namespace NAV24::OB {
     class KeyPoint2D : public Point2D {
     public:
         KeyPoint2D(cv::KeyPoint kpt, const cv::Mat& desc) : Point2D(kpt.pt.x, kpt.pt.y),
-            angle(0.f), octave(0), mDesc(desc.clone()) {}
+            angle(kpt.angle), octave(kpt.octave), mDesc(desc.clone()) {}
 
         [[nodiscard]] cv::KeyPoint getKeyPoint() const {
             cv::KeyPoint kpt;

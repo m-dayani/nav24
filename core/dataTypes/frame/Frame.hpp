@@ -84,9 +84,9 @@ namespace NAV24 {
     class FrameMonoOS : public FrameImgMono {
     public:
         FrameMonoOS(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs) :
-                FrameImgMono(_ts, pose, vObs), mpGrid() {}
+                FrameImgMono(_ts, pose, vObs), mpGrid(), mbInitDBoW2(false) {}
         FrameMonoOS(double _ts, const PosePtr& pose, const std::vector<OB::ObsPtr>& vObs, const ImagePtr& pImage) :
-                FrameImgMono(_ts, pose, vObs, pImage), mpGrid() {}
+                FrameImgMono(_ts, pose, vObs, pImage), mpGrid(), mbInitDBoW2(false) {}
 
         void setObservations(const std::vector<OB::ObsPtr> &mvpObservations) override;
 
@@ -99,12 +99,16 @@ namespace NAV24 {
         [[nodiscard]] DBoW2::BowVector getBowVecDBoW2() const { return mBowVecDBoW2; }
         void setBowVecDBoW2(const DBoW2::BowVector& bowVec) { mBowVecDBoW2 = bowVec; }
 
+        [[nodiscard]] bool isInitDBoW2() const { return mbInitDBoW2; }
+        void updateInitDBoW2(const bool flag) { mbInitDBoW2 = flag; }
+
         void processKeyframe() override;
 
     protected:
         std::shared_ptr<OB::FeatureGrid> mpGrid;
         DBoW2::FeatureVector mFtVecDBoW2;
         DBoW2::BowVector mBowVecDBoW2;
+        bool mbInitDBoW2;
     };
 
 } // NAV24

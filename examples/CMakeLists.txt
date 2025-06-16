@@ -74,6 +74,10 @@ endif(Python_FOUND)
 add_executable(t_vpr tests/t_vpr.cpp)
 target_link_libraries(t_vpr LINK_PUBLIC ${LIB_NAV_NAME})
 list(APPEND INSTALLABLE_EXE t_vpr)
+
+add_executable(orb_voc_conv tests/orb_voc_conv.cpp)
+target_link_libraries(orb_voc_conv LINK_PUBLIC ${LIB_NAV_NAME})
+list(APPEND INSTALLABLE_EXE orb_voc_conv)
 #endif (DBoW2_FOUND)
 
 # Robotic Arm

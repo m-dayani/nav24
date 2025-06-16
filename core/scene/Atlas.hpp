@@ -13,6 +13,7 @@
 #include "Map.hpp"
 #include "Frame.hpp"
 #include "OP_MapPointManager.hpp"
+#include "OP_VPR_DBoW2.hpp"
 
 
 namespace NAV24 {
@@ -43,11 +44,13 @@ namespace NAV24 {
         std::string mActiveWorld;
 
     private:
+        std::vector<FramePtr> mvpFrameBuffer;
+        std::mutex mFrameBuffLock;
+
         std::shared_ptr<OP::MapPointManager> mpMpManager;
         std::vector<FramePtr> mvpKeyframes;
 
-        std::vector<FramePtr> mvpFrameBuffer;
-        std::mutex mFrameBuffLock;
+        std::shared_ptr<OP::VPR_DBoW2> mpVprDbow2;
     };
     typedef std::shared_ptr<Atlas> AtlasPtr;
 

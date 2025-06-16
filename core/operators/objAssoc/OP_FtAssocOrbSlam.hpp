@@ -49,6 +49,7 @@ namespace NAV24::OP {
         bool mbCheckOrientation;
         float windowSize;
 
+    public:
         ImgPyramidInfo mPInfo;
     };
 } // NAV24::OP

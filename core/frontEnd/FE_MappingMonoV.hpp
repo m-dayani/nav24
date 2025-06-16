@@ -48,6 +48,8 @@ namespace NAV24::FE {
 
         std::vector<FramePtr> mvpAllFrames;
 
+        CalibPtrRO mpCalib;
+
 //        ParamPtr mpTempParam;;
     };
 

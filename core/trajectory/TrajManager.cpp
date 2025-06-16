@@ -56,8 +56,10 @@ namespace NAV24 {
             }
             if (dynamic_pointer_cast<MsgType<FramePtr>>(msg)) {
                 auto pFrame = dynamic_pointer_cast<MsgType<FramePtr>>(msg)->getData();
-                if (pFrame && pFrame->getPose()) {
-                    this->addPosesToQueue({pFrame->getPose()});
+                if (pFrame) {
+                    if (pFrame->getPose()) {
+                        this->addPosesToQueue({pFrame->getPose()});
+                    }
                 }
             }
             if (dynamic_pointer_cast<MsgType<vector<FramePtr>>>(msg)) {

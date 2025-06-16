@@ -197,8 +197,10 @@ namespace NAV24 {
 
         bool operationSupported = false;
 
-        if (dynamic_pointer_cast<OB::Point2D>(p2d)) {
-            auto pObsIn = dynamic_pointer_cast<OB::Point2D>(p2d)->getPoint();
+        auto pP2d = dynamic_pointer_cast<OB::Point2D>(p2d);
+        if (pP2d) {
+            cv::Point2f pObsIn;
+            pObsIn = pP2d->getPoint();
             p2d_eig << pObsIn.x, pObsIn.y;
             operationSupported = true;
         }
@@ -473,21 +475,27 @@ namespace NAV24 {
 
     void CalibPinholeRadTan::undistort(const vector<OB::ObsPtr> &vpObsDist, vector<OB::ObsPtr> &vpObs) const {
 
-        vpObs.resize(vpObsDist.size());
-        for (auto & vpOb : vpObs) {
+        size_t nObs = vpObsDist.size();
+        vpObs.resize(nObs);
+        for (size_t i = 0; i < vpObsDist.size(); i++) {
 
-            auto pObs = dynamic_pointer_cast<OB::Point2D>(vpOb);
+            auto pObsDist = dynamic_pointer_cast<OB::Point2D>(vpObsDist[i]);
             Eigen::Vector2f p2d;
-            bool res = obs2vec(pObs, p2d);
+            bool res = obs2vec(pObsDist, p2d);
 
-            if (res && pObs) {
+            if (res && pObsDist) {
                 vector<cv::Point2f> vPts{cv::Point2f(p2d[0], p2d[1])};
                 // Some datasets do provide mR, mP, but if you use these you don't get a normalized result
                 // fixed this by setting R, P empty Mat, explicitly provide them for other use
-                cv::undistortPoints(vPts, vPts, mK_cv, mD_cv, mR, mP);
-                pObs->setPointUd(vPts[0]);
-                pObs->updateDistorted(true);
-                vpOb = pObs;
+                if (mR.empty()) {
+                    cv::undistortPoints(vPts, vPts, mK_cv, mD_cv, mK_cv);
+                }
+                else {
+                    cv::undistortPoints(vPts, vPts, mK_cv, mD_cv, mR, mP);
+                }
+                pObsDist->setPointUd(vPts[0]);
+                pObsDist->updateDistorted(true);
+                vpObs[i] = pObsDist;
             }
         }
     }

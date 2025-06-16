@@ -9,6 +9,7 @@
 #include "Frame.hpp"
 #include "ParameterServer.hpp"
 #include "System.hpp"
+#include "Camera.hpp"
 
 
 using namespace std;
@@ -68,6 +69,9 @@ namespace NAV24::FE {
                 if (pPose && pPose->getName() == "T_bc0") {
                     T_bc0 = pPose;
                 }
+            }
+            if (dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)) {
+                mpCalib = dynamic_pointer_cast<MsgType<CalibPtrRO>>(msg)->getData();
             }
         }
 
@@ -139,9 +143,14 @@ namespace NAV24::FE {
                 mpLastFrame->setNextFrame(pFrame);
             }
 
-            // feature extraction
+            // feature extraction & rectification
             if (mpOrbDetector) {
                 mpOrbDetector->detect(pFrame);
+                if (mpCalib) {
+                    vector<OB::ObsPtr> vpObsUd;
+                    mpCalib->undistort(pFrame->getObservations(), vpObsUd);
+                    pFrame->setObservations(vpObsUd);
+                }
             }
 
             // publish the new pose

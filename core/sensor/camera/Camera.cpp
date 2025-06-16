@@ -110,7 +110,7 @@ namespace NAV24 {
                 if (pMsgReq) {
                     auto senderCb = pMsgReq->getCallbackFun();
                     if (senderCb) {
-                        auto pMsgCalib = make_shared<MsgType<CalibPtr>>(DEF_CAT, mpCalib);
+                        auto pMsgCalib = make_shared<MsgType<CalibPtrRO>>(DEF_CAT, mpCalib);
                         senderCb(pMsgCalib);
                     }
                 }

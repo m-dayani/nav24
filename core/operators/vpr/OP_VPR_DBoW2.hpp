@@ -11,7 +11,8 @@
 #include <vector>
 #include <list>
 #include <set>
-#include<mutex>
+#include <mutex>
+#include <thread>
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
@@ -27,6 +28,13 @@
 
 namespace NAV24::OP {
 
+    class ORBVocabulary : public OrbVocabulary {
+    public:
+        ORBVocabulary() = default;
+        explicit ORBVocabulary(const std::string& pathVoc) : OrbVocabulary(pathVoc) {}
+        bool loadFromTextFile(const std::string &filename);
+    };
+
     class VPR_DBoW2 : public Operator {
     public:
         VPR_DBoW2(std::string pathVocab, std::string pathDb, std::string pathTsMap);
@@ -39,7 +47,7 @@ namespace NAV24::OP {
 
 #ifdef LIB_DBOW2_FOUND
         static void createVocab(const std::vector<FramePtr>& vpFrames, std::shared_ptr<OrbVocabulary>& pVoc);
-        void reloadDbWithVocab(const std::shared_ptr<OrbVocabulary>& pVoc);
+        void reloadDbWithVocab(const std::shared_ptr<ORBVocabulary>& pVoc);
 #endif
 
         // todo: unify these data conversion methods
@@ -69,8 +77,10 @@ namespace NAV24::OP {
 
         std::map<unsigned int, unsigned long> mTsMap;
 
+        std::mutex mVocLock;
+        std::shared_ptr<std::thread> mThLoadVoc;
 #ifdef LIB_DBOW2_FOUND
-        std::shared_ptr<OrbVocabulary> mpOrbVocabulary;
+        std::shared_ptr<ORBVocabulary> mpOrbVocabulary;
         std::shared_ptr<OrbDatabase> mpOrbDatabase;
 #endif
     };

@@ -5,6 +5,7 @@
 #include "OP_MapPointManager.hpp"
 #include "Point3D.hpp"
 #include "DataConversion.hpp"
+#include "Camera.hpp"
 
 using namespace std;
 
@@ -18,8 +19,8 @@ namespace NAV24::OP {
 
         // request calibration params
         auto fp = [this](auto && PH1) { receive(std::forward<decltype(PH1)>(PH1)); };
-        auto msgGetCalib = make_shared<MsgRequest>(ID_CH_PARAMS, fp, Operator::TOPIC);
-        mpChannel->send(msgGetCalib);
+        auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, fp, Sensor::TOPIC, FCN_CAM_GET_CALIB);
+        mpChannel->send(msgReqCalib);
     }
 
     bool MapPointManager::triangulate(Eigen::Vector3f &x_c1, Eigen::Vector3f &x_c2, Eigen::Matrix<float,3,4> &Tc1w,
@@ -74,7 +75,7 @@ namespace NAV24::OP {
 
         auto vpObs1 = pKF->getObservations();
 
-        const float ratioFactor = 1.5f*1.f;//mpCurrentKeyFrame->mfScaleFactor;
+        const float ratioFactor = 1.5f * mpFtMatcher->mPInfo.scaleFactor;
 
         // Loop through found key frames:
         for (const auto& pKF2 : vpCovisKFs) {
@@ -121,13 +122,15 @@ namespace NAV24::OP {
                 const int &idx1 = mchIdx.first;
                 const int &idx2 = mchIdx.second;
 
-                const auto &kp1 = dynamic_pointer_cast<OB::Point2D>(vpObs1[idx1]);
-                const auto &kp2 = dynamic_pointer_cast<OB::Point2D>(vpObs2[idx2]);
+                const auto &kp1 = dynamic_pointer_cast<OB::KeyPoint2D>(vpObs1[idx1]);
+                auto pObsUd1 = make_shared<OB::Point2D>(kp1->getPointUd().x, kp1->getPointUd().y);
+                const auto &kp2 = dynamic_pointer_cast<OB::KeyPoint2D>(vpObs2[idx2]);
+                auto pObsUd2 = make_shared<OB::Point2D>(kp2->getPointUd().x, kp2->getPointUd().y);
 
                 // Check parallax between rays
-                cv::Point3f cv_xn1 = dynamic_pointer_cast<WO::Point3D>(mpCamCalib->unproject({kp1}))->getPoint();
+                cv::Point3f cv_xn1 = dynamic_pointer_cast<WO::Point3D>(mpCamCalib->unproject({pObsUd1}))->getPoint();
                 Eigen::Vector3f xn1 = Converter::toVector3d(cv_xn1).cast<float>();
-                cv::Point3f cv_xn2 = dynamic_pointer_cast<WO::Point3D>(mpCamCalib->unproject({kp2}))->getPoint();
+                cv::Point3f cv_xn2 = dynamic_pointer_cast<WO::Point3D>(mpCamCalib->unproject({pObsUd2}))->getPoint();
                 Eigen::Vector3f xn2 = Converter::toVector3d(cv_xn2).cast<float>();
 
                 Eigen::Vector3f ray1 = Rwc1 * xn1;
@@ -150,7 +153,7 @@ namespace NAV24::OP {
                     continue;
 
                 // Check reprojection error in first keyframe
-                const float &sigmaSquare1 = 1.f;//mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
+                const float &sigmaSquare1 = mpFtMatcher->mPInfo.mvLevelSigma2[kp1->getOctave()];
                 const float x1 = Rcw1.row(0).dot(x3D)+tcw1(0);
                 const float y1 = Rcw1.row(1).dot(x3D)+tcw1(1);
                 const float invz1 = 1.0/z1;
@@ -158,7 +161,7 @@ namespace NAV24::OP {
                 // monocular case:
                 auto pWO1 = make_shared<WO::Point3D>(x1, y1, z1);
                 auto pUV1 = mpCamCalib->project(pWO1);
-                cv::Point2f uv1 = dynamic_pointer_cast<OB::Point2D>(pUV1)->getPointUd();
+                cv::Point2f uv1 = dynamic_pointer_cast<OB::Point2D>(pUV1)->getPoint();
                 float errX1 = uv1.x - kp1->getPointUd().x;
                 float errY1 = uv1.y - kp1->getPointUd().y;
 

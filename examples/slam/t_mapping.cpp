@@ -8,6 +8,7 @@
 
 #include "System.hpp"
 #include "FE_MappingMonoV.hpp"
+#include "Camera.hpp"
 
 
 using namespace std;
@@ -47,6 +48,10 @@ int main(int argc, char** argv) {
     auto msgReqPR = make_shared<MsgRequest>(ID_CH_TRAJECTORY, fp, FE::FrontEnd::TOPIC,
                                             FCN_GET_TRANS, "T_bc0");
     mpSystem->send(msgReqPR);
+
+    // request calibration params
+    auto msgReqCalib = make_shared<MsgRequest>(ID_CH_SENSORS, fp, Sensor::TOPIC, FCN_CAM_GET_CALIB);
+    mpSystem->send(msgReqCalib);
 
     // play the pose provider (and all other sensors) in the bg
     auto fp1 = [mpSystem](auto && PH1) {

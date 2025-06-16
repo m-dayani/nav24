@@ -13,10 +13,12 @@ using namespace std;
 namespace NAV24 {
 
     Atlas::Atlas(const ChannelPtr& pChannel) : MsgCallback(pChannel),
-            mWorlds(), mvpKeyframes(), mvpFrameBuffer(), mFrameBuffLock() {
+            mWorlds(), mvpFrameBuffer(), mFrameBuffLock(), mvpKeyframes() {
 
         mpMpManager = make_shared<OP::MapPointManager>(mpChannel);
         mpChannel->registerChannel(ID_CH_OP, mpMpManager);
+        mpVprDbow2 = make_shared<OP::VPR_DBoW2>(mpChannel);
+        mpChannel->registerChannel(ID_CH_OP, mpVprDbow2);
     }
 
     void Atlas::receive(const MsgPtr &msg) {
@@ -82,7 +84,7 @@ namespace NAV24 {
         }
     }
 
-    void Atlas::setup(const MsgPtr &configMsg) {
+    void Atlas::setup(const MsgPtr &) {
 
     }
 
@@ -112,8 +114,20 @@ namespace NAV24 {
 
             // manage world objects (map points)
             if (!mvpKeyframes.empty()) {
+
+                // compute DBoW feature vector for the last frame
+                for (const auto& pKF : mvpKeyframes) {
+                    if (dynamic_pointer_cast<FrameMonoOS>(pKF)) {
+                        if (!dynamic_pointer_cast<FrameMonoOS>(pKF)->isInitDBoW2()) {
+                            mpVprDbow2->computeBowInfo(mvpKeyframes.back());
+                        }
+                    }
+                }
+
+                // create new map points
                 std::vector<WO::WoPtr> vpPoints3d;
                 mpMpManager->checkNewKeyFrame(mvpKeyframes.back(), vpPoints3d);
+
                 // todo: process and publish map points
             }
 
