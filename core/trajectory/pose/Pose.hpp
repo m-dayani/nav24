@@ -44,6 +44,8 @@ namespace NAV24 {
 
 //            [[nodiscard]] double getOffset() const { return offset; }
 
+            [[nodiscard]] virtual std::string printStr(const std::string &prefix) const;
+
         protected:
 //            static ulong idCounter;
 
@@ -67,6 +69,8 @@ namespace NAV24 {
             OB::ObsPtr transformObs(const OB::ObsPtr &pObs) override;
 
             Eigen::Vector3d transform(const Eigen::Vector3d &P_t) { return T_rt * P_t; }
+
+            std::string printStr(const std::string &prefix) const override;
 
         private:
             Eigen::Matrix3d T_rt;
@@ -109,6 +113,7 @@ namespace NAV24 {
             void incLevel();
             [[nodiscard]] uint getLevel() const;
 
+            std::string printStr(const std::string &prefix) const override;
 //            void setGlobalScale(const std::shared_ptr<float>& pSc) { mpGlobSc; }
 
         protected:
@@ -131,9 +136,10 @@ namespace NAV24 {
 
         class PoseSim3 : public PoseSE3 {
         public:
+            std::string printStr(const std::string &prefix) const override;
 
         protected:
-            double scale{};
+            double scale{1.0};
         };
     } // TF
 

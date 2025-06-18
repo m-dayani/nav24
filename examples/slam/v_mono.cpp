@@ -15,13 +15,17 @@ using namespace std;
 using namespace NAV24;
 
 
-int main([[maybe_unused]] int argc, char** argv) {
+int main(int argc, char** argv) {
 
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
-    string confFile = "../config/EuRoC.yaml";
-    shared_ptr<ParamReceiver> pParamRec = make_shared<ParamReceiver>();
+    if (argc < 2) {
+        cout << "Usage: " << argv[0] << " config_file.yaml\n";
+        return 1;
+    }
+
+    string confFile = argv[1];
 
     // Create the system
     shared_ptr<System> mpSystem = make_shared<System>();

@@ -80,6 +80,9 @@ namespace NAV24::OP {
         // Loop through found key frames:
         for (const auto& pKF2 : vpCovisKFs) {
 
+            cout << "\n" << pKF->printStr("");
+            cout << "\n" << pKF2->printStr("");
+
             // Retrieve second frame's intrinsic/extrinsic params
             Eigen::Matrix4d T_wc2 = pKF2->getPose()->getPose();
             Eigen::Matrix4d T_cw2 = T_wc1.inverse();

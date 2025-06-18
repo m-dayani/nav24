@@ -2,10 +2,12 @@
 // Created by masoud on 4/28/24.
 //
 
+#include <iostream>
 #include <utility>
+#include <iomanip>
 
 #include "Frame.hpp"
-#include "OP_VPR_DBoW2.hpp"
+#include "DataConversion.hpp"
 
 
 using namespace std;
@@ -39,6 +41,21 @@ namespace NAV24 {
 
     }
 
+    std::string Frame::printStr(const string &prefix) const {
+
+        std::ostringstream oss;
+
+        oss << prefix << "ts: " << static_cast<long>(ts) << "\n";
+        oss << prefix << "ID: " << mId << "\n";
+        oss << prefix << "Num Observations: " << mvpObservations.size() << "\n";
+        oss << mpPose->printStr(prefix);
+        oss << prefix << "Frame level: " << mLevel << "\n";
+        oss << prefix << "Next frame: " << hex << mpNextFrame.lock() << "\n";
+        oss << prefix << "Previous frame: " << hex << mpPrevFrame.lock() << "\n";
+
+        return oss.str();
+    }
+
 //    void Frame::addObservation(const OB::ObsPtr &pObs) {
 //        mvpObservations.push_back(pObs);
 //    }
@@ -60,6 +77,20 @@ namespace NAV24 {
     void FrameImgMono::simplify() {
         Frame::simplify();
         mpImage->mImage = cv::Mat();
+    }
+
+    string FrameImgMono::printStr(const string &prefix) const {
+        string frameInfo = Frame::printStr(prefix);
+        ostringstream oss;
+
+        if (mpImage) {
+            oss << prefix << "Image is: " << mpImage->mPath << "\n";
+        }
+        else {
+            oss << prefix << "Image is not set\n";
+        }
+
+        return frameInfo + oss.str();
     }
 
     void FrameMonoOS::setObservations(const std::vector<OB::ObsPtr> &vpObservations) {
@@ -93,5 +124,15 @@ namespace NAV24 {
 
     void FrameMonoOS::processKeyframe() {
 //        this->computeFtVecDBoW2();
+    }
+
+    string FrameMonoOS::printStr(const string &prefix) const {
+        string imFrameInfo = FrameImgMono::printStr(prefix);
+
+        ostringstream oss;
+        oss << prefix << "Feature Vector Size: " << mFtVecDBoW2.size() << "\n";
+        oss << prefix << "BoW Size: " << mBowVecDBoW2.size() << "\n";
+
+        return imFrameInfo + oss.str();
     }
 } // NAV24

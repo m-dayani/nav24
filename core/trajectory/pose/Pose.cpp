@@ -9,6 +9,7 @@
 #include "DataConversion.hpp"
 #include "Point3D.hpp"
 #include "Frame.hpp"
+#include "DataConversion.hpp"
 
 
 using namespace std;
@@ -24,6 +25,14 @@ namespace NAV24::TF {
             SensorData(_ts, ""), name(std::move(name_)) {
 
 //        key = ref + DEF_SEP + target;
+    }
+
+    std::string Transformation::printStr(const std::string &prefix) const {
+        std::ostringstream oss;
+
+        oss << prefix << "TF Name: " << name << "\n";
+
+        return oss.str();
     }
 
     /* ============================================================================================================== */
@@ -53,6 +62,14 @@ namespace NAV24::TF {
 
     OB::ObsPtr Trans2D::transformObs(const OB::ObsPtr &pObs) {
         return {};
+    }
+
+    string Trans2D::printStr(const std::string &prefix) const {
+        ostringstream oss{Transformation::printStr(prefix)};
+
+        oss << Converter::toString(T_rt, prefix);
+
+        return oss.str();
     }
 
     /* ============================================================================================================== */
@@ -162,5 +179,21 @@ namespace NAV24::TF {
         return 0;
     }
 
+    string PoseSE3::printStr(const std::string &prefix) const {
+        std::ostringstream oss{Transformation::printStr(prefix)};
 
+        oss << Converter::toString(T_rt, prefix);
+        oss << prefix << "Frame: " << hex << mpFrame.lock() << "\n";
+
+        return oss.str();
+    }
+
+
+    string PoseSim3::printStr(const std::string &prefix) const {
+        std::ostringstream oss{PoseSE3::printStr(prefix)};
+
+        oss << prefix << "Scale: " << scale << "\n";
+
+        return oss.str();
+    }
 } // NAV24::TF

@@ -45,6 +45,8 @@ namespace NAV24 {
 
         virtual void processKeyframe() {}
 
+        [[nodiscard]] virtual std::string printStr(const std::string& prefix) const;
+
     protected:
         double ts;
         const long mId;
@@ -75,6 +77,8 @@ namespace NAV24 {
 
         void simplify() override;
 
+        [[nodiscard]] std::string printStr(const std::string &prefix) const override;
+
     protected:
         ImagePtr mpImage;
         OB::MatchedObsPtr mpMatches12;
@@ -103,6 +107,8 @@ namespace NAV24 {
         void updateInitDBoW2(const bool flag) { mbInitDBoW2 = flag; }
 
         void processKeyframe() override;
+
+        [[nodiscard]] std::string printStr(const std::string &prefix) const override;
 
     protected:
         std::shared_ptr<OB::FeatureGrid> mpGrid;
